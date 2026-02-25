@@ -577,7 +577,7 @@ function SearchableSelect({ label, icon: Icon, valueLabel, options, onSelect, pl
                       <button key={i} onClick={() => { onSelect(opt.value); setIsOpen(false); setSearchTerm(""); }} className={`w-full text-left px-3 py-2.5 text-[11px] font-bold transition-colors hover:bg-zinc-800 ${valueLabel === opt.label ? 'text-indigo-400 bg-zinc-800/50' : 'text-zinc-400'}`}>{opt.label}</button>
                     ))
                   ) : (
-                    <div className="px-3 py-5 text-center text-[11px] text-neutral-500 font-bold uppercase tracking-widest">Nenhum idioma encontrado</div>
+                    <div className="px-3 py-5 text-center text-[11px] text-neutral-500 font-bold uppercase tracking-widest">No languages found</div>
                   )}
                 </div>
               </motion.div>

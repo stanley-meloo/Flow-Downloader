@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  Download, FolderUp, AlertCircle, Languages, 
+import { FolderUp, AlertCircle, Languages, 
   ChevronDown, Check, Search, CheckCircle2 
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import logoImg from "../../assets/logo.png";
 
 export default function SetupModal({ settings, onClose }) {
   const { t, i18n } = useTranslation();
@@ -83,8 +83,8 @@ export default function SetupModal({ settings, onClose }) {
         exit="exit"
         className="relative w-full max-w-md bg-zinc-950/50 border border-white/10 rounded-2xl p-8 text-center shadow-2xl backdrop-blur-2xl"
       >
-        <motion.div variants={itemVariants} className="w-20 h-20 bg-violet-500/10 border border-violet-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
-          <Download size={32} className="text-violet-500" />
+        <motion.div variants={itemVariants} className="w-20 h-20 flex items-center justify-center mx-auto mb-6">
+          <img src={logoImg} alt="Logo" className="w-20 h-20" />
         </motion.div>
         
         <motion.h2 variants={itemVariants} className="text-2xl font-bold text-white mb-2">{t('setup_modal.title')}</motion.h2>
