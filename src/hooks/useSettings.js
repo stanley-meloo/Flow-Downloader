@@ -38,7 +38,7 @@ export default function useSettings() {
   const [playlistLimit, setPlaylistLimit] = useState(10);
   const [defaultQuality, setDefaultQuality] = useState("1080p");
   const [language, setLanguage] = useState("auto");
-  const [showSetup, setShowSetup] = useState(true);
+  const [showSetup, setShowSetup] = useState(false);
   
   const [visuals, setVisuals] = useState(DEFAULT_VISUALS);
 
