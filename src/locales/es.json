@@ -1,0 +1,133 @@
+{
+  "hero": {
+    "title": "FlowDownloader",
+    "subtitle": "Descarga todo desde cualquier lugar y en cualquier momento"
+  },
+  "search": {
+    "placeholder": "Pega el URL aquí...",
+    "analyzing_placeholder": "Buscando metadados...",
+    "paste_tooltip": "(CTRL + V) Pegar",
+    "analyze_tooltip": "Buscar",
+    "analyzing_tooltip": "Buscando..."
+  },
+  "queue": {
+    "title": "Cola de Descargas",
+    "empty": "Tu cola está vacía",
+    "open_folder": "Ir al archivo",
+    "cancel": "Cancelar descarga",
+    "retry": "Intentar de nuevo",
+    "delete": "Eliminar de la lista",
+    "finished": "Completado",
+    "canceled": "Cancelado",
+    "error": "Error de Descarga",
+    "speed": "Velocidad",
+    "eta": "Tiempo restante",
+    "calculating": "Calculando...",
+    "error_missing": "Archivo no encontrado (movido o eliminado)",
+    "finished_in": "Completado en {{time}}"
+  },
+  "media_modal": {
+    "title": "Opciones de Descarga",
+    "format": "Formato",
+    "quality": "Calidad",
+    "directory": "Guardar en",
+    "cancel": "Cancelar",
+    "download": "Descargar Ahora",
+    "output_format": "Elige lo que deseas descargar",
+    "format_video_audio": "Vídeo + Audio",
+    "format_video_only": "Solo Vídeo",
+    "format_audio_only": "Solo Audio",
+    "destination": "Destino",
+    "change": "Cambiar",
+    "audio": "Audio",
+    "fps": "FPS",
+    "native_fps": "Nativo",
+    "download_png": "Descargar Imagen",
+    "open_folder": "Abrir ubicación del archivo",
+    "start_download": "Descargar"
+  },
+  "playlist_modal": {
+    "badge": "LISTA DE REPRODUCCIÓN",
+    "unknown_uploader": "Canal desconocido",
+    "videos_listed": "{{count}} vídeos listados",
+    "output_label": "Elige lo que deseas descargar de la lista",
+    "select_videos": "Vídeos Seleccionados",
+    "select_all": "Seleccionar Todos",
+    "deselect_all": "Deseleccionar Todos",
+    "download_selected": "Descargar Seleccionados",
+    "video_placeholder": "Vídeo {{num}}",
+    "error_no_selection": "Selecciona al menos un vídeo para descargar"
+  },
+  "setup_modal": {
+    "title": "¡Bienvenido a FlowDownloader!",
+    "subtitle": "Vamos a configurar tu ubicación de descarga inicial",
+    "select_folder": "Seleccionar Carpeta de Descarga Predeterminada",
+    "finish": "Comenzar"
+  },
+  "settings": {
+    "title": "Configuración",
+    "not_defined": "No definido",
+    "quality_best": "Mejor (4K)",
+    "quality_fhd": "Full HD",
+    "quality_hd": "HD",
+    "lang_auto": "Automático",
+    "search_language": "Buscar idioma...",
+    "tabs": {
+      "general": "General",
+      "visual": "Apariencia"
+    },
+    "general": {
+      "path": "Ruta de Descarga Predeterminada",
+      "limit": "Límite de Elementos en Lista",
+      "limit_info": "Puedes aumentar el límite para escanear listas completas. Para evitar lentitud en tu equipo y bloqueos de servidores de YouTube (Error 429), Flow procesará la descarga de forma inteligente, descargando 3 vídeos a la vez.",
+      "quality": "Calidad Predeterminada",
+      "language": "Idioma de la Interfaz"
+    },
+    "visual": {
+      "style": "Motor Gráfico de Fondo",
+      "styles": {
+        "lines": "Líneas Animadas",
+        "liquid": "Agujero Negro",
+        "static": "Estático"
+      },
+      "color": "Color",
+      "custom_colors": "Colores Personalizados",
+      "quantity": "Cantidad de Líneas",
+      "distance": "Espaciado",
+      "radius": "Interacción (Ratón)",
+      "strength": "Fuerza (Ratón)",
+      "speed": "Velocidad",
+      "scale": "Escala",
+      "distortion": "Distorsión",
+      "noise": "Granulado (Ruido)",
+      "base_color": "Color de Fondo",
+      "image": "Fondo Personalizado",
+      "choose_image": "Buscar Imagen",
+      "image_defined": "Imagen Actual",
+      "effects": "Filtros de Post-Procesamiento",
+      "gradient": "Viñeta Superior",
+      "darken": "Oscurecer",
+      "blur": "Desenfocar"
+    },
+    "done": "Hecho"
+  },
+  "toast": {
+    "error_empty": "Por favor, inserta un enlace.",
+    "error_invalid": "Enlace inválido o no soportado.",
+    "success_added": "¡Vídeo añadido a la cola!",
+    "success_thumb": "¡Miniatura descargada con éxito!",
+    "error_thumb": "No se pudo descargar la miniatura.",
+    "download_started": "¡Descarga iniciada!",
+    "download_finished": "¡Todo listo! Descarga completada.",
+    "error_generic": "Algo salió mal. Inténtalo de nuevo.",
+    "clipboard_success": "¡Enlace pegado con éxito!",
+    "clipboard_empty": "El portapapeles está vacío.",
+    "clipboard_error": "Error al acceder al portapapeles.",
+    "link_error": "Por favor, pega un enlace válido.",
+    "data_error": "Error en los datos recibidos.",
+    "video_not_found": "Vídeo no encontrado o no disponible.",
+    "open_error": "Error al abrir la ubicación.",
+    "config_saved": "¡Configuraciones aplicadas!"
+  },
+  "support_flow": "Apoya a Flow Downloader 🪙"
+}

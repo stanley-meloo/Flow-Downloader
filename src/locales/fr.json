@@ -1,0 +1,133 @@
+{
+  "hero": {
+    "title": "FlowDownloader",
+    "subtitle": "Téléchargez tout, de n'importe où et à tout moment"
+  },
+  "search": {
+    "placeholder": "Collez l'URL ici...",
+    "analyzing_placeholder": "Récupération des métadonnées...",
+    "paste_tooltip": "(CTRL + V) Coller",
+    "analyze_tooltip": "Chercher",
+    "analyzing_tooltip": "Recherche..."
+  },
+  "queue": {
+    "title": "File de Téléchargement",
+    "empty": "Votre file d'attente est vide",
+    "open_folder": "Aller au fichier",
+    "cancel": "Annuler le téléchargement",
+    "retry": "Réessayer",
+    "delete": "Retirer de la liste",
+    "finished": "Terminé",
+    "canceled": "Annulé",
+    "error": "Erreur de Téléchargement",
+    "speed": "Vitesse",
+    "eta": "Temps restant",
+    "calculating": "Calcul...",
+    "error_missing": "Fichier non trouvé (déplacé ou supprimé)",
+    "finished_in": "Terminé en {{time}}"
+  },
+  "media_modal": {
+    "title": "Options de Téléchargement",
+    "format": "Format",
+    "quality": "Qualité",
+    "directory": "Enregistrer sous",
+    "cancel": "Annuler",
+    "download": "Télécharger maintenant",
+    "output_format": "Choisissez ce que vous voulez télécharger",
+    "format_video_audio": "Vidéo + Audio",
+    "format_video_only": "Vidéo uniquement",
+    "format_audio_only": "Audio uniquement",
+    "destination": "Destination",
+    "change": "Modifier",
+    "audio": "Audio",
+    "fps": "FPS",
+    "native_fps": "Natif",
+    "download_png": "Télécharger l'image",
+    "open_folder": "Ouvrir l'emplacement du fichier",
+    "start_download": "Télécharger"
+  },
+  "playlist_modal": {
+    "badge": "PLAYLIST",
+    "unknown_uploader": "Chaîne inconnue",
+    "videos_listed": "{{count}} vidéos listées",
+    "output_label": "Choisissez ce que vous voulez télécharger de la playlist",
+    "select_videos": "Vidéos Sélectionnées",
+    "select_all": "Tout Sélectionner",
+    "deselect_all": "Tout Désélectionner",
+    "download_selected": "Télécharger la Sélection",
+    "video_placeholder": "Vidéo {{num}}",
+    "error_no_selection": "Sélectionnez au moins une vidéo à télécharger"
+  },
+  "setup_modal": {
+    "title": "Bienvenue sur FlowDownloader !",
+    "subtitle": "Configurons votre emplacement de téléchargement initial",
+    "select_folder": "Sélectionner le dossier de téléchargement par défaut",
+    "finish": "Commencer"
+  },
+  "settings": {
+    "title": "Paramètres",
+    "not_defined": "Non défini",
+    "quality_best": "Meilleur (4K)",
+    "quality_fhd": "Full HD",
+    "quality_hd": "HD",
+    "lang_auto": "Automatique",
+    "search_language": "Rechercher une langue...",
+    "tabs": {
+      "general": "Général",
+      "visual": "Apparence"
+    },
+    "general": {
+      "path": "Chemin de téléchargement par défaut",
+      "limit": "Limite d'éléments de playlist",
+      "limit_info": "Vous pouvez augmenter la limite pour analyser des playlists entières. Pour éviter de ralentir votre machine et les blocages des serveurs YouTube (Erreur 429), Flow traitera le téléchargement intelligemment, en téléchargeant 3 vidéos à la fois.",
+      "quality": "Qualité par défaut",
+      "language": "Langue de l'interface"
+    },
+    "visual": {
+      "style": "Moteur graphique d'arrière-plan",
+      "styles": {
+        "lines": "Lignes animées",
+        "liquid": "Trou Noir",
+        "static": "Statique"
+      },
+      "color": "Couleur",
+      "custom_colors": "Couleurs personnalisées",
+      "quantity": "Quantité de lignes",
+      "distance": "Espacement",
+      "radius": "Interaction (Souris)",
+      "strength": "Force (Souris)",
+      "speed": "Vitesse",
+      "scale": "Échelle",
+      "distortion": "Distorsion",
+      "noise": "Grain (Bruit)",
+      "base_color": "Couleur de fond",
+      "image": "Fond d'écran personnalisé",
+      "choose_image": "Parcourir l'image",
+      "image_defined": "Image actuelle",
+      "effects": "Filtres de post-traitement",
+      "gradient": "Vignette supérieure",
+      "darken": "Assombrir",
+      "blur": "Flouter"
+    },
+    "done": "Terminé"
+  },
+  "toast": {
+    "error_empty": "Veuillez insérer un lien.",
+    "error_invalid": "Lien invalide ou non pris en charge.",
+    "success_added": "Vidéo ajoutée à la file !",
+    "success_thumb": "Miniature téléchargée avec succès !",
+    "error_thumb": "Impossible de télécharger la miniature.",
+    "download_started": "Le téléchargement a commencé !",
+    "download_finished": "Tout est prêt ! Téléchargement terminé.",
+    "error_generic": "Un problème est survenu. Réessayez.",
+    "clipboard_success": "Lien collé avec succès !",
+    "clipboard_empty": "Le presse-papiers est vide.",
+    "clipboard_error": "Erreur d'accès au presse-papiers.",
+    "link_error": "Veuillez coller un lien valide.",
+    "data_error": "Erreur dans les données reçues.",
+    "video_not_found": "Vidéo introuvable ou indisponible.",
+    "open_error": "Erreur lors de l'ouverture de l'emplacement.",
+    "config_saved": "Paramètres appliqués !"
+  },
+  "support_flow": "Soutenir Flow Downloader 🪙"
+}

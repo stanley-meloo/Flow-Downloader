@@ -1,0 +1,133 @@
+{
+  "hero": {
+    "title": "FlowDownloader",
+    "subtitle": "Lade alles von überall und zu jeder Zeit herunter"
+  },
+  "search": {
+    "placeholder": "URL hier einfügen...",
+    "analyzing_placeholder": "Metadaten werden abgerufen...",
+    "paste_tooltip": "(STRG + V) Einfügen",
+    "analyze_tooltip": "Suchen",
+    "analyzing_tooltip": "Suche..."
+  },
+  "queue": {
+    "title": "Download-Warteschlange",
+    "empty": "Deine Warteschlange ist leer",
+    "open_folder": "Gehe zu Datei",
+    "cancel": "Download abbrechen",
+    "retry": "Erneut versuchen",
+    "delete": "Von Liste entfernen",
+    "finished": "Abgeschlossen",
+    "canceled": "Abgebrochen",
+    "error": "Download-Fehler",
+    "speed": "Geschwindigkeit",
+    "eta": "Verbleibende Zeit",
+    "calculating": "Berechnung...",
+    "error_missing": "Datei nicht gefunden (verschoben oder gelöscht)",
+    "finished_in": "Abgeschlossen in {{time}}"
+  },
+  "media_modal": {
+    "title": "Download-Optionen",
+    "format": "Format",
+    "quality": "Qualität",
+    "directory": "Speichern unter",
+    "cancel": "Abbrechen",
+    "download": "Jetzt herunterladen",
+    "output_format": "Wähle aus, was du herunterladen möchtest",
+    "format_video_audio": "Video + Audio",
+    "format_video_only": "Nur Video",
+    "format_audio_only": "Nur Audio",
+    "destination": "Zielort",
+    "change": "Ändern",
+    "audio": "Audio",
+    "fps": "FPS",
+    "native_fps": "Nativ",
+    "download_png": "Bild herunterladen",
+    "open_folder": "Dateispeicherort öffnen",
+    "start_download": "Herunterladen"
+  },
+  "playlist_modal": {
+    "badge": "PLAYLIST",
+    "unknown_uploader": "Unbekannter Kanal",
+    "videos_listed": "{{count}} Videos aufgelistet",
+    "output_label": "Wähle aus, was du aus der Playlist herunterladen möchtest",
+    "select_videos": "Ausgewählte Videos",
+    "select_all": "Alle auswählen",
+    "deselect_all": "Alle abwählen",
+    "download_selected": "Auswahl herunterladen",
+    "video_placeholder": "Video {{num}}",
+    "error_no_selection": "Wähle mindestens ein Video zum Herunterladen aus"
+  },
+  "setup_modal": {
+    "title": "Willkommen bei FlowDownloader!",
+    "subtitle": "Lass uns deinen ersten Download-Pfad einrichten",
+    "select_folder": "Standard-Download-Ordner auswählen",
+    "finish": "Loslegen"
+  },
+  "settings": {
+    "title": "Einstellungen",
+    "not_defined": "Nicht definiert",
+    "quality_best": "Beste (4K)",
+    "quality_fhd": "Full HD",
+    "quality_hd": "HD",
+    "lang_auto": "Automatisch",
+    "search_language": "Sprache suchen...",
+    "tabs": {
+      "general": "Allgemein",
+      "visual": "Aussehen"
+    },
+    "general": {
+      "path": "Standard-Download-Pfad",
+      "limit": "Playlist-Element-Limit",
+      "limit_info": "Du kannst das Limit erhöhen, um ganze Playlists zu scannen. Um eine Verlangsamung deines Rechners und YouTube-Server-Sperren (Fehler 429) zu vermeiden, verarbeitet Flow den Download intelligent und lädt 3 Videos gleichzeitig herunter.",
+      "quality": "Standardqualität",
+      "language": "Interface-Sprache"
+    },
+    "visual": {
+      "style": "Hintergrund-Grafik-Engine",
+      "styles": {
+        "lines": "Animierte Linien",
+        "liquid": "Schwarzes Loch",
+        "static": "Statisch"
+      },
+      "color": "Farbe",
+      "custom_colors": "Eigene Farben",
+      "quantity": "Linienanzahl",
+      "distance": "Abstand",
+      "radius": "Interaktion (Maus)",
+      "strength": "Stärke (Maus)",
+      "speed": "Geschwindigkeit",
+      "scale": "Skalierung",
+      "distortion": "Verzerrung",
+      "noise": "Körnung (Rauschen)",
+      "base_color": "Hintergrundfarbe",
+      "image": "Eigenes Wallpaper",
+      "choose_image": "Bild suchen",
+      "image_defined": "Aktuelles Bild",
+      "effects": "Post-Processing-Filter",
+      "gradient": "Obere Vignette",
+      "darken": "Abdunkeln",
+      "blur": "Weichzeichnen"
+    },
+    "done": "Fertig"
+  },
+  "toast": {
+    "error_empty": "Bitte füge einen Link ein.",
+    "error_invalid": "Ungültiger oder nicht unterstützter Link.",
+    "success_added": "Video zur Warteschlange hinzugefügt!",
+    "success_thumb": "Vorschaubild erfolgreich heruntergeladen!",
+    "error_thumb": "Vorschaubild konnte nicht heruntergeladen werden.",
+    "download_started": "Download gestartet!",
+    "download_finished": "Alles fertig! Download abgeschlossen.",
+    "error_generic": "Etwas ist schiefgelaufen. Versuch es noch einmal.",
+    "clipboard_success": "Link erfolgreich eingefügt!",
+    "clipboard_empty": "Die Zwischenablage ist leer.",
+    "clipboard_error": "Fehler beim Zugriff auf die Zwischenablage.",
+    "link_error": "Bitte füge einen gültigen Link ein.",
+    "data_error": "Fehler in den empfangenen Daten.",
+    "video_not_found": "Video nicht gefunden oder nicht verfügbar.",
+    "open_error": "Fehler beim Öffnen des Speicherorts.",
+    "config_saved": "Einstellungen angewendet!"
+  },
+  "support_flow": "Flow Downloader unterstützen 🪙"
+}

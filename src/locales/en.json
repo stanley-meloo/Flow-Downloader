@@ -1,0 +1,133 @@
+{
+  "hero": {
+    "title": "FlowDownloader",
+    "subtitle": "Download anything from anywhere, anytime"
+  },
+  "search": {
+    "placeholder": "Paste the URL here...",
+    "analyzing_placeholder": "Fetching metadata...",
+    "paste_tooltip": "(CTRL + V) Paste",
+    "analyze_tooltip": "Search",
+    "analyzing_tooltip": "Searching..."
+  },
+  "queue": {
+    "title": "Download Queue",
+    "empty": "Your queue is empty",
+    "open_folder": "Go to file",
+    "cancel": "Cancel download",
+    "retry": "Try again",
+    "delete": "Remove from list",
+    "finished": "Completed",
+    "canceled": "Canceled",
+    "error": "Download Error",
+    "speed": "Speed",
+    "eta": "Remaining time",
+    "calculating": "Calculating...",
+    "error_missing": "File not found (moved or deleted)",
+    "finished_in": "Finished in {{time}}"
+  },
+  "media_modal": {
+    "title": "Download Options",
+    "format": "Format",
+    "quality": "Quality",
+    "directory": "Save to",
+    "cancel": "Cancel",
+    "download": "Download Now",
+    "output_format": "Choose what you want to download",
+    "format_video_audio": "Video + Audio",
+    "format_video_only": "Video Only",
+    "format_audio_only": "Audio Only",
+    "destination": "Destination",
+    "change": "Change",
+    "audio": "Audio",
+    "fps": "FPS",
+    "native_fps": "Native",
+    "download_png": "Download Image",
+    "open_folder": "Open file location",
+    "start_download": "Download"
+  },
+  "playlist_modal": {
+    "badge": "PLAYLIST",
+    "unknown_uploader": "Unknown channel",
+    "videos_listed": "{{count}} videos listed",
+    "output_label": "Choose what you want to download from the playlist",
+    "select_videos": "Selected Videos",
+    "select_all": "Select All",
+    "deselect_all": "Deselect All",
+    "download_selected": "Download Selected",
+    "video_placeholder": "Video {{num}}",
+    "error_no_selection": "Select at least one video to download"
+  },
+  "setup_modal": {
+    "title": "Welcome to FlowDownloader!",
+    "subtitle": "Let's set up your initial download location",
+    "select_folder": "Select Default Download Folder",
+    "finish": "Get Started"
+  },
+  "settings": {
+    "title": "Settings",
+    "not_defined": "Not defined",
+    "quality_best": "Best (4K)",
+    "quality_fhd": "Full HD",
+    "quality_hd": "HD",
+    "lang_auto": "Automatic",
+    "search_language": "Search language...",
+    "tabs": {
+      "general": "General",
+      "visual": "Appearance"
+    },
+    "general": {
+      "path": "Default Download Path",
+      "limit": "Playlist Item Limit",
+      "limit_info": "You can increase the limit to scan entire playlists. To avoid slowing down your machine and YouTube server blocks (Error 429), Flow will process downloads intelligently, downloading 3 videos at a time.",
+      "quality": "Default Quality",
+      "language": "Interface Language"
+    },
+    "visual": {
+      "style": "Background Graphics Engine",
+      "styles": {
+        "lines": "Animated Lines",
+        "liquid": "Black Hole",
+        "static": "Static"
+      },
+      "color": "Color",
+      "custom_colors": "Custom Colors",
+      "quantity": "Line Quantity",
+      "distance": "Spacing",
+      "radius": "Interaction (Mouse)",
+      "strength": "Strength (Mouse)",
+      "speed": "Speed",
+      "scale": "Scale",
+      "distortion": "Distortion",
+      "noise": "Grain (Noise)",
+      "base_color": "Background Color",
+      "image": "Custom Wallpaper",
+      "choose_image": "Browse Image",
+      "image_defined": "Current Image",
+      "effects": "Post-Processing Filters",
+      "gradient": "Top Vignette",
+      "darken": "Darken",
+      "blur": "Blur"
+    },
+    "done": "Done"
+  },
+  "toast": {
+    "error_empty": "Please insert a link.",
+    "error_invalid": "Invalid or unsupported link.",
+    "success_added": "Video added to queue!",
+    "success_thumb": "Thumbnail downloaded successfully!",
+    "error_thumb": "Could not download thumbnail.",
+    "download_started": "Download started!",
+    "download_finished": "All set! Download completed.",
+    "error_generic": "Something went wrong. Try again.",
+    "clipboard_success": "Link pasted successfully!",
+    "clipboard_empty": "Clipboard is empty.",
+    "clipboard_error": "Error accessing clipboard.",
+    "link_error": "Please paste a valid link.",
+    "data_error": "Error parsing received data.",
+    "video_not_found": "Video not found or unavailable.",
+    "open_error": "Error opening location.",
+    "config_saved": "Settings applied!"
+  },
+  "support_flow": "Support Flow Downloader 🪙"
+}

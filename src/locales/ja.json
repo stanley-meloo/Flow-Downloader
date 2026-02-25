@@ -1,0 +1,133 @@
+{
+  "hero": {
+    "title": "FlowDownloader",
+    "subtitle": "いつでも、どこからでも、すべてをダウンロード。"
+  },
+  "search": {
+    "placeholder": "ここにURLを貼り付け...",
+    "analyzing_placeholder": "メタデータを取得中...",
+    "paste_tooltip": "(CTRL + V) 貼り付け",
+    "analyze_tooltip": "検索",
+    "analyzing_tooltip": "検索中..."
+  },
+  "queue": {
+    "title": "ダウンロード待ち行列",
+    "empty": "待ち行列は空です",
+    "open_folder": "ファイルを開く",
+    "cancel": "ダウンロードをキャンセル",
+    "retry": "再試行",
+    "delete": "リストから削除",
+    "finished": "完了",
+    "canceled": "キャンセル済み",
+    "error": "ダウンロードエラー",
+    "speed": "速度",
+    "eta": "残り時間",
+    "calculating": "計算中...",
+    "error_missing": "ファイルが見つかりません（移動または削除済み）",
+    "finished_in": "{{time}} で完了"
+  },
+  "media_modal": {
+    "title": "ダウンロードオプション",
+    "format": "形式",
+    "quality": "品質",
+    "directory": "保存先",
+    "cancel": "キャンセル",
+    "download": "今すぐダウンロード",
+    "output_format": "ダウンロードするものを選択",
+    "format_video_audio": "動画 + 音声",
+    "format_video_only": "動画のみ",
+    "format_audio_only": "音声のみ",
+    "destination": "保存先",
+    "change": "変更",
+    "audio": "オーディオ",
+    "fps": "FPS",
+    "native_fps": "ネイティブ",
+    "download_png": "画像をダウンロード",
+    "open_folder": "ファイルの場所を開く",
+    "start_download": "ダウンロード"
+  },
+  "playlist_modal": {
+    "badge": "プレイリスト",
+    "unknown_uploader": "不明なチャンネル",
+    "videos_listed": "{{count}} 本の動画",
+    "output_label": "プレイリストからダウンロードするものを選択",
+    "select_videos": "選択された動画",
+    "select_all": "すべて選択",
+    "deselect_all": "すべての選択を解除",
+    "download_selected": "選択項目をダウンロード",
+    "video_placeholder": "動画 {{num}}",
+    "error_no_selection": "ダウンロードする動画を少なくとも1つ選択してください"
+  },
+  "setup_modal": {
+    "title": "FlowDownloaderへようこそ！",
+    "subtitle": "初期ダウンロード場所を設定しましょう",
+    "select_folder": "デフォルトのダウンロードフォルダを選択",
+    "finish": "開始"
+  },
+  "settings": {
+    "title": "設定",
+    "not_defined": "未定義",
+    "quality_best": "最高 (4K)",
+    "quality_fhd": "フルHD",
+    "quality_hd": "HD",
+    "lang_auto": "自動",
+    "search_language": "言語を検索...",
+    "tabs": {
+      "general": "全般",
+      "visual": "外観"
+    },
+    "general": {
+      "path": "デフォルトのダウンロードパス",
+      "limit": "プレイリストの項目数制限",
+      "limit_info": "制限を増やしてプレイリスト全体をスキャンできます。マシンの低速化やYouTubeサーバーのブロック（エラー429）を避けるため、Flowは3本ずつインテリジェントにダウンロードを処理します。",
+      "quality": "デフォルトの品質",
+      "language": "インターフェース言語"
+    },
+    "visual": {
+      "style": "背景グラフィックエンジン",
+      "styles": {
+        "lines": "アニメーションライン",
+        "liquid": "ブラックホール",
+        "static": "静的"
+      },
+      "color": "色",
+      "custom_colors": "カスタムカラー",
+      "quantity": "ラインの数",
+      "distance": "間隔",
+      "radius": "インタラクション (マウス)",
+      "strength": "強度 (マウス)",
+      "speed": "速度",
+      "scale": "スケール",
+      "distortion": "歪み",
+      "noise": "ノイズ",
+      "base_color": "背景色",
+      "image": "カスタム壁紙",
+      "choose_image": "画像を参照",
+      "image_defined": "現在の画像",
+      "effects": "ポストプロセッシングフィルタ",
+      "gradient": "上部ビネット",
+      "darken": "暗くする",
+      "blur": "ぼかし"
+    },
+    "done": "完了"
+  },
+  "toast": {
+    "error_empty": "リンクを入力してください",
+    "error_invalid": "無効またはサポートされていないリンクです",
+    "success_added": "ビデオをキューに追加しました！",
+    "success_thumb": "サムネイルのダウンロードに成功しました！",
+    "error_thumb": "サムネイルをダウンロードできませんでした",
+    "download_started": "ダウンロードを開始しました！",
+    "download_finished": "完了しました！ダウンロードが終了しました。",
+    "error_generic": "問題が発生しました。もう一度お試しください。",
+    "clipboard_success": "リンクを貼り付けました！",
+    "clipboard_empty": "クリップボードが空です。",
+    "clipboard_error": "クリップボードへのアクセスエラー。",
+    "link_error": "有効なリンクを貼り付けてください。",
+    "data_error": "受信データのエラー。",
+    "video_not_found": "ビデオが見つからないか、利用不可能です。",
+    "open_error": "場所を開く際にエラーが発生しました。",
+    "config_saved": "設定が適用されました！"
+  },
+  "support_flow": "Flow Downloader を支援する 🪙"
+}

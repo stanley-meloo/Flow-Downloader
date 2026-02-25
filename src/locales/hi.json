@@ -1,0 +1,133 @@
+{
+  "hero": {
+    "title": "FlowDownloader",
+    "subtitle": "कहीं से भी, कभी भी कुछ भी डाउनलोड करें।"
+  },
+  "search": {
+    "placeholder": "यहाँ URL पेस्ट करें...",
+    "analyzing_placeholder": "मेटाडेटा प्राप्त किया जा रहा है...",
+    "paste_tooltip": "(CTRL + V) पेस्ट करें",
+    "analyze_tooltip": "खोजें",
+    "analyzing_tooltip": "खोजा जा रहा है..."
+  },
+  "queue": {
+    "title": "डाउनलोड कतार",
+    "empty": "आपकी कतार खाली है",
+    "open_folder": "फ़ाइल पर जाएँ",
+    "cancel": "डाउनलोड रद्द करें",
+    "retry": "पुनः प्रयास करें",
+    "delete": "सूची से हटाएँ",
+    "finished": "पूरा हुआ",
+    "canceled": "रद्द किया गया",
+    "error": "डाउनलोड त्रुटि",
+    "speed": "गति",
+    "eta": "शेष समय",
+    "calculating": "गणना की जा रही है...",
+    "error_missing": "फ़ाइल नहीं मिली (स्थानांतरित या हटा दी गई)",
+    "finished_in": "{{time}} में पूरा हुआ"
+  },
+  "media_modal": {
+    "title": "डाउनलोड विकल्प",
+    "format": "फ़ॉर्मेट",
+    "quality": "गुणवत्ता",
+    "directory": "यहाँ सहेजें",
+    "cancel": "रद्द करें",
+    "download": "अभी डाउनलोड करें",
+    "output_format": "चुनें कि आप क्या डाउनलोड करना चाहते हैं",
+    "format_video_audio": "वीडियो + ऑडियो",
+    "format_video_only": "केवल वीडियो",
+    "format_audio_only": "केवल ऑडियो",
+    "destination": "गंतव्य",
+    "change": "बदलें",
+    "audio": "ऑडियो",
+    "fps": "FPS",
+    "native_fps": "नेटिव",
+    "download_png": "छवि डाउनलोड करें",
+    "open_folder": "फ़ाइल का स्थान खोलें",
+    "start_download": "डाउनलोड करें"
+  },
+  "playlist_modal": {
+    "badge": "प्लेलिस्ट",
+    "unknown_uploader": "अज्ञात चैनल",
+    "videos_listed": "{{count}} वीडियो सूचीबद्ध",
+    "output_label": "चुनें कि आप प्लेलिस्ट से क्या डाउनलोड करना चाहते हैं",
+    "select_videos": "चयनित वीडियो",
+    "select_all": "सभी चुनें",
+    "deselect_all": "सभी अचयनित करें",
+    "download_selected": "चयनित डाउनलोड करें",
+    "video_placeholder": "वीडियो {{num}}",
+    "error_no_selection": "डाउनलोड करने के लिए कम से कम एक वीडियो चुनें"
+  },
+  "setup_modal": {
+    "title": "FlowDownloader में आपका स्वागत है!",
+    "subtitle": "आइए आपका प्रारंभिक डाउनलोड स्थान सेट करें",
+    "select_folder": "डिफ़ॉल्ट डाउनलोड फ़ोल्डर चुनें",
+    "finish": "शुरू करें"
+  },
+  "settings": {
+    "title": "सेटिंग्स",
+    "not_defined": "निर्धारित नहीं",
+    "quality_best": "सर्वश्रेष्ठ (4K)",
+    "quality_fhd": "Full HD",
+    "quality_hd": "HD",
+    "lang_auto": "स्वचालित",
+    "search_language": "भाषा खोजें...",
+    "tabs": {
+      "general": "सामान्य",
+      "visual": "दिखावट"
+    },
+    "general": {
+      "path": "डिफ़ॉल्ट डाउनलोड पथ",
+      "limit": "प्लेलिस्ट आइटम सीमा",
+      "limit_info": "आप पूरी प्लेलिस्ट को स्कैन करने के लिए सीमा बढ़ा सकते हैं। मशीन को धीमा होने और YouTube सर्वर ब्लॉक (त्रुटि 429) से बचाने के लिए, Flow एक बार में 3 वीडियो डाउनलोड करेगा।",
+      "quality": "डिफ़ॉल्ट गुणवत्ता",
+      "language": "इंटरफ़ेस भाषा"
+    },
+    "visual": {
+      "style": "पृष्ठभूमि ग्राफिक्स इंजन",
+      "styles": {
+        "lines": "एनिमेटेड लाइन्स",
+        "liquid": "ब्लैक होल",
+        "static": "स्थिर"
+      },
+      "color": "रंग",
+      "custom_colors": "कस्टम रंग",
+      "quantity": "लाइनों की संख्या",
+      "distance": "दूरी",
+      "radius": "इंटरेक्शन (माउस)",
+      "strength": "ताकत (माउस)",
+      "speed": "गति",
+      "scale": "पैमाना",
+      "distortion": "विकृति",
+      "noise": "शोर (Noise)",
+      "base_color": "पृष्ठभूमि का रंग",
+      "image": "कस्टम वॉलपेपर",
+      "choose_image": "छवि खोजें",
+      "image_defined": "वर्तमान छवि",
+      "effects": "पोस्ट-प्रोसेसिंग फिल्टर",
+      "gradient": "शीर्ष विनेट",
+      "darken": "अंधेरा करें",
+      "blur": "धुंधला करें"
+    },
+    "done": "हो गया"
+  },
+  "toast": {
+    "error_empty": "कृपया एक लिंक डालें",
+    "error_invalid": "अमान्य या असमर्थित लिंक",
+    "success_added": "वीडियो कतार में जोड़ा गया!",
+    "success_thumb": "थंबनेल सफलतापूर्वक डाउनलोड हो गया!",
+    "error_thumb": "थंबनेल डाउनलोड नहीं किया जा सका",
+    "download_started": "डाउनलोड शुरू हो गया!",
+    "download_finished": "सब तैयार है! डाउनलोड पूरा हुआ।",
+    "error_generic": "कुछ गलत हो गया। फिर से कोशिश करें।",
+    "clipboard_success": "लिंक सफलतापूर्वक पेस्ट किया गया!",
+    "clipboard_empty": "क्लिपबोर्ड खाली है।",
+    "clipboard_error": "क्लिपबोर्ड एक्सेस करने में त्रुटि।",
+    "link_error": "कृपया एक मान्य लिंक पेस्ट करें।",
+    "data_error": "प्राप्त डेटा में त्रुटि।",
+    "video_not_found": "वीडियो नहीं मिला या उपलब्ध नहीं है।",
+    "open_error": "स्थान खोलने में त्रुटि।",
+    "config_saved": "सेटिंग्स लागू की गईं!"
+  },
+  "support_flow": "Flow Downloader का समर्थन करें 🪙"
+}

@@ -1,0 +1,133 @@
+{
+  "hero": {
+    "title": "FlowDownloader",
+    "subtitle": "Baixe tudo de qualquer lugar e a qualquer momento"
+  },
+  "search": {
+    "placeholder": "Cole o URL aqui...",
+    "analyzing_placeholder": "Buscando metadados...",
+    "paste_tooltip": "(CTRL + V) Colar",
+    "analyze_tooltip": "Buscar",
+    "analyzing_tooltip": "Buscando..."
+  },
+  "queue": {
+    "title": "Fila de Downloads",
+    "empty": "Sua fila está vazia",
+    "open_folder": "Ir até arquivo",
+    "cancel": "Cancelar download",
+    "retry": "Tentar novamente",
+    "delete": "Remover da lista",
+    "finished": "Concluído",
+    "canceled": "Cancelado",
+    "error": "Erro no Download",
+    "speed": "Velocidade",
+    "eta": "Tempo restante",
+    "calculating": "Calculando...",
+    "error_missing": "Arquivo não encontrado (movido ou excluído)",
+    "finished_in": "Concluído em {{time}}"
+  },
+  "media_modal": {
+    "title": "Opções de Download",
+    "format": "Formato",
+    "quality": "Qualidade",
+    "directory": "Salvar em",
+    "cancel": "Cancelar",
+    "download": "Baixar Agora",
+    "output_format": "Escolha o que deseja baixar",
+    "format_video_audio": "Video + Audio",
+    "format_video_only": "Apenas Video",
+    "format_audio_only": "Apenas Audio",
+    "destination": "Destino",
+    "change": "Mudar",
+    "audio": "Áudio",
+    "fps": "FPS",
+    "native_fps": "Nativo",
+    "download_png": "Baixar Imagem",
+    "open_folder": "Abrir local do arquivo",
+    "start_download": "Baixar"
+  },
+  "playlist_modal": {
+    "badge": "PLAYLIST",
+    "unknown_uploader": "Canal desconhecido",
+    "videos_listed": "{{count}} vídeos listados",
+    "output_label": "Escolha o que deseja baixar da playlist",
+    "select_videos": "Vídeos Selecionados",
+    "select_all": "Selecionar Todos",
+    "deselect_all": "Desselecionar Todos",
+    "download_selected": "Baixar Selecionados",
+    "video_placeholder": "Vídeo {{num}}",
+    "error_no_selection": "Selecione pelo menos um vídeo para baixar"
+  },
+  "setup_modal": {
+    "title": "Seja bem-vindo ao FlowDownloader!",
+    "subtitle": "Vamos configurar seu local de download inicial",
+    "select_folder": "Selecionar Pasta Padrão de Download",
+    "finish": "Começar"
+  },
+  "settings": {
+    "title": "Configurações",
+    "not_defined": "Não definido",
+    "quality_best": "Melhor (4K)",
+    "quality_fhd": "Full HD",
+    "quality_hd": "HD",
+    "lang_auto": "Automático",
+    "search_language": "Procurar idioma...",
+    "tabs": {
+      "general": "Geral",
+      "visual": "Aparência"
+    },
+    "general": {
+      "path": "Caminho de Download Padrão",
+      "limit": "Limite de Itens na Playlist",
+      "limit_info": "Você pode aumentar o limite para varrer playlists inteiras. Para evitar lentidão na tua máquina e bloqueios no servidor do YouTube (Erro 429), o Flow processará o download de forma inteligente, baixando 3 vídeos por vez.",
+      "quality": "Qualidade Padrão",
+      "language": "Idioma da Interface"
+    },
+    "visual": {
+      "style": "Motor Gráfico do Plano de Fundo",
+      "styles": {
+        "lines": "Linhas Animadas",
+        "liquid": "Buraco Negro",
+        "static": "Estático"
+      },
+      "color": "Cor",
+      "custom_colors": "Cores Customizadas",
+      "quantity": "Quantidade de Linhas",
+      "distance": "Espaçamento",
+      "radius": "Interação (Mouse)",
+      "strength": "Força (Mouse)",
+      "speed": "Velocidade",
+      "scale": "Escala",
+      "distortion": "Distorção",
+      "noise": "Granulação (Ruído)",
+      "base_color": "Cor do Fundo",
+      "image": "Wallpaper Personalizado",
+      "choose_image": "Procurar Imagem",
+      "image_defined": "Imagem Atual",
+      "effects": "Filtros de Pós-Processamento",
+      "gradient": "Vinheta Superior",
+      "darken": "Escurecer",
+      "blur": "Desfocar"
+    },
+    "done": "Concluído"
+  },
+  "toast": {
+    "error_empty": "Por favor, insira um link",
+    "error_invalid": "Link inválido ou não suportado",
+    "success_added": "Vídeo adicionado à fila!",
+    "success_thumb": "Capa baixada com sucesso!",
+    "error_thumb": "Não foi possível baixar a capa",
+    "download_started": "O download foi iniciado!",
+    "download_finished": "Tudo pronto! Download concluído.",
+    "error_generic": "Algo deu errado. Tente novamente.",
+    "clipboard_success": "Link colado com sucesso!",
+    "clipboard_empty": "A área de transferência está vazia.",
+    "clipboard_error": "Erro ao acessar área de transferência.",
+    "link_error": "Por favor, cole um link válido.",
+    "data_error": "Erro nos dados recebidos.",
+    "video_not_found": "Vídeo não encontrado ou indisponível.",
+    "open_error": "Erro ao abrir local.",
+    "config_saved": "Configurações aplicadas!"
+  },
+  "support_flow": "Apoie o Flow Downloader 🪙"
+}

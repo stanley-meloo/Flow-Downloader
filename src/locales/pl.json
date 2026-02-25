@@ -1,0 +1,133 @@
+{
+  "hero": {
+    "title": "FlowDownloader",
+    "subtitle": "Pobieraj wszystko z dowolnego miejsca i w dowolnym czasie."
+  },
+  "search": {
+    "placeholder": "Wklej URL tutaj...",
+    "analyzing_placeholder": "Szukanie metadanych...",
+    "paste_tooltip": "(CTRL + V) Wklej",
+    "analyze_tooltip": "Szukaj",
+    "analyzing_tooltip": "Szukanie..."
+  },
+  "queue": {
+    "title": "Kolejka pobierania",
+    "empty": "Twoja kolejka jest pusta",
+    "open_folder": "Idź do pliku",
+    "cancel": "Anuluj pobieranie",
+    "retry": "Spróbuj ponownie",
+    "delete": "Usuń z listy",
+    "finished": "Zakończono",
+    "canceled": "Anulowano",
+    "error": "Błąd pobierania",
+    "speed": "Prędkość",
+    "eta": "Pozostały czas",
+    "calculating": "Obliczanie...",
+    "error_missing": "Nie znaleziono pliku (przeniesiony lub usunięty)",
+    "finished_in": "Ukończono w {{time}}"
+  },
+  "media_modal": {
+    "title": "Opcje pobierania",
+    "format": "Format",
+    "quality": "Jakość",
+    "directory": "Zapisz w",
+    "cancel": "Anuluj",
+    "download": "Pobierz teraz",
+    "output_format": "Wybierz, co chcesz pobrać",
+    "format_video_audio": "Wideo + Audio",
+    "format_video_only": "Tylko Wideo",
+    "format_audio_only": "Tylko Audio",
+    "destination": "Miejsce docelowe",
+    "change": "Zmień",
+    "audio": "Audio",
+    "fps": "FPS",
+    "native_fps": "Natywne",
+    "download_png": "Pobierz okładkę",
+    "open_folder": "Otwórz lokalizację pliku",
+    "start_download": "Pobierz"
+  },
+  "playlist_modal": {
+    "badge": "PLAYLISTA",
+    "unknown_uploader": "Nieznany kanał",
+    "videos_listed": "Lista {{count}} filmów",
+    "output_label": "Wybierz, co chcesz pobrać z playlisty",
+    "select_videos": "Wybrane filmy",
+    "select_all": "Zaznacz wszystkie",
+    "deselect_all": "Odznacz wszystkie",
+    "download_selected": "Pobierz zaznaczone",
+    "video_placeholder": "Film {{num}}",
+    "error_no_selection": "Wybierz co najmniej jeden film do pobrania"
+  },
+  "setup_modal": {
+    "title": "Witaj w FlowDownloader!",
+    "subtitle": "Skonfigurujmy Twoją początkową lokalizację pobierania",
+    "select_folder": "Wybierz domyślny folder pobierania",
+    "finish": "Zacznij"
+  },
+  "settings": {
+    "title": "Ustawienia",
+    "not_defined": "Nie zdefiniowano",
+    "quality_best": "Najlepsza (4K)",
+    "quality_fhd": "Full HD",
+    "quality_hd": "HD",
+    "lang_auto": "Automatyczny",
+    "search_language": "Szukaj języka...",
+    "tabs": {
+      "general": "Ogólne",
+      "visual": "Wygląd"
+    },
+    "general": {
+      "path": "Domyślna ścieżka pobierania",
+      "limit": "Limit elementów playlisty",
+      "limit_info": "Możesz zwiększyć limit, aby skanować całe playlisty. Aby uniknąć spowolnienia komputera i blokad YouTube (Błąd 429), Flow pobierze 3 filmy naraz.",
+      "quality": "Domyślna jakość",
+      "language": "Język interfejsu"
+    },
+    "visual": {
+      "style": "Silnik graficzny tła",
+      "styles": {
+        "lines": "Animowane linie",
+        "liquid": "Czarna dziura",
+        "static": "Statyczne"
+      },
+      "color": "Kolor",
+      "custom_colors": "Własne kolory",
+      "quantity": "Ilość linii",
+      "distance": "Odstępy",
+      "radius": "Interakcja (Mysz)",
+      "strength": "Siła (Mysz)",
+      "speed": "Prędkość",
+      "scale": "Skala",
+      "distortion": "Zniekształcenie",
+      "noise": "Ziarno (Szum)",
+      "base_color": "Kolor tła",
+      "image": "Własna tapeta",
+      "choose_image": "Przeglądaj obrazy",
+      "image_defined": "Aktualny obraz",
+      "effects": "Filtry post-processingu",
+      "gradient": "Górna winieta",
+      "darken": "Przyciemnij",
+      "blur": "Rozmycie"
+    },
+    "done": "Gotowe"
+  },
+  "toast": {
+    "error_empty": "Proszę wstawić link",
+    "error_invalid": "Nieprawidłowy lub nieobsługiwany link",
+    "success_added": "Wideo dodane do kolejki!",
+    "success_thumb": "Miniaturka pobrana pomyślnie!",
+    "error_thumb": "Nie można pobrać miniaturki",
+    "download_started": "Pobieranie rozpoczęte!",
+    "download_finished": "Gotowe! Pobieranie zakończone.",
+    "error_generic": "Coś poszło nie tak. Spróbuj ponownie.",
+    "clipboard_success": "Link wklejony pomyślnie!",
+    "clipboard_empty": "Schowek jest pusty.",
+    "clipboard_error": "Błąd dostępu do schowka.",
+    "link_error": "Proszę wkleić prawidłowy link.",
+    "data_error": "Błąd w otrzymanych danych.",
+    "video_not_found": "Wideo nie znalezione lub niedostępne.",
+    "open_error": "Błąd podczas otwierania lokalizacji.",
+    "config_saved": "Ustawienia zastosowane!"
+  },
+  "support_flow": "Wesprzyj Flow Downloader 🪙"
+}

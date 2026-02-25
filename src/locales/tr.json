@@ -1,0 +1,133 @@
+{
+  "hero": {
+    "title": "FlowDownloader",
+    "subtitle": "Her şeyi, her yerden, her zaman indirin."
+  },
+  "search": {
+    "placeholder": "URL'yi buraya yapıştırın...",
+    "analyzing_placeholder": "Meta veriler alınıyor...",
+    "paste_tooltip": "(CTRL + V) Yapıştır",
+    "analyze_tooltip": "Ara",
+    "analyzing_tooltip": "Aranıyor..."
+  },
+  "queue": {
+    "title": "İndirme Kuyruğu",
+    "empty": "Kuyruğunuz boş",
+    "open_folder": "Dosyaya git",
+    "cancel": "İndirmeyi iptal et",
+    "retry": "Yeniden dene",
+    "delete": "Listeden kaldır",
+    "finished": "Tamamlandı",
+    "canceled": "İptal edildi",
+    "error": "İndirme Hatası",
+    "speed": "Hız",
+    "eta": "Kalan süre",
+    "calculating": "Hesaplanıyor...",
+    "error_missing": "Dosya bulunamadı (taşınmış veya silinmiş)",
+    "finished_in": "{{time}} içinde tamamlandı"
+  },
+  "media_modal": {
+    "title": "İndirme Seçenekleri",
+    "format": "Format",
+    "quality": "Kalite",
+    "directory": "Şuraya kaydet",
+    "cancel": "İptal",
+    "download": "Şimdi İndir",
+    "output_format": "Ne indirmek istediğinizi seçin",
+    "format_video_audio": "Video + Ses",
+    "format_video_only": "Sadece Video",
+    "format_audio_only": "Sadece Ses",
+    "destination": "Hedef",
+    "change": "Değiştir",
+    "audio": "Ses",
+    "fps": "FPS",
+    "native_fps": "Yerel",
+    "download_png": "Kapağı İndir",
+    "open_folder": "Dosya konumunu aç",
+    "start_download": "İndir"
+  },
+  "playlist_modal": {
+    "badge": "OYNATMA LISTESI",
+    "unknown_uploader": "Bilinmeyen kanal",
+    "videos_listed": "{{count}} video listelendi",
+    "output_label": "Oynatma listesinden ne indirmek istediğinizi seçin",
+    "select_videos": "Seçilen Videolar",
+    "select_all": "Tümünü Seç",
+    "deselect_all": "Seçimi Kaldır",
+    "download_selected": "Seçilenleri İndir",
+    "video_placeholder": "Video {{num}}",
+    "error_no_selection": "İndirmek için en az bir video seçin"
+  },
+  "setup_modal": {
+    "title": "FlowDownloader'a Hoş Geldiniz!",
+    "subtitle": "İlk indirme konumunuzu ayarlayalım",
+    "select_folder": "Varsayılan İndirme Klasörünü Seçin",
+    "finish": "Başla"
+  },
+  "settings": {
+    "title": "Ayarlar",
+    "not_defined": "Tanımlanmadı",
+    "quality_best": "En İyi (4K)",
+    "quality_fhd": "Full HD",
+    "quality_hd": "HD",
+    "lang_auto": "Otomatik",
+    "search_language": "Dil ara...",
+    "tabs": {
+      "general": "Genel",
+      "visual": "Görünüm"
+    },
+    "general": {
+      "path": "Varsayılan İndirme Yolu",
+      "limit": "Oynatma Listesi Sınırı",
+      "limit_info": "Tüm listeleri taramak için sınırı artırabilirsiniz. Bilgisayarın yavaşlamasını ve sunucu engellerini (Hata 429) önlemek için Flow, 3 video aynı anda indirir.",
+      "quality": "Varsayılan Kalite",
+      "language": "Arayüz Dili"
+    },
+    "visual": {
+      "style": "Arka Plan Grafik Motoru",
+      "styles": {
+        "lines": "Hareketli Çizgiler",
+        "liquid": "Kara Delik",
+        "static": "Statik"
+      },
+      "color": "Renk",
+      "custom_colors": "Özel Renkler",
+      "quantity": "Çizgi Miktarı",
+      "distance": "Aralık",
+      "radius": "Etkileşim (Fare)",
+      "strength": "Güç (Fare)",
+      "speed": "Hız",
+      "scale": "Ölçek",
+      "distortion": "Bozulma",
+      "noise": "Kumlanma (Gürültü)",
+      "base_color": "Arka Plan Rengi",
+      "image": "Özel Duvar Kağıdı",
+      "choose_image": "Resim Seç",
+      "image_defined": "Mevcut Resim",
+      "effects": "Post-Processing Filtreleri",
+      "gradient": "Üst Vinyet",
+      "darken": "Karart",
+      "blur": "Bulanıklaştır"
+    },
+    "done": "Tamam"
+  },
+  "toast": {
+    "error_empty": "Lütfen bir bağlantı girin",
+    "error_invalid": "Geçersiz veya desteklenmeyen bağlantı",
+    "success_added": "Video sıraya eklendi!",
+    "success_thumb": "Küçük resim başarıyla indirildi!",
+    "error_thumb": "Küçük resim indirilemedi",
+    "download_started": "İndirme başlatıldı!",
+    "download_finished": "Her şey hazır! İndirme tamamlandı.",
+    "error_generic": "Bir şeyler ters gitti. Tekrar deneyin.",
+    "clipboard_success": "Bağlantı başarıyla yapıştırıldı!",
+    "clipboard_empty": "Pano boş.",
+    "clipboard_error": "Panoya erişim hatası.",
+    "link_error": "Lütfen geçerli bir bağlantı yapıştırın.",
+    "data_error": "Alınan verilerde hata.",
+    "video_not_found": "Video bulunamadı veya kullanılamıyor.",
+    "open_error": "Konum açılırken hata oluştu.",
+    "config_saved": "Ayarlar uygulandı!"
+  },
+  "support_flow": "Flow Downloader'ı destekleyin 🪙"
+}

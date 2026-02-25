@@ -1,0 +1,30 @@
+# --- Dependências e Build ---
+node_modules/
+dist/
+dist-ssr/
+src-tauri/target/
+bin/
+obj/
+
+# --- Binários Sidecar (Importante para o Tauri) ---
+# Ignora os executáveis, mas mantém a estrutura da pasta
+src-tauri/binaries/*
+!src-tauri/binaries/.gitkeep
+
+# --- Variáveis de Ambiente e Segredos ---
+.env
+*.local
+
+# --- Logs ---
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# --- Editor e Sistema ---
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+*.suo
+*.sw?

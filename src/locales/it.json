@@ -1,0 +1,133 @@
+{
+  "hero": {
+    "title": "FlowDownloader",
+    "subtitle": "Scarica tutto da ovunque e in qualsiasi momento"
+  },
+  "search": {
+    "placeholder": "Incolla l'URL qui...",
+    "analyzing_placeholder": "Ricerca metadati...",
+    "paste_tooltip": "(CTRL + V) Incolla",
+    "analyze_tooltip": "Cerca",
+    "analyzing_tooltip": "Ricerca in corso..."
+  },
+  "queue": {
+    "title": "Coda di Download",
+    "empty": "La tua coda è vuota",
+    "open_folder": "Vai al file",
+    "cancel": "Annulla download",
+    "retry": "Riprova",
+    "delete": "Rimuovi dalla lista",
+    "finished": "Completato",
+    "canceled": "Annullato",
+    "error": "Errore di Download",
+    "speed": "Velocità",
+    "eta": "Tempo rimanente",
+    "calculating": "Calcolo in corso...",
+    "error_missing": "File non trovato (spostato o eliminato)",
+    "finished_in": "Completato in {{time}}"
+  },
+  "media_modal": {
+    "title": "Opzioni di Download",
+    "format": "Formato",
+    "quality": "Qualità",
+    "directory": "Salva in",
+    "cancel": "Annulla",
+    "download": "Scarica Ora",
+    "output_format": "Scegli cosa desideri scaricare",
+    "format_video_audio": "Video + Audio",
+    "format_video_only": "Solo Video",
+    "format_audio_only": "Solo Audio",
+    "destination": "Destinazione",
+    "change": "Cambia",
+    "audio": "Audio",
+    "fps": "FPS",
+    "native_fps": "Nativo",
+    "download_png": "Scarica Copertina",
+    "open_folder": "Apri percorso file",
+    "start_download": "Scarica"
+  },
+  "playlist_modal": {
+    "badge": "PLAYLIST",
+    "unknown_uploader": "Canale sconosciuto",
+    "videos_listed": "{{count}} video elencati",
+    "output_label": "Scegli cosa scaricare dalla playlist",
+    "select_videos": "Video Selezionati",
+    "select_all": "Seleziona Tutti",
+    "deselect_all": "Deseleziona Tutti",
+    "download_selected": "Scarica Selezionati",
+    "video_placeholder": "Video {{num}}",
+    "error_no_selection": "Seleziona almeno un video da scaricare"
+  },
+  "setup_modal": {
+    "title": "Benvenuto in FlowDownloader!",
+    "subtitle": "Configuriamo la tua cartella di download iniziale",
+    "select_folder": "Seleziona Cartella di Download Predefinita",
+    "finish": "Inizia"
+  },
+  "settings": {
+    "title": "Impostazioni",
+    "not_defined": "Non definito",
+    "quality_best": "Migliore (4K)",
+    "quality_fhd": "Full HD",
+    "quality_hd": "HD",
+    "lang_auto": "Automatico",
+    "search_language": "Cerca lingua...",
+    "tabs": {
+      "general": "Generale",
+      "visual": "Aspetto"
+    },
+    "general": {
+      "path": "Percorso di Download Predefinito",
+      "limit": "Limite Elementi Playlist",
+      "limit_info": "Puoi aumentare il limite per scansionare intere playlist. Per evitare rallentamenti e blocchi (Errore 429), Flow scaricherà 3 video alla volta.",
+      "quality": "Qualità Predefinita",
+      "language": "Lingua Interfaccia"
+    },
+    "visual": {
+      "style": "Motore Grafico Sfondo",
+      "styles": {
+        "lines": "Linee Animate",
+        "liquid": "Buco Nero",
+        "static": "Statico"
+      },
+      "color": "Colore",
+      "custom_colors": "Colori Personalizzati",
+      "quantity": "Quantità Linee",
+      "distance": "Spaziatura",
+      "radius": "Interazione (Mouse)",
+      "strength": "Forza (Mouse)",
+      "speed": "Velocità",
+      "scale": "Scala",
+      "distortion": "Distorsione",
+      "noise": "Grana (Rumore)",
+      "base_color": "Colore Sfondo",
+      "image": "Sfondo Personalizzato",
+      "choose_image": "Sfoglia Immagine",
+      "image_defined": "Immagine Attuale",
+      "effects": "Filtri Post-Processing",
+      "gradient": "Vignettatura Superiore",
+      "darken": "Scurisci",
+      "blur": "Sfoca"
+    },
+    "done": "Fatto"
+  },
+  "toast": {
+    "error_empty": "Per favore, inserisci un link.",
+    "error_invalid": "Link non valido o non supportato.",
+    "success_added": "Video aggiunto alla coda!",
+    "success_thumb": "Copertina scaricata con successo!",
+    "error_thumb": "Impossibile scaricare la copertina.",
+    "download_started": "Download avviato!",
+    "download_finished": "Tutto pronto! Download completato.",
+    "error_generic": "Qualcosa è andato storto. Riprova.",
+    "clipboard_success": "Link incollato con successo!",
+    "clipboard_empty": "Gli appunti sono vuoti.",
+    "clipboard_error": "Errore di accesso agli appunti.",
+    "link_error": "Per favore, incolla un link valido.",
+    "data_error": "Errore nei dati ricevuti.",
+    "video_not_found": "Video non trovato o non disponibile.",
+    "open_error": "Errore nell'apertura della posizione.",
+    "config_saved": "Impostazioni applicate!"
+  },
+  "support_flow": "Sostieni Flow Downloader 🪙"
+}

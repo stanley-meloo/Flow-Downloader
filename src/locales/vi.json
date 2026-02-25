@@ -1,0 +1,133 @@
+{
+  "hero": {
+    "title": "FlowDownloader",
+    "subtitle": "Tải xuống mọi thứ từ mọi nơi và bất cứ khi nào."
+  },
+  "search": {
+    "placeholder": "Dán URL vào đây...",
+    "analyzing_placeholder": "Đang tìm siêu dữ liệu...",
+    "paste_tooltip": "(CTRL + V) Dán",
+    "analyze_tooltip": "Tìm kiếm",
+    "analyzing_tooltip": "Đang tìm..."
+  },
+  "queue": {
+    "title": "Hàng đợi tải xuống",
+    "empty": "Hàng đợi của bạn đang trống",
+    "open_folder": "Đến tệp tin",
+    "cancel": "Hủy tải xuống",
+    "retry": "Thử lại",
+    "delete": "Xóa khỏi danh sách",
+    "finished": "Đã hoàn thành",
+    "canceled": "Đã hủy",
+    "error": "Lỗi tải xuống",
+    "speed": "Tốc độ",
+    "eta": "Thời gian còn lại",
+    "calculating": "Đang tính toán...",
+    "error_missing": "Không tìm thấy tệp (đã bị di chuyển hoặc xóa)",
+    "finished_in": "Hoàn thành trong {{time}}"
+  },
+  "media_modal": {
+    "title": "Tùy chọn tải xuống",
+    "format": "Định dạng",
+    "quality": "Chất lượng",
+    "directory": "Lưu vào",
+    "cancel": "Hủy",
+    "download": "Tải xuống ngay",
+    "output_format": "Chọn những gì bạn muốn tải xuống",
+    "format_video_audio": "Video + Âm thanh",
+    "format_video_only": "Chỉ Video",
+    "format_audio_only": "Chỉ Âm thanh",
+    "destination": "Đích đến",
+    "change": "Thay đổi",
+    "audio": "Âm thanh",
+    "fps": "FPS",
+    "native_fps": "Gốc",
+    "download_png": "Tải ảnh bìa",
+    "open_folder": "Mở vị trí tệp",
+    "start_download": "Tải xuống"
+  },
+  "playlist_modal": {
+    "badge": "DANH SÁCH PHÁT",
+    "unknown_uploader": "Kênh không xác định",
+    "videos_listed": "Đã liệt kê {{count}} video",
+    "output_label": "Chọn những gì bạn muốn tải từ danh sách phát",
+    "select_videos": "Video đã chọn",
+    "select_all": "Chọn tất cả",
+    "deselect_all": "Bỏ chọn tất cả",
+    "download_selected": "Tải xuống các mục đã chọn",
+    "video_placeholder": "Video {{num}}",
+    "error_no_selection": "Vui lòng chọn ít nhất một video để tải xuống"
+  },
+  "setup_modal": {
+    "title": "Chào mừng bạn đến với FlowDownloader!",
+    "subtitle": "Hãy thiết lập vị trí tải xuống ban đầu của bạn",
+    "select_folder": "Chọn thư mục tải xuống mặc định",
+    "finish": "Bắt đầu"
+  },
+  "settings": {
+    "title": "Cài đặt",
+    "not_defined": "Chưa xác định",
+    "quality_best": "Tốt nhất (4K)",
+    "quality_fhd": "Full HD",
+    "quality_hd": "HD",
+    "lang_auto": "Tự động",
+    "search_language": "Tìm ngôn ngữ...",
+    "tabs": {
+      "general": "Chung",
+      "visual": "Giao diện"
+    },
+    "general": {
+      "path": "Đường dẫn tải xuống mặc định",
+      "limit": "Giới hạn danh sách phát",
+      "limit_info": "Bạn có thể tăng giới hạn để quét toàn bộ danh sách phát. Để tránh làm chậm máy và bị YouTube chặn (Lỗi 429), Flow sẽ tải 3 video cùng lúc.",
+      "quality": "Chất lượng mặc định",
+      "language": "Ngôn ngữ giao diện"
+    },
+    "visual": {
+      "style": "Công cụ đồ họa nền",
+      "styles": {
+        "lines": "Đường kẻ động",
+        "liquid": "Hố đen",
+        "static": "Tĩnh"
+      },
+      "color": "Màu sắc",
+      "custom_colors": "Màu tùy chỉnh",
+      "quantity": "Số lượng đường kẻ",
+      "distance": "Khoảng cách",
+      "radius": "Tương tác (Chuột)",
+      "strength": "Lực (Chuột)",
+      "speed": "Tốc độ",
+      "scale": "Tỷ lệ",
+      "distortion": "Biến dạng",
+      "noise": "Độ nhiễu (Noise)",
+      "base_color": "Màu nền",
+      "image": "Hình nền tùy chỉnh",
+      "choose_image": "Tìm ảnh",
+      "image_defined": "Ảnh hiện tại",
+      "effects": "Bộ lọc hậu xử lý",
+      "gradient": "Vignette trên",
+      "darken": "Làm tối",
+      "blur": "Làm mờ"
+    },
+    "done": "Xong"
+  },
+  "toast": {
+    "error_empty": "Vui lòng chèn một liên kết",
+    "error_invalid": "Liên kết không hợp lệ hoặc không được hỗ trợ",
+    "success_added": "Đã thêm video vào hàng đợi!",
+    "success_thumb": "Đã tải xuống hình thu nhỏ thành công!",
+    "error_thumb": "Không thể tải xuống hình thu nhỏ",
+    "download_started": "Đã bắt đầu tải xuống!",
+    "download_finished": "Tất cả đã xong! Tải xuống hoàn tất.",
+    "error_generic": "Đã xảy ra lỗi. Vui lòng thử lại.",
+    "clipboard_success": "Đã dán liên kết thành công!",
+    "clipboard_empty": "Bộ nhớ tạm trống.",
+    "clipboard_error": "Lỗi khi truy cập bộ nhớ tạm.",
+    "link_error": "Vui lòng dán một liên kết hợp lệ.",
+    "data_error": "Lỗi trong dữ liệu nhận được.",
+    "video_not_found": "Không tìm thấy video hoặc không khả dụng.",
+    "open_error": "Lỗi khi mở vị trí.",
+    "config_saved": "Đã áp dụng cài đặt!"
+  },
+  "support_flow": "Hỗ trợ Flow Downloader 🪙"
+}

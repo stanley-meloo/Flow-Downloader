@@ -1,0 +1,132 @@
+{
+  "hero": {
+    "title": "FlowDownloader",
+    "subtitle": "যেকোনো জায়গা থেকে যেকোনো সময় যেকোনো কিছু ডাউনলোড করুন।"
+  },
+  "search": {
+    "placeholder": "এখানে URL পেস্ট করুন...",
+    "analyzing_placeholder": "মেটাডেটা খোঁজা হচ্ছে...",
+    "paste_tooltip": "(CTRL + V) পেস্ট করুন",
+    "analyze_tooltip": "খুঁজুন",
+    "analyzing_tooltip": "খোঁজা হচ্ছে..."
+  },
+  "queue": {
+    "title": "ডাউনলোড তালিকা",
+    "empty": "আপনার তালিকা খালি",
+    "open_folder": "ফাইলে যান",
+    "cancel": "ডাউনলোড বাতিল করুন",
+    "retry": "আবার চেষ্টা করুন",
+    "delete": "তালিকা থেকে সরান",
+    "finished": "সম্পন্ন",
+    "canceled": "বাতিল করা হয়েছে",
+    "error": "ডাউনলোড ত্রুটি",
+    "speed": "গতি",
+    "eta": "বাকি সময়",
+    "calculating": "হিসাব করা হচ্ছে...",
+    "error_missing": "ফাইলটি পাওয়া যায়নি (সরানো বা মুছে ফেলা হয়েছে)"
+  },
+  "media_modal": {
+    "title": "ডাউনলোড অপশন",
+    "format": "ফরম্যাট",
+    "quality": "মান",
+    "directory": "এখানে সেভ করুন",
+    "cancel": "বাতিল",
+    "download": "এখনই ডাউনলোড করুন",
+    "output_format": "আপনি কী ডাউনলোড করতে চান তা বেছে নিন",
+    "format_video_audio": "ভিডিও + অডিও",
+    "format_video_only": "শুধুমাত্র ভিডিও",
+    "format_audio_only": "শুধুমাত্র অডিও",
+    "destination": "গন্তব্য",
+    "change": "পরিবর্তন",
+    "audio": "অডিও",
+    "fps": "FPS",
+    "native_fps": "নেটিভ",
+    "download_png": "কভার ডাউনলোড করুন",
+    "open_folder": "ফাইল লোকেশন খুলুন",
+    "start_download": "ডাউনলোড"
+  },
+  "playlist_modal": {
+    "badge": "প্লেলিস্ট",
+    "unknown_uploader": "অজানা চ্যানেল",
+    "videos_listed": "{{count}}টি ভিডিও তালিকাভুক্ত",
+    "output_label": "প্লেলিস্ট থেকে কী ডাউনলোড করতে চান তা বেছে নিন",
+    "select_videos": "নির্বাচিত ভিডিও",
+    "select_all": "সব সিলেক্ট করুন",
+    "deselect_all": "সব ডিসিলেক্ট করুন",
+    "download_selected": "নির্বাচিতগুলো ডাউনলোড করুন",
+    "video_placeholder": "ভিডিও {{num}}",
+    "error_no_selection": "ডাউনলোড করার জন্য অন্তত একটি ভিডিও বেছে নিন"
+  },
+  "setup_modal": {
+    "title": "FlowDownloader-এ স্বাগতম!",
+    "subtitle": "চলুন আপনার প্রাথমিক ডাউনলোড ফোল্ডার সেট করি",
+    "select_folder": "ডিফল্ট ডাউনলোড ফোল্ডার নির্বাচন করুন",
+    "finish": "শুরু করুন"
+  },
+  "settings": {
+    "title": "সেটিংস",
+    "not_defined": "নির্ধারিত নেই",
+    "quality_best": "সেরা (4K)",
+    "quality_fhd": "Full HD",
+    "quality_hd": "HD",
+    "lang_auto": "স্বয়ংক্রিয়",
+    "search_language": "ভাষা খুঁজুন...",
+    "tabs": {
+      "general": "সাধারণ",
+      "visual": "চেহারা"
+    },
+    "general": {
+      "path": "ডিফল্ট ডাউনলোড পাথ",
+      "limit": "প্লেলিস্ট আইটেম সীমা",
+      "limit_info": "পুরো প্লেলিস্ট স্ক্যান করার জন্য আপনি সীমা বাড়াতে পারেন। পিসি স্লো হওয়া এবং ইউটিউব ব্লক এড়াতে ফ্লো একবারে ৩টি করে ডাউনলোড করবে।",
+      "quality": "ডিফল্ট মান",
+      "language": "ইন্টারফেস ভাষা"
+    },
+    "visual": {
+      "style": "ব্যাকগ্রাউন্ড গ্রাফিক্স ইঞ্জিন",
+      "styles": {
+        "lines": "অ্যানিমেটেড লাইন",
+        "liquid": "ব্ল্যাক হোল",
+        "static": "স্থির"
+      },
+      "color": "রঙ",
+      "custom_colors": "পছন্দমতো রঙ",
+      "quantity": "লাইনের সংখ্যা",
+      "distance": "ব্যবধান",
+      "radius": "ইন্টারঅ্যাকশন (মাউস)",
+      "strength": "শক্তি (মাউস)",
+      "speed": "গতি",
+      "scale": "স্কেল",
+      "distortion": "বিকৃতি",
+      "noise": "গ্রেইন (নয়েজ)",
+      "base_color": "ব্যাকগ্রাউন্ড রঙ",
+      "image": "পছন্দমতো ওয়ালপেপার",
+      "choose_image": "ছবি খুঁজুন",
+      "image_defined": "বর্তমান ছবি",
+      "effects": "পোস্ট-প্রসেসিং ফিল্টার",
+      "gradient": "উপরের ভিনিয়েট",
+      "darken": "অন্ধকার করা",
+      "blur": "ব্লার"
+    },
+    "done": "সম্পন্ন"
+  },
+  "toast": {
+    "error_empty": "অনুগ্রহ করে একটি লিঙ্ক প্রবেশ করান",
+    "error_invalid": "অকার্যকর বা অসমর্থিত লিঙ্ক",
+    "success_added": "ভিডিও সারিতে যোগ করা হয়েছে!",
+    "success_thumb": "থাম্বনেইল সফলভাবে ডাউনলোড হয়েছে!",
+    "error_thumb": "থাম্বনেইল ডাউনলোড করা যায়নি",
+    "download_started": "ডাউনলোড শুরু হয়েছে!",
+    "download_finished": "সব সেট! ডাউনলোড সম্পন্ন হয়েছে।",
+    "error_generic": "কিছু ভুল হয়েছে। আবার চেষ্টা করুন।",
+    "clipboard_success": "লিঙ্ক সফলভাবে পেস্ট করা হয়েছে!",
+    "clipboard_empty": "ক্লিপবোর্ড খালি।",
+    "clipboard_error": "ক্লিপবোর্ড অ্যাক্সেস করতে ত্রুটি।",
+    "link_error": "অনুগ্রহ করে একটি বৈধ লিঙ্ক পেস্ট করুন।",
+    "data_error": "প্রাপ্ত ডেটাতে ত্রুটি।",
+    "video_not_found": "ভিডিও পাওয়া যায়নি বা উপলব্ধ নেই।",
+    "open_error": "অবস্থান খুলতে ত্রুটি।",
+    "config_saved": "সেটিংস প্রয়োগ করা হয়েছে!"
+  },
+  "support_flow": "Flow Downloader-কে সমর্থন করুন 🪙"
+}

@@ -1,0 +1,133 @@
+{
+  "hero": {
+    "title": "FlowDownloader",
+    "subtitle": "Скачивайте что угодно, откуда угодно и когда угодно"
+  },
+  "search": {
+    "placeholder": "Вставьте URL здесь...",
+    "analyzing_placeholder": "Получение метаданных...",
+    "paste_tooltip": "(CTRL + V) Вставить",
+    "analyze_tooltip": "Поиск",
+    "analyzing_tooltip": "Поиск..."
+  },
+  "queue": {
+    "title": "Очередь загрузки",
+    "empty": "Ваша очередь пуста",
+    "open_folder": "Перейти к файлу",
+    "cancel": "Отменить загрузку",
+    "retry": "Повторить",
+    "delete": "Удалить из списка",
+    "finished": "Завершено",
+    "canceled": "Отменено",
+    "error": "Ошибка загрузки",
+    "speed": "Скорость",
+    "eta": "Оставшееся время",
+    "calculating": "Вычисление...",
+    "error_missing": "Файл не найден (перемещен или удален)",
+    "finished_in": "Завершено за {{time}}"
+  },
+  "media_modal": {
+    "title": "Параметры загрузки",
+    "format": "Формат",
+    "quality": "Качество",
+    "directory": "Сохранить в",
+    "cancel": "Отмена",
+    "download": "Скачать сейчас",
+    "output_format": "Выберите, что вы хотите скачать",
+    "format_video_audio": "Видео + Аудио",
+    "format_video_only": "Только видео",
+    "format_audio_only": "Только аудио",
+    "destination": "Место назначения",
+    "change": "Изменить",
+    "audio": "Аудио",
+    "fps": "FPS",
+    "native_fps": "Родной",
+    "download_png": "Скачать обложку",
+    "open_folder": "Открыть расположение файла",
+    "start_download": "Скачать"
+  },
+  "playlist_modal": {
+    "badge": "ПЛЕЙЛИСТ",
+    "unknown_uploader": "Неизвестный канал",
+    "videos_listed": "Видео в списке: {{count}}",
+    "output_label": "Выберите, что вы хотите скачать из плейлиста",
+    "select_videos": "Выбранные видео",
+    "select_all": "Выбрать все",
+    "deselect_all": "Снять выделение",
+    "download_selected": "Скачать выбранное",
+    "video_placeholder": "Видео {{num}}",
+    "error_no_selection": "Выберите хотя бы одно видео для загрузки"
+  },
+  "setup_modal": {
+    "title": "Добро пожаловать в FlowDownloader!",
+    "subtitle": "Давайте настроим папку для загрузок",
+    "select_folder": "Выберите папку для загрузки по умолчанию",
+    "finish": "Начать"
+  },
+  "settings": {
+    "title": "Настройки",
+    "not_defined": "Не определено",
+    "quality_best": "Лучшее (4K)",
+    "quality_fhd": "Full HD",
+    "quality_hd": "HD",
+    "lang_auto": "Автоматически",
+    "search_language": "Поиск языка...",
+    "tabs": {
+      "general": "Общие",
+      "visual": "Внешний вид"
+    },
+    "general": {
+      "path": "Путь загрузки по умолчанию",
+      "limit": "Лимит элементов плейлиста",
+      "limit_info": "Вы можете увеличить лимит для сканирования целых плейлистов. Чтобы избежать замедления работы компьютера и блокировок YouTube (ошибка 429), Flow будет скачивать по 3 видео одновременно.",
+      "quality": "Качество по умолчанию",
+      "language": "Язык интерфейса"
+    },
+    "visual": {
+      "style": "Графический движок фона",
+      "styles": {
+        "lines": "Анимированные линии",
+        "liquid": "Черная дыра",
+        "static": "Статичный"
+      },
+      "color": "Цвет",
+      "custom_colors": "Пользовательские цвета",
+      "quantity": "Количество линий",
+      "distance": "Интервал",
+      "radius": "Взаимодействие (мышь)",
+      "strength": "Сила (мышь)",
+      "speed": "Скорость",
+      "scale": "Масштаб",
+      "distortion": "Искажение",
+      "noise": "Шум",
+      "base_color": "Цвет фона",
+      "image": "Пользовательские обои",
+      "choose_image": "Обзор изображений",
+      "image_defined": "Текущее изображение",
+      "effects": "Фильтры постобработки",
+      "gradient": "Верхняя виньетка",
+      "darken": "Затемнение",
+      "blur": "Размытие"
+    },
+    "done": "Готово"
+  },
+  "toast": {
+    "error_empty": "Пожалуйста, вставьте ссылку",
+    "error_invalid": "Неверная или неподдерживаемая ссылка",
+    "success_added": "Видео добавлено в очередь!",
+    "success_thumb": "Обложка успешно загружена!",
+    "error_thumb": "Не удалось загрузить обложку",
+    "download_started": "Загрузка началась!",
+    "download_finished": "Готово! Загрузка завершена.",
+    "error_generic": "Что-то пошло не так. Попробуйте снова.",
+    "clipboard_success": "Ссылка успешно вставлена!",
+    "clipboard_empty": "Буфер обмена пуст.",
+    "clipboard_error": "Ошибка доступа к буферу обмена.",
+    "link_error": "Пожалуйста, вставьте корректную ссылку.",
+    "data_error": "Ошибка в полученных данных.",
+    "video_not_found": "Видео не найдено или недоступно.",
+    "open_error": "Ошибка при открытии расположения.",
+    "config_saved": "Настройки применены!"
+  },
+  "support_flow": "Поддержать Flow Downloader 🪙"
+}

@@ -1,0 +1,133 @@
+{
+  "hero": {
+    "title": "FlowDownloader",
+    "subtitle": "قم بتنزيل كل شيء من أي مكان وفي أي وقت"
+  },
+  "search": {
+    "placeholder": "الصق الرابط هنا...",
+    "analyzing_placeholder": "جاري جلب البيانات...",
+    "paste_tooltip": "(CTRL + V) لصق",
+    "analyze_tooltip": "بحث",
+    "analyzing_tooltip": "جاري البحث..."
+  },
+  "queue": {
+    "title": "قائمة التنزيلات",
+    "empty": "قائمة التنزيلات فارغة",
+    "open_folder": "انتقل إلى الملف",
+    "cancel": "إلغاء التنزيل",
+    "retry": "إعادة المحاولة",
+    "delete": "إزالة من القائمة",
+    "finished": "تم بنجاح",
+    "canceled": "تم الإلغاء",
+    "error": "خطأ في التنزيل",
+    "speed": "السرعة",
+    "eta": "الوقت المتبقي",
+    "calculating": "جاري الحساب...",
+    "error_missing": "الملف غير موجود (تم نقله أو حذفه)",
+    "finished_in": "اكتمل في {{time}}"
+  },
+  "media_modal": {
+    "title": "خيارات التنزيل",
+    "format": "التنسيق",
+    "quality": "الجودة",
+    "directory": "حفظ في",
+    "cancel": "إلغاء",
+    "download": "تنزيل الآن",
+    "output_format": "اختر ما تريد تنزيله",
+    "format_video_audio": "فيديو + صوت",
+    "format_video_only": "فيديو فقط",
+    "format_audio_only": "صوت فقط",
+    "destination": "الوجهة",
+    "change": "تغيير",
+    "audio": "صوت",
+    "fps": "إطار في الثانية",
+    "native_fps": "أصلي",
+    "download_png": "تنزيل الصورة",
+    "open_folder": "افتح موقع الملف",
+    "start_download": "تنزيل"
+  },
+  "playlist_modal": {
+    "badge": "قائمة تشغيل",
+    "unknown_uploader": "قناة غير معروفة",
+    "videos_listed": "{{count}} فيديوهات مدرجة",
+    "output_label": "اختر ما تريد تنزيله من قائمة التشغيل",
+    "select_videos": "الفيديوهات المختارة",
+    "select_all": "تحديد الكل",
+    "deselect_all": "إلغاء تحديد الكل",
+    "download_selected": "تنزيل المختار",
+    "video_placeholder": "فيديو {{num}}",
+    "error_no_selection": "يرجى تحديد فيديو واحد على الأقل لتنزيله"
+  },
+  "setup_modal": {
+    "title": "مرحباً بك في FlowDownloader!",
+    "subtitle": "لنقم بإعداد موقع التنزيل الأول الخاص بك",
+    "select_folder": "اختر مجلد التنزيل الافتراضي",
+    "finish": "ابدأ"
+  },
+  "settings": {
+    "title": "الإعدادات",
+    "not_defined": "غير محدد",
+    "quality_best": "الأفضل (4K)",
+    "quality_fhd": "Full HD",
+    "quality_hd": "HD",
+    "lang_auto": "تلقائي",
+    "search_language": "ابحث عن لغة...",
+    "tabs": {
+      "general": "عام",
+      "visual": "المظهر"
+    },
+    "general": {
+      "path": "مسار التنزيل الافتراضي",
+      "limit": "حد عناصر قائمة التشغيل",
+      "limit_info": "يمكنك زيادة الحد لمسح قوائم التشغيل الكاملة. لتجنب بطء جهازك وحظر خوادم يوتيوب (خطأ 429)، سيقوم Flow بتنزيل 3 فيديوهات في المرة الواحدة.",
+      "quality": "الجودة الافتراضية",
+      "language": "لغة الواجهة"
+    },
+    "visual": {
+      "style": "محرك رسوميات الخلفية",
+      "styles": {
+        "lines": "خطوط متحركة",
+        "liquid": "ثقب أسود",
+        "static": "ثابت"
+      },
+      "color": "اللون",
+      "custom_colors": "ألوان مخصصة",
+      "quantity": "كمية الخطوط",
+      "distance": "التباعد",
+      "radius": "التفاعل (الماوس)",
+      "strength": "القوة (الماوس)",
+      "speed": "السرعة",
+      "scale": "الحجم",
+      "distortion": "التشويه",
+      "noise": "ضجيج (Noise)",
+      "base_color": "لون الخلفية",
+      "image": "خلفية مخصصة",
+      "choose_image": "تصفح الصور",
+      "image_defined": "الصورة الحالية",
+      "effects": "فلاتر معالجة لاحقة",
+      "gradient": "تظليل علوي",
+      "darken": "تعتيم",
+      "blur": "تغبيش"
+    },
+    "done": "تم"
+  },
+  "toast": {
+    "error_empty": "يرجى إدخال رابط",
+    "error_invalid": "رابط غير صالح أو غير مدعوم",
+    "success_added": "تمت إضافة الفيديو إلى قائمة الانتظار!",
+    "success_thumb": "تم تحميل الصورة المصغرة بنجاح!",
+    "error_thumb": "تعذر تحميل الصورة المصغرة",
+    "download_started": "بدأ التحميل!",
+    "download_finished": "كل شيء جاهز! اكتمل التحميل.",
+    "error_generic": "حدث خطأ ما. حاول مرة أخرى.",
+    "clipboard_success": "تم لصق الرابط بنجاح!",
+    "clipboard_empty": "الحافظة فارغة.",
+    "clipboard_error": "خطأ في الوصول إلى الحافظة.",
+    "link_error": "يرجى لصق رابط صحيح.",
+    "data_error": "خطأ في البيانات المستلمة.",
+    "video_not_found": "الفيديو غير موجود أو غير متاح.",
+    "open_error": "خطأ في فتح الموقع.",
+    "config_saved": "تم تطبيق الإعدادات!"
+  },
+  "support_flow": "دعم Flow Downloader 🪙"
+}

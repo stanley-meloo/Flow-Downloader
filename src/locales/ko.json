@@ -1,0 +1,133 @@
+{
+  "hero": {
+    "title": "FlowDownloader",
+    "subtitle": "언제 어디서나 무엇이든 다운로드하세요"
+  },
+  "search": {
+    "placeholder": "여기에 URL을 붙여넣으세요...",
+    "analyzing_placeholder": "메타데이터를 가져오는 중...",
+    "paste_tooltip": "(CTRL + V) 붙여넣기",
+    "analyze_tooltip": "검색",
+    "analyzing_tooltip": "검색 중..."
+  },
+  "queue": {
+    "title": "다운로드 대기열",
+    "empty": "대기열이 비어 있습니다",
+    "open_folder": "파일로 이동",
+    "cancel": "다운로드 취소",
+    "retry": "재시도",
+    "delete": "목록에서 제거",
+    "finished": "완료됨",
+    "canceled": "취소됨",
+    "error": "다운로드 오류",
+    "speed": "속도",
+    "eta": "남은 시간",
+    "calculating": "계산 중...",
+    "error_missing": "파일을 찾을 수 없음 (이동 또는 삭제됨)",
+    "finished_in": "{{time}} 만에 완료"
+  },
+  "media_modal": {
+    "title": "다운로드 옵션",
+    "format": "형식",
+    "quality": "화질",
+    "directory": "저장 위치",
+    "cancel": "취소",
+    "download": "지금 다운로드",
+    "output_format": "다운로드할 항목을 선택하세요",
+    "format_video_audio": "비디오 + 오디오",
+    "format_video_only": "비디오만",
+    "format_audio_only": "오디오만",
+    "destination": "저장 경로",
+    "change": "변경",
+    "audio": "오디오",
+    "fps": "FPS",
+    "native_fps": "원본",
+    "download_png": "이미지 다운로드",
+    "open_folder": "파일 위치 열기",
+    "start_download": "다운로드"
+  },
+  "playlist_modal": {
+    "badge": "재생목록",
+    "unknown_uploader": "알 수 없는 채널",
+    "videos_listed": "{{count}}개의 비디오",
+    "output_label": "재생목록에서 다운로드할 항목을 선택하세요",
+    "select_videos": "선택된 비디오",
+    "select_all": "전체 선택",
+    "deselect_all": "전체 해제",
+    "download_selected": "선택 항목 다운로드",
+    "video_placeholder": "비디오 {{num}}",
+    "error_no_selection": "다운로드할 비디오를 하나 이상 선택하세요"
+  },
+  "setup_modal": {
+    "title": "FlowDownloader에 오신 것을 환영합니다!",
+    "subtitle": "초기 다운로드 위치를 설정해 봅시다",
+    "select_folder": "기본 다운로드 폴더 선택",
+    "finish": "시작하기"
+  },
+  "settings": {
+    "title": "설정",
+    "not_defined": "정의되지 않음",
+    "quality_best": "최고 (4K)",
+    "quality_fhd": "Full HD",
+    "quality_hd": "HD",
+    "lang_auto": "자동",
+    "search_language": "언어 검색...",
+    "tabs": {
+      "general": "일반",
+      "visual": "모양"
+    },
+    "general": {
+      "path": "기본 다운로드 경로",
+      "limit": "재생목록 항목 제한",
+      "limit_info": "재생목록 전체를 스캔하기 위해 제한을 늘릴 수 있습니다. PC 속도 저하 및 YouTube 서버 차단(오류 429)을 방지하기 위해 한 번에 3개씩 다운로드합니다.",
+      "quality": "기본 화질",
+      "language": "인터페이스 언어"
+    },
+    "visual": {
+      "style": "배경 그래픽 엔진",
+      "styles": {
+        "lines": "애니메이션 라인",
+        "liquid": "블랙홀",
+        "static": "정적"
+      },
+      "color": "색상",
+      "custom_colors": "사용자 지정 색상",
+      "quantity": "라인 수",
+      "distance": "간격",
+      "radius": "상호작용 (마우스)",
+      "strength": "강도 (마우스)",
+      "speed": "속도",
+      "scale": "크기",
+      "distortion": "왜곡",
+      "noise": "노이즈 (입자)",
+      "base_color": "배경 색상",
+      "image": "사용자 정의 배경화면",
+      "choose_image": "이미지 찾기",
+      "image_defined": "현재 이미지",
+      "effects": "후처리 필터",
+      "gradient": "상단 비네트",
+      "darken": "어둡게",
+      "blur": "흐림 (블러)"
+    },
+    "done": "완료"
+  },
+  "toast": {
+    "error_empty": "링크를 삽입해 주세요",
+    "error_invalid": "유효하지 않거나 지원되지 않는 링크입니다",
+    "success_added": "비디오가 대기열에 추가되었습니다!",
+    "success_thumb": "썸네일을 성공적으로 다운로드했습니다!",
+    "error_thumb": "썸네일을 다운로드할 수 없습니다",
+    "download_started": "다운로드가 시작되었습니다!",
+    "download_finished": "완료되었습니다! 다운로드가 끝났습니다.",
+    "error_generic": "문제가 발생했습니다. 다시 시도해 주세요.",
+    "clipboard_success": "링크를 성공적으로 붙여넣었습니다!",
+    "clipboard_empty": "클립보드가 비어 있습니다.",
+    "clipboard_error": "클립보드 접근 오류.",
+    "link_error": "유효한 링크를 붙여넣어 주세요.",
+    "data_error": "수신 데이터 오류.",
+    "video_not_found": "비디오를 찾을 수 없거나 사용할 수 없습니다.",
+    "open_error": "위치를 여는 중 오류가 발생했습니다.",
+    "config_saved": "설정이 적용되었습니다!"
+  },
+  "support_flow": "Flow Downloader 후원하기 🪙"
+}
