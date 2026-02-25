@@ -59,7 +59,7 @@ export default function SettingsModal({ onClose, settings }) {
   };
 
   const qualityOptions = [
-    { value: "best", label: t('settings.quality_best', { defaultValue: 'Melhor (4K)' }) },
+    { value: "best", label: t('settings.quality_best', { defaultValue: 'Best (4K)' }) },
     { value: "1080p", label: t('settings.quality_fhd', { defaultValue: 'Full HD' }) },
     { value: "720p", label: t('settings.quality_hd', { defaultValue: 'HD' }) }
   ];
@@ -76,8 +76,8 @@ export default function SettingsModal({ onClose, settings }) {
     { value: "vi", label: "Tiếng Việt (Vietnamese)" }, { value: "pl", label: "Polski (Polish)" }
   ];
   
-  const currentQualityLabel = qualityOptions.find(q => q.value === defaultQuality)?.label || "Melhor";
-  const currentLangLabel = languageOptions.find(l => l.value === language)?.label || "Automático do Sistema";
+  const currentQualityLabel = qualityOptions.find(q => q.value === defaultQuality)?.label || "Best";
+  const currentLangLabel = languageOptions.find(l => l.value === language)?.label || "System Default";
 
   return (
     <div className="fixed inset-0 z-30 flex items-center justify-center p-6">
@@ -121,8 +121,8 @@ export default function SettingsModal({ onClose, settings }) {
         <div className="px-8 pt-6 pb-2 shrink-0 bg-transparent z-10">
           <div className="flex bg-zinc-900/50 p-1 h-[44px] rounded-lg border border-white/5 relative">
             {[
-              { id: 'general', icon: FileCog, labelKey: 'settings.tabs.general', defaultLabel: 'Geral' },
-              { id: 'visual', icon: Paintbrush, labelKey: 'settings.tabs.visual', defaultLabel: 'Aparência' }
+              { id: 'general', icon: FileCog, labelKey: 'settings.tabs.general', defaultLabel: 'General' },
+              { id: 'visual', icon: Paintbrush, labelKey: 'settings.tabs.visual', defaultLabel: 'Appearance' }
             ].map((tab) => {
               const isActive = activeTab === tab.id;
               return (
@@ -157,7 +157,7 @@ export default function SettingsModal({ onClose, settings }) {
               >
                 <div className="space-y-1.5">
                   <label className="text-[11px] font-black text-neutral-500 uppercase tracking-widest px-1">
-                    {t('settings.general.path', { defaultValue: 'Caminho de Download Padrão' })}
+                    {t('settings.general.path', { defaultValue: 'Default Download Path' })}
                   </label>
                   <motion.div
                     whileHover={{ scale: 1.01 }}
@@ -167,10 +167,10 @@ export default function SettingsModal({ onClose, settings }) {
                   >
                     <FolderOpen size={20} className="text-neutral-200 group-hover:text-zinc-300 shrink-0" />
                     <span className="flex-1 text-[12.5px] font-bold text-zinc-300 truncate font-mono">
-                      {defaultPath || t('settings.not_defined', { defaultValue: 'Não definido' })}
+                      {defaultPath || t('settings.not_defined', { defaultValue: 'Not Defined' })}
                     </span>
                     <div className="px-2.5 py-1.5 bg-zinc-800 rounded text-[11px] font-bold text-zinc-400 group-hover:text-white shrink-0 uppercase transition-colors">
-                      {t('media_modal.change', { defaultValue: 'ALTERAR' })}
+                      {t('media_modal.change', { defaultValue: 'CHANGE' })}
                     </div>
                   </motion.div>
                 </div>
@@ -179,7 +179,7 @@ export default function SettingsModal({ onClose, settings }) {
                   <div className="flex items-center gap-2 px-1 relative">
                     <label className="text-[11px] font-black text-neutral-500 uppercase tracking-widest flex gap-1.5 items-center">
                       <ListVideo size={18} />
-                      {t('settings.general.limit', { defaultValue: 'Limite de Itens na Playlist' })}
+                      {t('settings.general.limit', { defaultValue: 'Playlist Item Limit' })}
                     </label>
 
                     <div className="group flex items-center justify-center cursor-help">
@@ -223,19 +223,19 @@ export default function SettingsModal({ onClose, settings }) {
 
                 <div className="grid grid-cols-2 gap-4 pt-2">
                   <CustomSelect
-                    label={t('settings.general.quality', { defaultValue: 'Qualidade Padrão' })}
+                    label={t('settings.general.quality', { defaultValue: 'Default Quality' })}
                     icon={(props) => <FileVideoCamera {...props} size={20} />}
                     valueLabel={currentQualityLabel}
                     options={qualityOptions}
                     onSelect={handleQualityChange}
                   />
                   <SearchableSelect
-                    label={t('settings.general.language', { defaultValue: 'Idioma da Interface' })}
+                    label={t('settings.general.language', { defaultValue: 'Language' })}
                     icon={(props) => <Languages {...props} size={20} />}
                     valueLabel={currentLangLabel}
                     options={languageOptions}
                     onSelect={handleLanguageChange}
-                    placeholder={t('settings.search_language', { defaultValue: 'Procurar idioma...' })}
+                    placeholder={t('settings.search_language', { defaultValue: 'Search Language' })}
                   />
                 </div>
               </motion.div>
@@ -253,7 +253,7 @@ export default function SettingsModal({ onClose, settings }) {
                 <div className="space-y-2.5">
                   <label className="text-[11px] font-black text-neutral-500 uppercase tracking-widest px-1 flex gap-1.5 items-center">
                     <Layers size={12} />
-                    {t('settings.visual.style', { defaultValue: 'Motor Gráfico do Fundo' })}
+                    {t('settings.visual.style', { defaultValue: 'Background Graphic Engine' })}
                   </label>
                   <div className="grid grid-cols-3 gap-3">
                     {[

@@ -22,33 +22,30 @@ export default function MediaModal({
   setDownloadPath,
   showToast,
   tooltipHandlers,
-  defaultQuality // <-- A mágica vem por essa Prop agora!
+  defaultQuality 
 }) {
   const { t } = useTranslation();
 
-  // --- DADOS DINÂMICOS DO YT-DLP ---
+  // --- YT-DLP DYNAMIC DATA ---
   const availableQualities = mediaData?.availableQualities?.length > 0 ? mediaData.availableQualities : [2160, 1440, 1080, 720, 480, 360, 240, 144];
   const availableAudio = mediaData?.availableAudio?.length > 0 ? mediaData.availableAudio : [320, 256, 192, 128];
   const cinematicFpsList = mediaData?.availableFps?.length > 0 ? ["Original", ...mediaData.availableFps] : ["Original", "60", "59.94", "50", "30", "29.97", "25", "24", "23.976"];
 
-  // --- CÁLCULO DE QUALIDADE AUTOMÁTICA ---
+  // --- AUTOMATIC QUALITY CALCULATION ---
   const getInitialQuality = () => {
     if (!defaultQuality || defaultQuality === "best") return availableQualities[0].toString();
 
-    // Converte '1080p' para número 1080 para fazer a checagem
     const targetQuality = parseInt(defaultQuality.replace("p", ""));
 
     if (availableQualities.includes(targetQuality)) {
       return targetQuality.toString();
     }
 
-    // Se o vídeo não tiver a qualidade exata (ex: você pediu 1080p mas o vídeo só tem até 720p)
-    // Ele acha a qualidade imediatamente abaixo ou a maior possível
     const closestQuality = availableQualities.find(q => q <= targetQuality);
     return closestQuality ? closestQuality.toString() : availableQualities[0].toString();
   };
 
-  // --- ESTADOS ---
+  // --- STATES ---
   const [quality, setQuality] = useState(getInitialQuality()); // Inicializa com a inteligência do Settings
   const [audioKbps, setAudioKbps] = useState(`${availableAudio[0]}kb`);
   const [fps, setFps] = useState("Original");
@@ -71,7 +68,7 @@ export default function MediaModal({
     setFormatExt(selectedFormat === 'audio' ? '.mp3' : '.mp4');
   }, [selectedFormat]);
 
-  // --- OPÇÕES DOS DROPDOWNS ---
+  // --- DROPDOWN OPTIONS ---
   const qualityOptions = availableQualities.map(q => ({ value: q.toString(), label: `${q}p` }));
   const audioOptions = availableAudio.map(a => ({ value: `${a}kb`, label: `${a}kbps` }));
   const fpsOptions = cinematicFpsList.map(f => ({
@@ -197,7 +194,7 @@ export default function MediaModal({
             )}
           </div>
 
-          {/* Informações do Vídeo */}
+          {/* Video Info */}
           <div className="flex-1 min-w-0 flex flex-col justify-center pt-1">
             <span className="text-[12px] font-black text-zinc-600 uppercase tracking-widest mb-1">
               {mediaData.extractor_key || "Web"}
@@ -221,7 +218,7 @@ export default function MediaModal({
         <div className="p-6 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-5 gap-5">
 
-            {/* Seletor Tipo */}
+            {/* Type Selector */}
             <div className="md:col-span-3 space-y-2.5">
               <label className="text-[12px] font-black text-zinc-600 uppercase tracking-widest px-1">
                 {t('media_modal.output_format', { defaultValue: 'Formato de Saída' })}
@@ -252,7 +249,7 @@ export default function MediaModal({
               </div>
             </div>
 
-            {/* Destino */}
+            {/* Path */}
             <div className="md:col-span-2 space-y-2.5">
               <label className="text-[12px] font-black text-zinc-600 uppercase tracking-widest px-1">
                 {t('media_modal.destination', { defaultValue: 'Destino' })}
@@ -270,7 +267,7 @@ export default function MediaModal({
             </div>
           </div>
 
-          {/* CAIXAS DE CONFIGURAÇÃO INTERATIVAS */}
+          {/* CONFIG BOXES */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <DropdownConfigBox
               label={t('media_modal.quality', { defaultValue: 'Qualidade' })}
@@ -306,7 +303,7 @@ export default function MediaModal({
             />
           </div>
 
-          {/* BOTÃO INICIAR DOWNLOAD */}
+          {/* START DOWNLOAD BUTTON */}
           <motion.button
             whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.98 }}
@@ -351,16 +348,14 @@ function DropdownConfigBox({ label, icon: Icon, valueLabel, options, active, onS
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <div className="flex flex-col"> {/* <-- O relative foi removido daqui */}
+    <div className="flex flex-col"> 
       <label className="text-[11px] font-black text-zinc-600 uppercase tracking-widest px-1 mb-1.5">
         {label}
       </label>
 
-      {/* NOVO: Container relativo isolando apenas o botão e a lista */}
       <div className="relative">
         <button
           onClick={() => active && setIsOpen(!isOpen)}
-          // Adicionado w-full
           className={`w-full flex items-center justify-between p-2.5 px-3 rounded-lg border transition-all duration-500 ease-in-out h-[44px] ${active
               ? isOpen
                 ? "bg-zinc-800 border-white/20 shadow-inner"
@@ -385,7 +380,6 @@ function DropdownConfigBox({ label, icon: Icon, valueLabel, options, active, onS
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 10, scale: 0.95 }}
                 transition={{ duration: 0.15 }}
-                // mb-1 aqui adiciona apenas 4px de gap suave.
                 className="absolute bottom-full left-0 right-0 mb-1 bg-zinc-900 border border-zinc-800 rounded-lg shadow-2xl z-40 overflow-hidden py-1 max-h-48 overflow-y-auto custom-scrollbar ring-1 ring-black/50 origin-bottom"
               >
                 {options.map((opt, i) => (

@@ -213,7 +213,7 @@ function FloatingLines({
   const middleLineDistance = enabledWaves.includes('middle') ? getLineDistance('middle') * 0.01 : 0.01;
   const bottomLineDistance = enabledWaves.includes('bottom') ? getLineDistance('bottom') * 0.01 : 0.01;
 
-  // Converte os arrays para strings para evitar o loop infinito de re-renderização do WebGL
+  // Converts the arrays to strings to avoid the infinite re-rendering loop of WebGL
   const linesGradientStr = JSON.stringify(linesGradient);
   const enabledWavesStr = JSON.stringify(enabledWaves);
   const lineCountStr = JSON.stringify(lineCount);
@@ -274,10 +274,9 @@ function FloatingLines({
 
     const clock = new Clock();
     
-    // --- CORREÇÃO AQUI: Verificação de segurança ---
     const setSize = () => {
       const el = containerRef.current;
-      if (!el) return; // Se o elemento já saiu da tela, não faz nada
+      if (!el) return; // If the element is already off-screen, do nothing
       
       const width = el.clientWidth || 1;
       const height = el.clientHeight || 1;

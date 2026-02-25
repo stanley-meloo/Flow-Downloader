@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { X, Minus, Square, Download } from "lucide-react";
+import { X, Minus, Square} from "lucide-react";
 import { motion } from "framer-motion";
 import appLogo from "../../assets/logo.png";
 

@@ -12,7 +12,6 @@ const Toast = forwardRef((props, ref) => {
       const id = Date.now();
       setToasts(prev => [...prev, { id, messageKey, type }]);
       
-      // Auto-remove em 4 segundos
       setTimeout(() => {
         setToasts(prev => prev.filter(t => t.id !== id));
       }, 4000);

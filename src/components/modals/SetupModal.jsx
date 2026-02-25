@@ -12,7 +12,7 @@ export default function SetupModal({ settings, onClose }) {
   const [searchTerm, setSearchTerm] = useState("");
 
   const languageOptions = [
-    { value: "auto", label: "Automático" },
+    { value: "auto", label: "Auto" },
     { value: "en", label: "English" }, { value: "pt", label: "Português" },
     { value: "es", label: "Español" }, { value: "fr", label: "Français" },
     { value: "de", label: "Deutsch" }, { value: "it", label: "Italiano" },
@@ -48,7 +48,7 @@ export default function SetupModal({ settings, onClose }) {
     setSearchTerm("");
   };
 
-  // VARIANTES DE ANIMAÇÃO
+  // Animation variants for the modal container and items
   const containerVariants = {
     hidden: { opacity: 0, scale: 0.95, y: 20 },
     visible: { 

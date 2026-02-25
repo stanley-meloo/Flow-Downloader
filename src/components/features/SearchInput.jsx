@@ -31,15 +31,11 @@ export default function SearchInput({
   const { enter, move, leave } = tooltipHandlers || {};
   const [isFocused, setIsFocused] = useState(false);
   
-  // 1. Criamos uma referência para controlar o input
   const inputRef = useRef(null);
 
-  // 2. Função intermediária para Colar + Focar
   const handlePasteAndFocus = () => {
-    onPaste(); // Executa a lógica de colar do App
+    onPaste(); 
     
-    // Pequeno timeout para garantir que o texto entrou antes de focar (opcional, mas seguro)
-    // Na maioria das vezes inputRef.current?.focus() direto funciona, mas assim é garantido.
     setTimeout(() => {
       inputRef.current?.focus();
     }, 10);
@@ -52,7 +48,7 @@ export default function SearchInput({
       transition={{ ...liquidSpring, delay: 0.1 }}
       className="w-full max-w-2xl shrink-0 relative z-20 group"
     >
-      {/* --- GLOW DE ANÁLISE --- */}
+      {/* --- GLOW --- */}
       <AnimatePresence>
         {analyzing && (
           <motion.div
@@ -73,7 +69,7 @@ export default function SearchInput({
         )}
       </AnimatePresence>
 
-      {/* --- BARRA DE INPUT LIQUID GLASS --- */}
+      {/* --- INPUTBAR --- */}
       <motion.div 
         animate={{
           backgroundColor: isFocused ? "rgba(9, 9, 11, 0.6)" : "rgba(9, 9, 11, 0.3)",
@@ -86,9 +82,8 @@ export default function SearchInput({
         className="relative z-10 flex items-center gap-2 backdrop-blur-2xl border p-2 rounded-full"
       >
         
-        {/* --- BOTÃO COLAR (OTIMIZADO) --- */}
+        {/* --- PASTE BUTTON --- */}
         <motion.button
-          // 1. Física no container pai (apenas movimento)
           whileHover="hover"
           whileTap="tap"
           variants={{
@@ -97,21 +92,21 @@ export default function SearchInput({
           }}
           transition={physicsSpring}
           
-          onClick={handlePasteAndFocus} // <--- AQUI A MUDANÇA
+          onClick={handlePasteAndFocus} 
           onMouseEnter={(e) => enter && enter(e, t('search.paste_tooltip'))}
           onMouseMove={move}
           onMouseLeave={leave}
           disabled={analyzing}
           className="relative p-3 rounded-full text-zinc-400 hover:text-white transition-colors disabled:opacity-30 ml-1 cursor-pointer overflow-hidden isolate"
         >
-          {/* 2. Background separado (Anima Opacidade = Super Leve) */}
+          {/* 2. Separate background (Animate Opacity = Super Light) */}
           <motion.div 
             variants={{
               hover: { opacity: 1 },
               tap: { opacity: 1 }
             }}
             initial={{ opacity: 0 }}
-            transition={{ duration: 0.2, ease: "easeOut" }} // Transição suave linear
+            transition={{ duration: 0.2, ease: "easeOut" }} 
             className="absolute inset-0 bg-white/10 z-[-1]"
           />
           
@@ -119,9 +114,9 @@ export default function SearchInput({
         </motion.button>
 
 
-        {/* Campo de Texto */}
+        {/* Text field */}
         <input
-          ref={inputRef} // <--- CONECTADO AQUI
+          ref={inputRef} 
           className="flex-1 bg-transparent border-none text-white px-2 py-3 outline-none placeholder-zinc-500/70 text-lg font-medium cursor-text tracking-wide"
           placeholder={analyzing ? t('search.analyzing_placeholder') : t('search.placeholder')}
           value={url}
@@ -132,7 +127,7 @@ export default function SearchInput({
           disabled={analyzing}
         />
 
-        {/* --- BOTÃO PESQUISAR --- */}
+        {/* --- FETCH BUTTON --- */}
         <motion.button
           whileHover={{ 
             scale: 1.1, 

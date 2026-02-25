@@ -36,12 +36,10 @@ export default function QueueList({
       </AnimatePresence>
 
       <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar p-1">
-        {/* Adicionamos layout ao container para ajudar o Framer Motion */}
         <motion.div layout className="space-y-4">
           <AnimatePresence mode="popLayout">
             {queue.map((item) => (
               <QueueItem
-                // CHAVE ESTÁVEL: Agora o Framer Motion sabe exatamente quem é quem
                 key={item.id} 
                 item={item}
                 t={t}
@@ -111,7 +109,6 @@ function QueueItem({ item, t, handlers, actions }) {
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 20, scale: 0.95 }}
-      // Adicionamos uma transição específica para o layout não ser brusco
       transition={{ 
         layout: { type: "spring", stiffness: 300, damping: 30 },
         opacity: { duration: 0.2 }
@@ -162,7 +159,7 @@ function QueueItem({ item, t, handlers, actions }) {
             </>
           )}
           
-          {/* LÓGICA DE TRADUÇÃO COM INTERPOLAÇÃO APLICADA AQUI */}
+          {/* TRANSLATION LOGIC WITH INTERPOLATION APPLIED HERE */}
           {isFinished && (
             item.totalTime ? (
               <span className="text-emerald-400 font-medium">

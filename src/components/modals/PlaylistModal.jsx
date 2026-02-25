@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  X, FolderOpen, Music, FilePlay, EarOff, Monitor, Camera, FileMusic,
-  Speaker, Activity, Download, Image as ImageIcon, ExternalLink, Check, ChevronDown, ListChecks
+  X, FolderOpen, Music, FilePlay, EarOff, Monitor, Camera, FileMusic, 
+  Activity, Download, Image as ImageIcon, ExternalLink, Check, ChevronDown, ListChecks
 } from "lucide-react";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { downloadDir, join } from "@tauri-apps/api/path";

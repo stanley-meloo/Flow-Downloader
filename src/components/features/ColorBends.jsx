@@ -90,7 +90,7 @@ function ColorBends({
   const materialRef = useRef(null);
   const resizeObserverRef = useRef(null);
   
-  // Parâmetros chumbados (nunca vão causar erros matemáticos ou tela preta)
+  // Hardcoded parameters (will never cause mathematical errors or a black screen)
   const speed = 0.2;
   const scale = 1.0;
   const frequency = 1.0;
@@ -216,7 +216,7 @@ function ColorBends({
     const material = materialRef.current;
     if (!material) return;
 
-    // Tratamento robusto para não deixar nenhuma cor corrompida passar
+    // Robust handling to prevent any corrupted color from passing
     const toVec3 = hex => {
       try {
         if (!hex || typeof hex !== 'string') return new THREE.Vector3(0, 0, 0);

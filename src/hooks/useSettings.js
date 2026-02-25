@@ -2,17 +2,16 @@ import { useState, useEffect } from "react";
 import { exists, readTextFile, writeTextFile, mkdir, BaseDirectory } from "@tauri-apps/plugin-fs";
 import { downloadDir } from "@tauri-apps/api/path";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
-import i18n from "../locales/i18n"; // <--- Importe a configuração do i18n que você criou
+import i18n from "../locales/i18n"; 
 
 const CONFIG_FILE = "settings.json";
 
-// VALORES PADRÃO (Com todas as configurações visuais que criamos)
 const DEFAULT_VISUALS = {
   activeBackground: 'floatingLines', // 'floatingLines', 'colorBends', 'static'
 
   // Configs Floating Lines
-  lineCount: 9,
-  lineDistance: 21,
+  lineCount: 6,
+  lineDistance: 1,
   bendRadius: 2.5,
   bendStrength: -0.5,
   showColors: false,
@@ -25,7 +24,7 @@ const DEFAULT_VISUALS = {
   cb_warpStrength: 1,
   cb_noise: 0.1,
 
-  // Configs Estático / Imagem
+  // Configs Static/Image
   staticColor: "#09090b",
   bgImage: null,
   staticGradientEnabled: true,
@@ -43,11 +42,11 @@ export default function useSettings() {
   
   const [visuals, setVisuals] = useState(DEFAULT_VISUALS);
 
-  // Efeito para sincronizar o idioma com o i18next
+  // Effect to synchronize the language with i18next
   useEffect(() => {
     if (language && language !== 'auto') {
-      // Mapeia 'pt-BR' para 'pt', 'en-US' para 'en', etc.
-      // Certifique-se que as chaves batem com seu arquivo i18n.js
+      // Maps 'pt-BR' to 'pt', 'en-US' to 'en', etc.
+      // Ensure the keys match your i18n.js file
       const langMap = {
         'pt-BR': 'pt',
         'en-US': 'en',
@@ -55,8 +54,8 @@ export default function useSettings() {
       };
       i18n.changeLanguage(langMap[language] || 'en');
     } else {
-       // Se for auto, deixa o i18next decidir (ele usa o detector do navegador/sistema)
-       // Ou você pode forçar a detecção novamente se necessário
+      // If it's auto, let i18next decide (it uses the browser/system detector)
+      // Or you can force detection again if necessary
     }
   }, [language]);
 

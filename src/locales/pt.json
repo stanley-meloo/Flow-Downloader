@@ -116,7 +116,7 @@
     "error_invalid": "Link inválido ou não suportado",
     "success_added": "Vídeo adicionado à fila!",
     "success_thumb": "Capa baixada com sucesso!",
-    "error_thumb": "Não foi possível baixar a capa",
+    "error_thumb": "Não foi possível baixar a thumbnail",
     "download_started": "O download foi iniciado!",
     "download_finished": "Tudo pronto! Download concluído.",
     "error_generic": "Algo deu errado. Tente novamente.",
