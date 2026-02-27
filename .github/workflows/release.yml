@@ -1,0 +1,52 @@
+name: Release Flow Downloader
+
+# O robô só vai acordar quando você criar uma Tag de versão (ex: v1.0.2)
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  publish-tauri:
+    strategy:
+      fail-fast: false
+      matrix:
+        # Aqui está a mágica: ele vai ligar um Mac e um Windows virtuais ao mesmo tempo
+        platform: [macos-latest, windows-latest]
+
+    runs-on: ${{ matrix.platform }}
+    
+    steps:
+      - name: Baixar o código do repositório
+        uses: actions/checkout@v4
+
+      - name: Instalar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Instalar dependências (NPM)
+        run: npm install
+
+      - name: Instalar Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      # Passo de segurança exclusivo para Mac: Garantir que os sidecars sejam executáveis
+      - name: Dar permissão aos Sidecars (Apenas Mac)
+        if: matrix.platform == 'macos-latest'
+        run: |
+          chmod +x src-tauri/ytdlp-x86_64-apple-darwin
+          chmod +x src-tauri/ytdlp-aarch64-apple-darwin
+          chmod +x src-tauri/ffmpeg-x86_64-apple-darwin
+          chmod +x src-tauri/ffmpeg-aarch64-apple-darwin
+
+      - name: Construir e Publicar os Instaladores
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: 'Flow Downloader ${{ github.ref_name }}'
+          releaseBody: '🚀 Lançamento automático multiplataforma (Windows & macOS) gerado via GitHub Actions.'
+          releaseDraft: false
+          prerelease: false
