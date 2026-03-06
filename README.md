@@ -1,7 +1,7 @@
 # 🌊 Flow Downloader
 
 [![Download for Windows](https://img.shields.io/badge/DOWNLOAD%20FOR%20WINDOWS-AVAILABLE-FF0055?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/stanley-meloo/Flow-Downloader/releases/latest)
-![Download for Mac](https://img.shields.io/badge/DOWNLOAD%20FOR%20MAC-COMING%20SOON-555555?style=for-the-badge&logo=apple&logoColor=white)
+[![Download for Mac](https://img.shields.io/badge/DOWNLOAD%20FOR%20MAC-AVAILABLE-FF0055?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/stanley-meloo/Flow-Downloader/releases/latest)
 ![Download for Linux](https://img.shields.io/badge/DOWNLOAD%20FOR%20LINUX-COMING%20SOON-555555?style=for-the-badge&logo=linux&logoColor=white)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 [![Tauri](https://img.shields.io/badge/Tauri-v2-24C8D8?style=for-the-badge&logo=tauri)](https://tauri.app/)
