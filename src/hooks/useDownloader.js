@@ -21,7 +21,7 @@ export default function useDownloader(settings, showToast) {
     return `${minutes}m ${remainingSeconds}s`;
   };
 
-  // --- 1. ANÁLISE COMPLETA ---
+  // --- 1. COMPLETE ANALYSIS ---
   async function analyzeLink() {
     if (!url) return;
     setAnalyzing(true);
@@ -64,7 +64,6 @@ export default function useDownloader(settings, showToast) {
           uniqueId: `${entry.id}-${idx}`
         }));
 
-        // ✅ A SUA IDEIA: Analisar apenas o primeiro vídeo para basear a qualidade
         let dynamicQualities = [1080, 720, 480, 360];
         let has60fps = false;
 
@@ -159,7 +158,7 @@ export default function useDownloader(settings, showToast) {
     }
   }
 
-  // --- 2. INICIAR COM CONFIGURAÇÕES ---
+  // --- 2. START WITH CONFIGURATIONS ---
   function startDownload(config, formatType, customData) {
     const dataToDownload = customData || mediaData;
     if (!dataToDownload) return;
@@ -222,7 +221,7 @@ export default function useDownloader(settings, showToast) {
     showToast("success_added", "success");
   }
 
-  // --- 3. PROCESSADOR DINÂMICO ---
+  // --- 3. DYNAMIC PROCESSOR ---
   useEffect(() => {
     const processQueue = () => {
       const MAX_CONCURRENT_DOWNLOADS = 3;
@@ -271,13 +270,15 @@ export default function useDownloader(settings, showToast) {
               '--audio-quality', `${nextItem.targetAudio}K`
             ];
           } else if (nextItem.formatType === 'video_only') {
-            formatString = `bestvideo${resFilter}/best`;
+            // Forces video to download at H.264 if available for better editing compatibility, otherwise falls back to best video stream of any codec
+            formatString = `bestvideo${resFilter}[vcodec^=avc1]/bestvideo${resFilter}/best`;
             additionalArgs = ['--remux-video', finalExt];
           } else {
             if (finalExt === 'mp4') {
-              formatString = `bestvideo${resFilter}+bestaudio[ext=m4a]/best${resFilter}/best`;
+              formatString = `bestvideo${resFilter}[vcodec^=avc1]+bestaudio[ext=m4a]/bestvideo${resFilter}+bestaudio/best${resFilter}/best`;
             } else {
-              formatString = `bestvideo${resFilter}+bestaudio/best${resFilter}/best`;
+              // To MKV or other formats, we can allow any audio codec since it will be remuxed, which increases the chances of getting the best quality audio available
+              formatString = `bestvideo${resFilter}[vcodec^=avc1]+bestaudio/bestvideo${resFilter}+bestaudio/best${resFilter}/best`;
             }
             additionalArgs = ['--merge-output-format', finalExt];
           }
