@@ -1,52 +1,40 @@
-name: Release Flow Downloader
+name: Release macOS Build
 
-# O robô só vai acordar quando você criar uma Tag de versão (ex: v1.0.2)
 on:
   push:
     tags:
       - 'v*'
 
 jobs:
-  publish-tauri:
-    strategy:
-      fail-fast: false
-      matrix:
-        # Aqui está a mágica: ele vai ligar um Mac e um Windows virtuais ao mesmo tempo
-        platform: [macos-latest, windows-latest]
-
-    runs-on: ${{ matrix.platform }}
+  build-mac:
+    runs-on: macos-latest
     
     steps:
-      - name: Baixar o código do repositório
+      - name: Checkout do repositório
         uses: actions/checkout@v4
 
-      - name: Instalar Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: 24.12.0 
 
-      - name: Instalar dependências (NPM)
+      - name: Instalar Dependências do Frontend
         run: npm install
 
-      - name: Instalar Rust
+      - name: Setup Rust Toolchain
         uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin, x86_64-apple-darwin
 
-      # Passo de segurança exclusivo para Mac: Garantir que os sidecars sejam executáveis
-      - name: Dar permissão aos Sidecars (Apenas Mac)
-        if: matrix.platform == 'macos-latest'
-        run: |
-          chmod +x src-tauri/ytdlp-x86_64-apple-darwin
-          chmod +x src-tauri/ytdlp-aarch64-apple-darwin
-          chmod +x src-tauri/ffmpeg-x86_64-apple-darwin
-          chmod +x src-tauri/ffmpeg-aarch64-apple-darwin
-
-      - name: Construir e Publicar os Instaladores
+      - name: Compilar Flow Downloader (Tauri)
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ github.ref_name }}
-          releaseName: 'Flow Downloader ${{ github.ref_name }}'
-          releaseBody: '🚀 Lançamento automático multiplataforma (Windows & macOS) gerado via GitHub Actions.'
-          releaseDraft: false
+          tagName: app-v__VERSION__ 
+          releaseName: 'Flow Downloader v__VERSION__'
+          releaseBody: 'Nova compilação automatizada do Flow Downloader para macOS.'
+          releaseDraft: true
           prerelease: false
+          
+          args: --target aarch64-apple-darwin
