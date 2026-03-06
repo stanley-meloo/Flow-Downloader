@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Command } from "@tauri-apps/plugin-shell";
-import { downloadDir } from "@tauri-apps/api/path";
+import { downloadDir, executableDir } from "@tauri-apps/api/path";
 
 export default function useDownloader(settings, showToast) {
   const [url, setUrl] = useState("");
@@ -244,17 +244,18 @@ export default function useDownloader(settings, showToast) {
 
         if (manuallyHandled.current.has(itemId)) manuallyHandled.current.delete(itemId);
 
-        activeProcesses.current[itemId] = "starting";
+        activeProcesses.current[itemId] = "Starting Download";
         lastUpdate.current[itemId] = 0;
 
         try {
-          updateItemStatus(itemId, "Baixando");
+          updateItemStatus(itemId, "Downloading");
 
           const safeTitle = nextItem.title.replace(/[\\/:*?"<>|]/g, "").replace(/ /g, "_");
 
           let formatString = 'best';
           let additionalArgs = [];
           const finalExt = nextItem.ext || 'mp4';
+          const execDir = await executableDir();
 
           let resFilter = '';
           if (nextItem.targetRes && nextItem.targetRes !== 'best' && nextItem.targetRes !== 'Original') {
@@ -288,6 +289,7 @@ export default function useDownloader(settings, showToast) {
           }
 
           const args = [
+            '--ffmpeg-location', execDir,
             '-f', formatString,
             ...additionalArgs,
             '-o', `${nextItem.directory}/${safeTitle}.%(ext)s`,

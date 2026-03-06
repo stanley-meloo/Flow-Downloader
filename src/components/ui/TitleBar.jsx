@@ -1,57 +1,85 @@
 import { useState, useEffect } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { X, Minus, Square} from "lucide-react";
+import { X, Minus, Square, Maximize2 } from "lucide-react";
 import { motion } from "framer-motion";
 import appLogo from "../../assets/logo.png";
 
 export default function TitleBar() {
   const [appWindow, setAppWindow] = useState(null);
 
+  // SO Detection
+  const isMac = navigator.userAgent.toLowerCase().includes('mac');
+
   useEffect(() => {
     const win = getCurrentWindow();
     setAppWindow(win);
   }, []);
 
+  // --- WINDOWS RENDR ---
   const buttonLightVariants = {
-    initial: { 
-      opacity: 0.6, 
-      scale: 1, 
-      background: "radial-gradient(closest-side at center, rgba(255,255,255,0) 0%, rgba(255,255,255,0) 100%)",
-      color: "rgb(161 161 170)"
-    },
-    hover: { 
-      opacity: 1, 
-      scale: 1.1, 
-      background: "radial-gradient(closest-side at center, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 100%)",
-      color: "rgb(255 255 255)", 
-      transition: { type: "spring", stiffness: 300, damping: 25 } 
-    },
-    tap: { 
-      scale: 0.95,
-      background: "radial-gradient(closest-side at center, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0) 100%)",
-    }
+    initial: { opacity: 0.6, scale: 1, background: "radial-gradient(closest-side at center, rgba(255,255,255,0) 0%, rgba(255,255,255,0) 100%)", color: "rgb(161 161 170)" },
+    hover: { opacity: 1, scale: 1.1, background: "radial-gradient(closest-side at center, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 100%)", color: "rgb(255 255 255)", transition: { type: "spring", stiffness: 300, damping: 25 } },
+    tap: { scale: 0.95, background: "radial-gradient(closest-side at center, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0) 100%)" }
   };
 
   const closeLightVariants = {
-    initial: { 
-      opacity: 0.6, 
-      scale: 1, 
-      background: "radial-gradient(closest-side at center, rgba(220, 38, 38, 0) 0%, rgba(220, 38, 38, 0) 100%)",
-      color: "rgb(161 161 170)"
-    },
-    hover: { 
-      opacity: 1, 
-      scale: 1.1, 
-      background: "radial-gradient(closest-side at center, rgba(220, 38, 38, 0.25) 0%, rgba(220, 38, 38, 0) 100%)",
-      color: "rgb(255 255 255)",
-      transition: { type: "spring", stiffness: 300, damping: 25 } 
-    },
-    tap: { 
-      scale: 0.95,
-       background: "radial-gradient(closest-side at center, rgba(220, 38, 38, 0.35) 0%, rgba(220, 38, 38, 0) 100%)",
-    }
+    initial: { opacity: 0.6, scale: 1, background: "radial-gradient(closest-side at center, rgba(220, 38, 38, 0) 0%, rgba(220, 38, 38, 0) 100%)", color: "rgb(161 161 170)" },
+    hover: { opacity: 1, scale: 1.1, background: "radial-gradient(closest-side at center, rgba(220, 38, 38, 0.25) 0%, rgba(220, 38, 38, 0) 100%)", color: "rgb(255 255 255)", transition: { type: "spring", stiffness: 300, damping: 25 } },
+    tap: { scale: 0.95, background: "radial-gradient(closest-side at center, rgba(220, 38, 38, 0.35) 0%, rgba(220, 38, 38, 0) 100%)" }
   };
 
+  // --- MAC OS RENDER ---
+  if (isMac) {
+    return (
+      <div className="fixed top-0 left-0 right-0 h-10 flex items-center select-none z-[10000]">
+        
+        {/* Draggable region */}
+        <div data-tauri-drag-region className="absolute inset-0 cursor-default" />
+
+        {/* Traffic Lights */}
+        <div className="absolute left-4 flex items-center gap-2 z-10 group">
+          
+          {/* Close button (red) */}
+          <button 
+            onClick={() => appWindow?.close()} 
+            className="w-3.5 h-3.5 rounded-full flex items-center justify-center bg-[#FF5F56] border border-[#E0443E] hover:bg-[#FF5F56] active:bg-[#C24139] transition-colors"
+          >
+            <X size={8} strokeWidth={3} className="text-black/60 opacity-0 group-hover:opacity-100 transition-opacity" />
+          </button>
+          
+          {/* Minimize button (yellow) */}
+          <button 
+            onClick={() => appWindow?.minimize()} 
+            className="w-3.5 h-3.5 rounded-full flex items-center justify-center bg-[#FFBD2E] border border-[#DEA123] hover:bg-[#FFBD2E] active:bg-[#B8861E] transition-colors"
+          >
+            <Minus size={8} strokeWidth={4} className="text-black/60 opacity-0 group-hover:opacity-100 transition-opacity" />
+          </button>
+          
+          {/* Maximize button (green) */}
+          <button 
+            onClick={() => appWindow?.toggleMaximize()} 
+            className="w-3.5 h-3.5 rounded-full flex items-center justify-center bg-[#27C93F] border border-[#1AAB29] hover:bg-[#27C93F] active:bg-[#1D912C] transition-colors"
+          >
+            <Maximize2 size={7} strokeWidth={3} className="text-black/60 opacity-0 group-hover:opacity-100 transition-opacity" />
+          </button>
+        </div>
+
+        {/* Logo and Title */}
+        <motion.div 
+          initial={{ opacity: 0, y: -5 }}
+          animate={{ opacity: 0.7, y: 0 }}
+          className="w-full flex justify-center items-center gap-2 pointer-events-none z-0"
+        >
+           <img src={appLogo} alt="Flow Logo" className="w-4 h-4" />
+           <span className="text-[10px] font-bold text-zinc-300 tracking-[0.2em] uppercase">
+             FLOW DOWNLOADER
+           </span>
+        </motion.div>
+      </div>
+    );
+  }
+
+  // RENDERIZAÇÃO WINDOWS / LINUX
   return (
     <div className="fixed top-0 left-0 right-0 h-10 flex select-none z-[10000]">
       <div data-tauri-drag-region className="flex-1 flex items-center pl-4 gap-3 cursor-default">
@@ -61,7 +89,6 @@ export default function TitleBar() {
           className="pointer-events-none flex items-center gap-2"
         >
            <img src={appLogo} alt="Flow Logo" className="w-5 h-5" />
-           {/* MUDANÇA: Nome FLOW DOWNLOADER */}
            <span className="text-[10px] font-bold text-zinc-300 tracking-[0.2em] uppercase">
              FLOW DOWNLOADER
            </span>

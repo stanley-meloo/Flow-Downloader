@@ -19,7 +19,7 @@
         "fullscreen": false,
         "maximized": false,
         "decorations": false,
-        "transparent": false,
+        "transparent": true,
         "center": true
       }
     ],
