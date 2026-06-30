@@ -6,8 +6,53 @@ on:
       - 'v*'
 
 jobs:
+  # Create the draft release once, so both architecture builds can upload to the
+  # same release (no race, no duplicate drafts). Reuses an existing draft for the
+  # same tag if the workflow is re-run.
+  create-release:
+    runs-on: ubuntu-latest
+    outputs:
+      release_id: ${{ steps.create-release.outputs.result }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Read app version
+        id: version
+        run: echo "version=$(node -p "require('./src-tauri/tauri.conf.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Create (or reuse) the draft release
+        id: create-release
+        uses: actions/github-script@v7
+        env:
+          APP_VERSION: ${{ steps.version.outputs.version }}
+        with:
+          script: |
+            const tag = `v${process.env.APP_VERSION}`;
+            const { owner, repo } = context.repo;
+            const releases = await github.paginate(github.rest.repos.listReleases, { owner, repo, per_page: 100 });
+            let release = releases.find(r => r.tag_name === tag);
+            if (!release) {
+              release = (await github.rest.repos.createRelease({
+                owner, repo,
+                tag_name: tag,
+                name: `Flow Downloader ${tag}`,
+                draft: true,
+                prerelease: false,
+              })).data;
+            }
+            return release.id;
+
+  # Build each macOS architecture separately. Each target uses its own
+  # arch-specific sidecars (ffmpeg/deno/ytdlp), so no universal "lipo" is needed.
+  # Produces two .dmg files (Apple Silicon + Intel), both uploaded to the draft.
   build-mac:
+    needs: create-release
     runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [aarch64-apple-darwin, x86_64-apple-darwin]
 
     steps:
       - name: Checkout repository
@@ -24,20 +69,12 @@ jobs:
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
-          # Both targets are required to build a universal (Intel + Apple Silicon) binary.
-          targets: aarch64-apple-darwin, x86_64-apple-darwin
+          targets: ${{ matrix.target }}
 
       - name: Build Flow Downloader (Tauri)
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          # Release tag matches the pushed trigger tag (e.g. v1.1.0) — no "app-" prefix.
-          tagName: v__VERSION__
-          releaseName: 'Flow Downloader v__VERSION__'
-          releaseBody: 'Automated macOS build of Flow Downloader.'
-          releaseDraft: true
-          prerelease: false
-
-          # Universal build: one .dmg that runs on both Intel and Apple Silicon Macs.
-          args: --target universal-apple-darwin
+          releaseId: ${{ needs.create-release.outputs.release_id }}
+          args: --target ${{ matrix.target }}
