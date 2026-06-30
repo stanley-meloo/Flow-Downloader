@@ -7,7 +7,7 @@
     "placeholder": "Collez l'URL ici...",
     "analyzing_placeholder": "Récupération des métadonnées...",
     "paste_tooltip": "(CTRL + V) Coller",
-    "analyze_tooltip": "Chercher",
+    "analyze_tooltip": "(ENTER) Chercher",
     "analyzing_tooltip": "Recherche..."
   },
   "queue": {
@@ -24,7 +24,8 @@
     "eta": "Temps restant",
     "calculating": "Calcul...",
     "error_missing": "Fichier non trouvé (déplacé ou supprimé)",
-    "finished_in": "Terminé en {{time}}"
+    "finished_in": "Terminé en {{time}}",
+    "processing": "Traitement et conversion…"
   },
   "media_modal": {
     "title": "Options de Téléchargement",
@@ -44,7 +45,15 @@
     "native_fps": "Natif",
     "download_png": "Télécharger l'image",
     "open_folder": "Ouvrir l'emplacement du fichier",
-    "start_download": "Télécharger"
+    "start_download": "Télécharger",
+    "codec": "Codec",
+    "codec_h264": "H.264",
+    "codec_prores": "ProRes",
+    "codec_dnxhr": "DNxHR",
+    "editor_warning": "Les résolutions supérieures à 1080p sont en {{codec}}, que les éditeurs vidéo (Premiere, DaVinci…) ne peuvent pas ouvrir. Choisissez 1080p ou moins pour avoir du H.264, ou convertissez ce fichier en H.264 avec un convertisseur en ligne.",
+    "audio_best": "Meilleure (~160 kbps)",
+    "audio_medium": "Moyenne (128 kbps)",
+    "audio_low": "Faible (96 kbps)"
   },
   "playlist_modal": {
     "badge": "PLAYLIST",
@@ -81,14 +90,24 @@
       "limit": "Limite d'éléments de playlist",
       "limit_info": "Vous pouvez augmenter la limite pour analyser des playlists entières. Pour éviter de ralentir votre machine et les blocages des serveurs YouTube (Erreur 429), Flow traitera le téléchargement intelligemment, en téléchargeant 3 vidéos à la fois.",
       "quality": "Qualité par défaut",
-      "language": "Langue de l'interface"
+      "language": "Langue de l'interface",
+      "engine": "Moteur de téléchargement (yt-dlp)",
+      "update_engine": "Rechercher des mises à jour",
+      "update_now": "METTRE À JOUR",
+      "cookies": "Cookies du navigateur (connexion YouTube)",
+      "cookies_off": "Désactivé",
+      "cookies_info": "Si YouTube demande de « confirmer que vous n'êtes pas un robot », choisissez le navigateur où vous êtes connecté. Firefox est le plus fiable sous Windows.",
+      "cookies_file_choose": "Utiliser un fichier cookies.txt…",
+      "cookies_file_info": "Flow Downloader affiche l'erreur « confirmez que vous n'êtes pas un robot » ? Utilisez un fichier cookies.txt : exportez vos cookies YouTube (connecté) avec une extension de navigateur comme « Get cookies.txt LOCALLY », puis sélectionnez le fichier ici.",
+      "autopaste": "Coller les liens automatiquement",
+      "autopaste_info": "À l'ouverture ou au focus de l'app, remplit automatiquement la barre avec un lien présent dans le presse-papiers."
     },
     "visual": {
       "style": "Moteur graphique d'arrière-plan",
       "styles": {
         "lines": "Lignes animées",
         "liquid": "Trou Noir",
-        "static": "Statique"
+        "static": "Personnalisé"
       },
       "color": "Couleur",
       "custom_colors": "Couleurs personnalisées",
@@ -101,15 +120,23 @@
       "distortion": "Distorsion",
       "noise": "Grain (Bruit)",
       "base_color": "Couleur de fond",
+      "static_or_image": "Couleur Statique ou Image Personnalisée",
+      "static_color": "Couleur Statique",
       "image": "Fond d'écran personnalisé",
       "choose_image": "Parcourir l'image",
       "image_defined": "Image actuelle",
       "effects": "Filtres de post-traitement",
       "gradient": "Vignette supérieure",
       "darken": "Assombrir",
-      "blur": "Flouter"
+      "blur": "Flouter",
+      "presets": "Fonds prêts",
+      "animated": "Animés (GIF)",
+      "still": "Statiques (Image)",
+      "randomize": "Aléatoire au démarrage",
+      "wallpaper_credit": "Fonds d'écran de wallpaperaccess.com"
     },
-    "done": "Terminé"
+    "done": "Terminé",
+    "no_languages": "Aucune langue trouvée"
   },
   "toast": {
     "error_empty": "Veuillez insérer un lien.",
@@ -127,7 +154,15 @@
     "data_error": "Erreur dans les données reçues.",
     "video_not_found": "Vidéo introuvable ou indisponible.",
     "open_error": "Erreur lors de l'ouverture de l'emplacement.",
-    "config_saved": "Paramètres appliqués !"
+    "config_saved": "Paramètres appliqués !",
+    "ytdlp_checking": "Recherche de mises à jour de yt-dlp…",
+    "ytdlp_updated": "yt-dlp mis à jour vers la dernière version !",
+    "ytdlp_uptodate": "yt-dlp est déjà à jour.",
+    "ytdlp_update_error": "Impossible de mettre à jour yt-dlp.",
+    "youtube_bot_check": "YouTube a bloqué la requête (vérification anti-robot). Activez les cookies dans Paramètres → Général.",
+    "cookie_error": "Impossible de lire les cookies du navigateur. Essayez Firefox ou un fichier cookies.txt.",
+    "no_formats": "Aucun format téléchargeable pour cette vidéo (live, première ou encore en traitement).",
+    "clipboard_autopaste": "Lien du presse-papiers collé automatiquement."
   },
   "support_flow": "Soutenir Flow Downloader 🪙"
 }

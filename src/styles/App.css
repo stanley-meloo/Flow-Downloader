@@ -6,29 +6,29 @@ body {
   font-family: 'Quicksand', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
-/* Largura da barra */
+/* Scrollbar width/height */
 .custom-scrollbar::-webkit-scrollbar {
-  width: 6px; 
+  width: 6px;
   height: 6px;
 }
 
-/* Fundo da barra (Trilho) - Transparente para parecer flutuante */
+/* Track — transparent so the bar looks like it's floating */
 .custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent; 
+  background: transparent;
 }
 
-/* A parte que a gente arrasta (Thumb) */
+/* Thumb — the draggable part */
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: #27272a; /* Cor Zinc-800 (Escura) */
-  border-radius: 99px;       /* Bem redonda */
+  background-color: #27272a; /* Zinc-800 (dark) */
+  border-radius: 99px;       /* fully rounded */
 }
 
-/* Cor quando passa o mouse em cima da barra */
+/* Thumb color on hover */
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background-color: #3f3f46; /* Cor Zinc-700 (Um pouco mais clara) */
+  background-color: #3f3f46; /* Zinc-700 (slightly lighter) */
 }
 
-/* Firefox (Opcional, pois Tauri usa Webkit/Chromium na base, mas bom garantir) */
+/* Firefox fallback (Tauri uses WebKit/Chromium, but this keeps it consistent) */
 .custom-scrollbar {
   scrollbar-width: thin;
   scrollbar-color: #27272a transparent;

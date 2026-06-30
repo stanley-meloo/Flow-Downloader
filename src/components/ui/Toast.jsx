@@ -3,6 +3,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, AlertCircle, Info, X, Zap } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+// Toast notifications. Exposes an imperative `add(messageKey, type)` via ref so
+// any component can fire a toast through the app-level `showToast` helper.
+// `messageKey` is an i18n key under "toast.*"; `type` selects the color/icon
+// (success = green, error = red, info = blue, download = violet). Each toast
+// auto-dismisses after 4s.
 const Toast = forwardRef((props, ref) => {
   const [toasts, setToasts] = useState([]);
   const { t } = useTranslation();
@@ -66,7 +71,7 @@ const Toast = forwardRef((props, ref) => {
                 flex items-center gap-4
               `}
             >
-              {/* Barra de cor lateral para feedback imediato */}
+              {/* Left accent bar (color matches the toast type) */}
               <div className={`absolute left-0 top-0 bottom-0 w-1 ${config.accent}`} />
               
               <div className="shrink-0 p-2 bg-white/5 rounded-xl border border-white/5">
@@ -75,7 +80,7 @@ const Toast = forwardRef((props, ref) => {
               
               <div className="flex-1">
                 <p className="text-[13px] font-bold leading-tight tracking-wide">
-                  {/* Usa o i18next para traduzir com base na chave enviada */}
+                  {/* Translate via i18next using the toast key (falls back to the raw key) */}
                   {t(`toast.${toast.messageKey}`, { defaultValue: toast.messageKey })}
                 </p>
               </div>

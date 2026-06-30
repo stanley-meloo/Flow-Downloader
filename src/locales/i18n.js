@@ -2,7 +2,7 @@ import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 
-// Importação dos arquivos JSON
+// Import every locale JSON bundle (16 languages).
 import pt from './pt.json';
 import en from './en.json';
 import es from './es.json';
@@ -42,13 +42,11 @@ i18n
       vi: { translation: vi },
       pl: { translation: pl }
     },
-    // Sincroniza com as chaves simplificadas (en, pt, es...)
+    // Fall back to English for any missing key.
     fallbackLng: 'en',
-    interpolation: {
-      escapeValue: false 
-    },
-    // Ajuda o i18n a entender que 'pt-BR' ou 'pt-PT' devem usar o arquivo 'pt'
+    // Use only the base language tag, so 'pt-BR'/'pt-PT' both resolve to 'pt'.
     load: 'languageOnly',
+    // React already escapes output, so disable i18next's own escaping.
     interpolation: { escapeValue: false }
   });
 

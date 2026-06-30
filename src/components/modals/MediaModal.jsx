@@ -2,13 +2,12 @@ import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X, FolderOpen, Music, Camera, EarOff, Monitor, FilePlay,
-  FileMusic, Activity, Download, Image as ImageIcon, ExternalLink, Check, ChevronDown
+  FileMusic, Download, Image as ImageIcon, ExternalLink, Check, ChevronDown, AlertTriangle
 } from "lucide-react";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { downloadDir, join } from "@tauri-apps/api/path";
 import { writeFile } from "@tauri-apps/plugin-fs";
-import { fetch } from "@tauri-apps/plugin-http";
-import { openMediaLocation } from "../../utils/fileSystem";
+import { openMediaLocation, fetchBestThumbnail } from "../../utils/fileSystem";
 
 import { useTranslation } from 'react-i18next';
 
@@ -28,8 +27,6 @@ export default function MediaModal({
 
   // --- YT-DLP DYNAMIC DATA ---
   const availableQualities = mediaData?.availableQualities?.length > 0 ? mediaData.availableQualities : [2160, 1440, 1080, 720, 480, 360, 240, 144];
-  const availableAudio = mediaData?.availableAudio?.length > 0 ? mediaData.availableAudio : [320, 256, 192, 128];
-  const cinematicFpsList = mediaData?.availableFps?.length > 0 ? ["Original", ...mediaData.availableFps] : ["Original", "60", "59.94", "50", "30", "29.97", "25", "24", "23.976"];
 
   // --- AUTOMATIC QUALITY CALCULATION ---
   const getInitialQuality = () => {
@@ -46,9 +43,8 @@ export default function MediaModal({
   };
 
   // --- STATES ---
-  const [quality, setQuality] = useState(getInitialQuality()); // Inicializa com a inteligência do Settings
-  const [audioKbps, setAudioKbps] = useState(`${availableAudio[0]}kb`);
-  const [fps, setFps] = useState("Original");
+  const [quality, setQuality] = useState(getInitialQuality()); // seeded from the Settings default-quality logic
+  const [audioKbps, setAudioKbps] = useState('160kb'); // YouTube tops out at ~160 kbps (Opus)
   const [formatExt, setFormatExt] = useState(".mp4");
 
   const [thumbStatus, setThumbStatus] = useState("idle");
@@ -70,11 +66,23 @@ export default function MediaModal({
 
   // --- DROPDOWN OPTIONS ---
   const qualityOptions = availableQualities.map(q => ({ value: q.toString(), label: `${q}p` }));
-  const audioOptions = availableAudio.map(a => ({ value: `${a}kb`, label: `${a}kbps` }));
-  const fpsOptions = cinematicFpsList.map(f => ({
-    value: f.toString(),
-    label: f.toString() === "Original" ? t('media_modal.native_fps', { defaultValue: 'Nativo' }) : `${f} FPS`
-  }));
+  // YouTube's real audio ceiling is ~160 kbps (Opus) / 128 kbps (AAC) — there is
+  // no 320 kbps source, so these are the honest tiers.
+  const audioOptions = [
+    { value: '160kb', label: t('media_modal.audio_best', { defaultValue: 'Melhor (~160 kbps)' }) },
+    { value: '128kb', label: t('media_modal.audio_medium', { defaultValue: 'Média (128 kbps)' }) },
+    { value: '96kb', label: t('media_modal.audio_low', { defaultValue: 'Baixa (96 kbps)' }) }
+  ];
+  const currentAudioLabel = audioOptions.find(o => o.value === audioKbps)?.label || audioOptions[0].label;
+
+  // Editor-compatibility warning. YouTube always serves H.264 (avc1) up to 1080p;
+  // ONLY above 1080p is the stream VP9/AV1, which many editors (Premiere/DaVinci)
+  // can't open. So we warn strictly above 1080p — never at 1080p or below. (We do
+  // NOT rely on the detected h264MaxHeight here, since format detection can
+  // under-report and produce false warnings at 1080p.)
+  const selectedHeight = parseInt(quality, 10);
+  const warnCodec = mediaData?.highResCodec || 'AV1';
+  const showEditorWarning = selectedFormat !== 'audio' && !isNaN(selectedHeight) && selectedHeight > 1080;
 
   const formatOptions = selectedFormat === 'audio'
     ? [{ value: '.mp3', label: '.mp3' }, { value: '.wav', label: '.wav' }, { value: '.m4a', label: '.m4a' }, { value: '.aac', label: '.aac' }]
@@ -83,29 +91,23 @@ export default function MediaModal({
   async function downloadThumbnail() {
     setThumbStatus("downloading");
     try {
-      const response = await fetch(mediaData.thumbnail, { method: 'GET', connectTimeout: 30000 });
-      const buffer = await response.arrayBuffer();
-      const uint8Array = new Uint8Array(buffer);
+      // Fetch the highest-resolution thumbnail (maxres -> sd -> hq -> fallback).
+      const { bytes, ext } = await fetchBestThumbnail(mediaData.id, mediaData.thumbnail);
 
       const downloadFolder = await downloadDir();
       const safeTitle = mediaData.title.replace(/[\\/:*?"<>|]/g, "").replace(/ /g, "_");
 
-      let ext = "jpg";
-      const urlLower = mediaData.thumbnail.toLowerCase();
-      if (urlLower.includes(".webp")) ext = "webp";
-      else if (urlLower.includes(".png")) ext = "png";
-
       const fileName = `${safeTitle}_thumb.${ext}`;
       const fullPath = await join(downloadFolder, fileName);
 
-      await writeFile(fullPath, uint8Array);
+      await writeFile(fullPath, bytes);
 
       const normalizedPath = fullPath.replace(/\\/g, '/');
       setSavedThumbPath(normalizedPath);
       setThumbStatus("success");
-      showToast(success_thumb, "success");
+      showToast("success_thumb", "success");
     } catch (err) {
-      console.error("Erro ao baixar thumb:", err);
+      console.error("Failed to download thumbnail:", err);
       setThumbStatus("idle");
       showToast("error_thumb", "error");
     }
@@ -114,13 +116,17 @@ export default function MediaModal({
   const formatTime = (seconds) => {
     const s = Number(seconds);
     if (isNaN(s) || s <= 0) return "00:00";
-    const mins = Math.floor(s / 60);
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
     const secs = Math.floor(s % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+    if (h > 0) {
+      return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+    return `${m}:${secs.toString().padStart(2, '0')}`;
   };
 
   const handleConfirm = () => {
-    onConfirm({ res: quality, ext: formatExt.replace('.', ''), audio: audioKbps.replace('kb', ''), fps: fps }, selectedFormat);
+    onConfirm({ res: quality, ext: formatExt.replace('.', ''), audio: audioKbps.replace('kb', '') }, selectedFormat);
   };
 
   return (
@@ -173,9 +179,9 @@ export default function MediaModal({
                     if (tooltipHandlers) tooltipHandlers.leave();
                     const dir = savedThumbPath.substring(0, savedThumbPath.lastIndexOf('/'));
                     const fullName = savedThumbPath.substring(savedThumbPath.lastIndexOf('/') + 1);
-                    const name = fullName.substring(0, fullName.lastIndexOf('.'));
-                    const ext = fullName.substring(fullName.lastIndexOf('.') + 1);
-                    openMediaLocation(dir, name, ext, showToast, (k) => k);
+                    // Pass the exact filename so the file itself gets highlighted
+                    // in the folder (revealItemInDir), like the download queue does.
+                    openMediaLocation(dir, fullName, '', '', showToast);
                   }}
                   onMouseEnter={(e) => tooltipHandlers?.enter(e, t('media_modal.open_folder', { defaultValue: 'Abrir local do arquivo' }), "left", "top")}
                   onMouseMove={tooltipHandlers?.move}
@@ -203,7 +209,7 @@ export default function MediaModal({
               {mediaData.title}
             </h3>
             <p className="text-zinc-400 text-sm font-semibold hover:text-zinc-200 transition-colors cursor-default">
-              {mediaData.uploader || "Canal desconhecido"}
+              {mediaData.uploader || t('playlist_modal.unknown_uploader', { defaultValue: 'Unknown channel' })}
             </p>
             <div className="flex items-center gap-1 text-zinc-500 text-[12px] font-semibold mt-1">
               <span>{formatTime(mediaData.duration)}</span>
@@ -268,7 +274,7 @@ export default function MediaModal({
           </div>
 
           {/* CONFIG BOXES */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <DropdownConfigBox
               label={t('media_modal.quality', { defaultValue: 'Qualidade' })}
               icon={Monitor}
@@ -288,20 +294,25 @@ export default function MediaModal({
             <DropdownConfigBox
               label={t('media_modal.audio', { defaultValue: 'Áudio' })}
               icon={FileMusic}
-              valueLabel={`${audioKbps.replace('kb', '')}kbps`}
+              valueLabel={currentAudioLabel}
               options={audioOptions}
               active={selectedFormat !== 'video_only'}
               onSelect={(val) => setAudioKbps(val)}
             />
-            <DropdownConfigBox
-              label={t('media_modal.fps', { defaultValue: 'FPS' })}
-              icon={Activity}
-              valueLabel={fps === "Original" ? t('media_modal.native_fps', { defaultValue: 'Nativo' }) : `${fps} FPS`}
-              options={fpsOptions}
-              active={selectedFormat !== 'audio'}
-              onSelect={(val) => setFps(val)}
-            />
           </div>
+
+          {/* Editor-compatibility warning (shown for >1080p VP9/AV1 downloads) */}
+          {showEditorWarning && (
+            <div className="flex items-start gap-2.5 p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl">
+              <AlertTriangle size={16} className="text-amber-400 shrink-0 mt-0.5" />
+              <p className="text-[11.5px] text-amber-200/90 leading-snug">
+                {t('media_modal.editor_warning', {
+                  codec: warnCodec,
+                  defaultValue: `Resoluções acima de 1080p vêm em {{codec}}, que editores de vídeo (Premiere, DaVinci...) não abrem. Escolha 1080p ou menos para ter H.264, ou converta este arquivo para H.264 com um conversor online.`
+                })}
+              </p>
+            </div>
+          )}
 
           {/* START DOWNLOAD BUTTON */}
           <motion.button

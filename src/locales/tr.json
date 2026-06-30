@@ -7,7 +7,7 @@
     "placeholder": "URL'yi buraya yapıştırın...",
     "analyzing_placeholder": "Meta veriler alınıyor...",
     "paste_tooltip": "(CTRL + V) Yapıştır",
-    "analyze_tooltip": "Ara",
+    "analyze_tooltip": "(ENTER) Ara",
     "analyzing_tooltip": "Aranıyor..."
   },
   "queue": {
@@ -24,7 +24,8 @@
     "eta": "Kalan süre",
     "calculating": "Hesaplanıyor...",
     "error_missing": "Dosya bulunamadı (taşınmış veya silinmiş)",
-    "finished_in": "{{time}} içinde tamamlandı"
+    "finished_in": "{{time}} içinde tamamlandı",
+    "processing": "İşleniyor ve dönüştürülüyor…"
   },
   "media_modal": {
     "title": "İndirme Seçenekleri",
@@ -44,7 +45,15 @@
     "native_fps": "Yerel",
     "download_png": "Kapağı İndir",
     "open_folder": "Dosya konumunu aç",
-    "start_download": "İndir"
+    "start_download": "İndir",
+    "codec": "Codec",
+    "codec_h264": "H.264",
+    "codec_prores": "ProRes",
+    "codec_dnxhr": "DNxHR",
+    "editor_warning": "1080p üzeri çözünürlükler {{codec}} formatında gelir ve video düzenleyiciler (Premiere, DaVinci…) bunu açamaz. H.264 için 1080p veya daha düşüğünü seçin ya da bu dosyayı çevrimiçi bir dönüştürücüyle H.264'e dönüştürün.",
+    "audio_best": "En iyi (~160 kbps)",
+    "audio_medium": "Orta (128 kbps)",
+    "audio_low": "Düşük (96 kbps)"
   },
   "playlist_modal": {
     "badge": "OYNATMA LISTESI",
@@ -81,14 +90,24 @@
       "limit": "Oynatma Listesi Sınırı",
       "limit_info": "Tüm listeleri taramak için sınırı artırabilirsiniz. Bilgisayarın yavaşlamasını ve sunucu engellerini (Hata 429) önlemek için Flow, 3 video aynı anda indirir.",
       "quality": "Varsayılan Kalite",
-      "language": "Arayüz Dili"
+      "language": "Arayüz Dili",
+      "engine": "İndirme motoru (yt-dlp)",
+      "update_engine": "Güncellemeleri denetle",
+      "update_now": "GÜNCELLE",
+      "cookies": "Tarayıcı Çerezleri (YouTube oturumu)",
+      "cookies_off": "Devre dışı",
+      "cookies_info": "YouTube 'robot olmadığınızı doğrulayın' derse, oturum açtığınız tarayıcıyı seçin. Windows'ta en güvenilir olanı Firefox'tur.",
+      "cookies_file_choose": "cookies.txt dosyası kullan…",
+      "cookies_file_info": "Flow Downloader 'robot olmadığınızı doğrulayın' hatası mı veriyor? Bir cookies.txt dosyası kullanın: oturum açıkken 'Get cookies.txt LOCALLY' gibi bir tarayıcı uzantısıyla YouTube çerezlerinizi dışa aktarın ve dosyayı burada seçin.",
+      "autopaste": "Bağlantıları otomatik yapıştır",
+      "autopaste_info": "Uygulamayı açtığınızda veya odaklandığınızda, panodaki bağlantıyla çubuğu otomatik doldurur."
     },
     "visual": {
       "style": "Arka Plan Grafik Motoru",
       "styles": {
         "lines": "Hareketli Çizgiler",
         "liquid": "Kara Delik",
-        "static": "Statik"
+        "static": "Özel"
       },
       "color": "Renk",
       "custom_colors": "Özel Renkler",
@@ -101,15 +120,23 @@
       "distortion": "Bozulma",
       "noise": "Kumlanma (Gürültü)",
       "base_color": "Arka Plan Rengi",
+      "static_or_image": "Sabit Renk veya Özel Görsel",
+      "static_color": "Sabit Renk",
       "image": "Özel Duvar Kağıdı",
       "choose_image": "Resim Seç",
       "image_defined": "Mevcut Resim",
       "effects": "Post-Processing Filtreleri",
       "gradient": "Üst Vinyet",
       "darken": "Karart",
-      "blur": "Bulanıklaştır"
+      "blur": "Bulanıklaştır",
+      "presets": "Hazır arka planlar",
+      "animated": "Hareketli (GIF)",
+      "still": "Sabit (Resim)",
+      "randomize": "Başlangıçta rastgele",
+      "wallpaper_credit": "Duvar kağıtları: wallpaperaccess.com"
     },
-    "done": "Tamam"
+    "done": "Tamam",
+    "no_languages": "Dil bulunamadı"
   },
   "toast": {
     "error_empty": "Lütfen bir bağlantı girin",
@@ -127,7 +154,15 @@
     "data_error": "Alınan verilerde hata.",
     "video_not_found": "Video bulunamadı veya kullanılamıyor.",
     "open_error": "Konum açılırken hata oluştu.",
-    "config_saved": "Ayarlar uygulandı!"
+    "config_saved": "Ayarlar uygulandı!",
+    "ytdlp_checking": "yt-dlp güncellemeleri kontrol ediliyor…",
+    "ytdlp_updated": "yt-dlp en son sürüme güncellendi!",
+    "ytdlp_uptodate": "yt-dlp zaten güncel.",
+    "ytdlp_update_error": "yt-dlp güncellenemedi.",
+    "youtube_bot_check": "YouTube isteği engelledi (bot doğrulaması). Ayarlar → Genel'den Çerezleri açın.",
+    "cookie_error": "Tarayıcı çerezleri okunamadı. Firefox'u veya bir cookies.txt dosyasını deneyin.",
+    "no_formats": "Bu video için indirilebilir bir format yok (canlı yayın, prömiyer olabilir ya da hâlâ işleniyor olabilir).",
+    "clipboard_autopaste": "Panodaki bağlantı otomatik olarak yapıştırıldı."
   },
   "support_flow": "Flow Downloader'ı destekleyin 🪙"
 }

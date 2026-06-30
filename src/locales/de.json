@@ -7,7 +7,7 @@
     "placeholder": "URL hier einfügen...",
     "analyzing_placeholder": "Metadaten werden abgerufen...",
     "paste_tooltip": "(STRG + V) Einfügen",
-    "analyze_tooltip": "Suchen",
+    "analyze_tooltip": "(ENTER) Suchen",
     "analyzing_tooltip": "Suche..."
   },
   "queue": {
@@ -24,7 +24,8 @@
     "eta": "Verbleibende Zeit",
     "calculating": "Berechnung...",
     "error_missing": "Datei nicht gefunden (verschoben oder gelöscht)",
-    "finished_in": "Abgeschlossen in {{time}}"
+    "finished_in": "Abgeschlossen in {{time}}",
+    "processing": "Verarbeiten und Konvertieren…"
   },
   "media_modal": {
     "title": "Download-Optionen",
@@ -44,7 +45,15 @@
     "native_fps": "Nativ",
     "download_png": "Bild herunterladen",
     "open_folder": "Dateispeicherort öffnen",
-    "start_download": "Herunterladen"
+    "start_download": "Herunterladen",
+    "codec": "Codec",
+    "codec_h264": "H.264",
+    "codec_prores": "ProRes",
+    "codec_dnxhr": "DNxHR",
+    "editor_warning": "Auflösungen über 1080p kommen in {{codec}}, das Videoeditoren (Premiere, DaVinci…) nicht öffnen können. Wähle 1080p oder weniger für H.264 oder konvertiere diese Datei mit einem Online-Konverter in H.264.",
+    "audio_best": "Beste (~160 kbps)",
+    "audio_medium": "Mittel (128 kbps)",
+    "audio_low": "Niedrig (96 kbps)"
   },
   "playlist_modal": {
     "badge": "PLAYLIST",
@@ -81,14 +90,24 @@
       "limit": "Playlist-Element-Limit",
       "limit_info": "Du kannst das Limit erhöhen, um ganze Playlists zu scannen. Um eine Verlangsamung deines Rechners und YouTube-Server-Sperren (Fehler 429) zu vermeiden, verarbeitet Flow den Download intelligent und lädt 3 Videos gleichzeitig herunter.",
       "quality": "Standardqualität",
-      "language": "Interface-Sprache"
+      "language": "Interface-Sprache",
+      "engine": "Download-Engine (yt-dlp)",
+      "update_engine": "Nach Updates suchen",
+      "update_now": "AKTUALISIEREN",
+      "cookies": "Browser-Cookies (YouTube-Anmeldung)",
+      "cookies_off": "Deaktiviert",
+      "cookies_info": "Wenn YouTube verlangt zu bestätigen, dass du kein Bot bist, wähle den Browser, in dem du angemeldet bist. Firefox ist unter Windows am zuverlässigsten.",
+      "cookies_file_choose": "cookies.txt-Datei verwenden…",
+      "cookies_file_info": "Zeigt Flow Downloader den Fehler „Bestätige, dass du kein Bot bist“? Verwende eine cookies.txt-Datei: Exportiere deine YouTube-Cookies (angemeldet) mit einer Browser-Erweiterung wie „Get cookies.txt LOCALLY“ und wähle die Datei hier aus.",
+      "autopaste": "Links automatisch einfügen",
+      "autopaste_info": "Beim Öffnen oder Fokussieren der App wird die Leiste automatisch mit einem Link aus der Zwischenablage gefüllt."
     },
     "visual": {
       "style": "Hintergrund-Grafik-Engine",
       "styles": {
         "lines": "Animierte Linien",
         "liquid": "Schwarzes Loch",
-        "static": "Statisch"
+        "static": "Benutzerdefiniert"
       },
       "color": "Farbe",
       "custom_colors": "Eigene Farben",
@@ -101,15 +120,23 @@
       "distortion": "Verzerrung",
       "noise": "Körnung (Rauschen)",
       "base_color": "Hintergrundfarbe",
+      "static_or_image": "Statische Farbe oder Eigenes Bild",
+      "static_color": "Statische Farbe",
       "image": "Eigenes Wallpaper",
       "choose_image": "Bild suchen",
       "image_defined": "Aktuelles Bild",
       "effects": "Post-Processing-Filter",
       "gradient": "Obere Vignette",
       "darken": "Abdunkeln",
-      "blur": "Weichzeichnen"
+      "blur": "Weichzeichnen",
+      "presets": "Fertige Hintergründe",
+      "animated": "Animiert (GIF)",
+      "still": "Statisch (Bild)",
+      "randomize": "Beim Start zufällig",
+      "wallpaper_credit": "Wallpaper von wallpaperaccess.com"
     },
-    "done": "Fertig"
+    "done": "Fertig",
+    "no_languages": "Keine Sprachen gefunden"
   },
   "toast": {
     "error_empty": "Bitte füge einen Link ein.",
@@ -127,7 +154,15 @@
     "data_error": "Fehler in den empfangenen Daten.",
     "video_not_found": "Video nicht gefunden oder nicht verfügbar.",
     "open_error": "Fehler beim Öffnen des Speicherorts.",
-    "config_saved": "Einstellungen angewendet!"
+    "config_saved": "Einstellungen angewendet!",
+    "ytdlp_checking": "Suche nach yt-dlp-Updates…",
+    "ytdlp_updated": "yt-dlp auf die neueste Version aktualisiert!",
+    "ytdlp_uptodate": "yt-dlp ist bereits aktuell.",
+    "ytdlp_update_error": "yt-dlp konnte nicht aktualisiert werden.",
+    "youtube_bot_check": "YouTube hat die Anfrage blockiert (Bot-Prüfung). Aktiviere Cookies unter Einstellungen → Allgemein.",
+    "cookie_error": "Browser-Cookies konnten nicht gelesen werden. Versuche Firefox oder eine cookies.txt-Datei.",
+    "no_formats": "Kein herunterladbares Format für dieses Video (evtl. Livestream, Premiere oder noch in Verarbeitung).",
+    "clipboard_autopaste": "Link aus der Zwischenablage automatisch eingefügt."
   },
   "support_flow": "Flow Downloader unterstützen 🪙"
 }

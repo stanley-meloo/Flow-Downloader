@@ -3,15 +3,15 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Search, Loader2, Link as LinkIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-// Mola suave para entrada inicial
-const liquidSpring = { 
-  type: "spring", 
-  stiffness: 150, 
-  damping: 25, 
-  mass: 0.8 
+// Soft spring for the initial mount animation.
+const liquidSpring = {
+  type: "spring",
+  stiffness: 150,
+  damping: 25,
+  mass: 0.8
 };
 
-// Mola "crocante" para o movimento físico (Scale/Rotate)
+// Snappier spring for physical motion (scale/rotate on hover/tap).
 const physicsSpring = {
   type: "spring",
   stiffness: 400,
@@ -116,7 +116,8 @@ export default function SearchInput({
 
         {/* Text field */}
         <input
-          ref={inputRef} 
+          ref={inputRef}
+          id="flow-search-input"
           className="flex-1 bg-transparent border-none text-white px-2 py-3 outline-none placeholder-zinc-500/70 text-lg font-medium cursor-text tracking-wide"
           placeholder={analyzing ? t('search.analyzing_placeholder') : t('search.placeholder')}
           value={url}

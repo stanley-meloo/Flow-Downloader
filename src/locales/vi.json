@@ -7,7 +7,7 @@
     "placeholder": "Dán URL vào đây...",
     "analyzing_placeholder": "Đang tìm siêu dữ liệu...",
     "paste_tooltip": "(CTRL + V) Dán",
-    "analyze_tooltip": "Tìm kiếm",
+    "analyze_tooltip": "(ENTER) Tìm kiếm",
     "analyzing_tooltip": "Đang tìm..."
   },
   "queue": {
@@ -24,7 +24,8 @@
     "eta": "Thời gian còn lại",
     "calculating": "Đang tính toán...",
     "error_missing": "Không tìm thấy tệp (đã bị di chuyển hoặc xóa)",
-    "finished_in": "Hoàn thành trong {{time}}"
+    "finished_in": "Hoàn thành trong {{time}}",
+    "processing": "Đang xử lý và chuyển đổi…"
   },
   "media_modal": {
     "title": "Tùy chọn tải xuống",
@@ -44,7 +45,15 @@
     "native_fps": "Gốc",
     "download_png": "Tải ảnh bìa",
     "open_folder": "Mở vị trí tệp",
-    "start_download": "Tải xuống"
+    "start_download": "Tải xuống",
+    "codec": "Codec",
+    "codec_h264": "H.264",
+    "codec_prores": "ProRes",
+    "codec_dnxhr": "DNxHR",
+    "editor_warning": "Độ phân giải trên 1080p ở định dạng {{codec}}, mà các trình chỉnh sửa video (Premiere, DaVinci…) không mở được. Hãy chọn 1080p trở xuống để có H.264, hoặc chuyển tệp này sang H.264 bằng công cụ chuyển đổi trực tuyến.",
+    "audio_best": "Tốt nhất (~160 kbps)",
+    "audio_medium": "Trung bình (128 kbps)",
+    "audio_low": "Thấp (96 kbps)"
   },
   "playlist_modal": {
     "badge": "DANH SÁCH PHÁT",
@@ -81,14 +90,24 @@
       "limit": "Giới hạn danh sách phát",
       "limit_info": "Bạn có thể tăng giới hạn để quét toàn bộ danh sách phát. Để tránh làm chậm máy và bị YouTube chặn (Lỗi 429), Flow sẽ tải 3 video cùng lúc.",
       "quality": "Chất lượng mặc định",
-      "language": "Ngôn ngữ giao diện"
+      "language": "Ngôn ngữ giao diện",
+      "engine": "Công cụ tải xuống (yt-dlp)",
+      "update_engine": "Kiểm tra cập nhật",
+      "update_now": "CẬP NHẬT",
+      "cookies": "Cookie trình duyệt (đăng nhập YouTube)",
+      "cookies_off": "Tắt",
+      "cookies_info": "Nếu YouTube yêu cầu 'xác nhận bạn không phải robot', hãy chọn trình duyệt bạn đang đăng nhập. Firefox đáng tin cậy nhất trên Windows.",
+      "cookies_file_choose": "Dùng tệp cookies.txt…",
+      "cookies_file_info": "Flow Downloader có hiện lỗi 'xác nhận bạn không phải robot' không? Hãy dùng tệp cookies.txt: khi đã đăng nhập, xuất cookie YouTube bằng một tiện ích trình duyệt như 'Get cookies.txt LOCALLY', rồi chọn tệp tại đây.",
+      "autopaste": "Tự động dán liên kết",
+      "autopaste_info": "Khi bạn mở hoặc chuyển sang ứng dụng, tự động điền vào thanh tìm kiếm liên kết có trong bộ nhớ tạm."
     },
     "visual": {
       "style": "Công cụ đồ họa nền",
       "styles": {
         "lines": "Đường kẻ động",
         "liquid": "Hố đen",
-        "static": "Tĩnh"
+        "static": "Tùy chỉnh"
       },
       "color": "Màu sắc",
       "custom_colors": "Màu tùy chỉnh",
@@ -101,15 +120,23 @@
       "distortion": "Biến dạng",
       "noise": "Độ nhiễu (Noise)",
       "base_color": "Màu nền",
+      "static_or_image": "Màu Tĩnh hoặc Ảnh Tùy Chỉnh",
+      "static_color": "Màu Tĩnh",
       "image": "Hình nền tùy chỉnh",
       "choose_image": "Tìm ảnh",
       "image_defined": "Ảnh hiện tại",
       "effects": "Bộ lọc hậu xử lý",
       "gradient": "Vignette trên",
       "darken": "Làm tối",
-      "blur": "Làm mờ"
+      "blur": "Làm mờ",
+      "presets": "Hình nền có sẵn",
+      "animated": "Động (GIF)",
+      "still": "Tĩnh (Ảnh)",
+      "randomize": "Ngẫu nhiên khi khởi động",
+      "wallpaper_credit": "Hình nền từ wallpaperaccess.com"
     },
-    "done": "Xong"
+    "done": "Xong",
+    "no_languages": "Không tìm thấy ngôn ngữ"
   },
   "toast": {
     "error_empty": "Vui lòng chèn một liên kết",
@@ -127,7 +154,15 @@
     "data_error": "Lỗi trong dữ liệu nhận được.",
     "video_not_found": "Không tìm thấy video hoặc không khả dụng.",
     "open_error": "Lỗi khi mở vị trí.",
-    "config_saved": "Đã áp dụng cài đặt!"
+    "config_saved": "Đã áp dụng cài đặt!",
+    "ytdlp_checking": "Đang kiểm tra cập nhật yt-dlp…",
+    "ytdlp_updated": "Đã cập nhật yt-dlp lên phiên bản mới nhất!",
+    "ytdlp_uptodate": "yt-dlp đã ở phiên bản mới nhất.",
+    "ytdlp_update_error": "Không thể cập nhật yt-dlp.",
+    "youtube_bot_check": "YouTube đã chặn yêu cầu (kiểm tra bot). Bật Cookie trong Cài đặt → Chung.",
+    "cookie_error": "Không đọc được cookie trình duyệt. Hãy thử Firefox hoặc tệp cookies.txt.",
+    "no_formats": "Không có định dạng tải xuống cho video này (có thể là phát trực tiếp, công chiếu hoặc đang xử lý).",
+    "clipboard_autopaste": "Đã tự động dán liên kết từ bộ nhớ tạm."
   },
   "support_flow": "Hỗ trợ Flow Downloader 🪙"
 }

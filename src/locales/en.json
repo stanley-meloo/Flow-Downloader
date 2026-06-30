@@ -7,7 +7,7 @@
     "placeholder": "Paste the URL here...",
     "analyzing_placeholder": "Fetching metadata...",
     "paste_tooltip": "(CTRL + V) Paste",
-    "analyze_tooltip": "Search",
+    "analyze_tooltip": "(ENTER) Search",
     "analyzing_tooltip": "Searching..."
   },
   "queue": {
@@ -24,7 +24,8 @@
     "eta": "Remaining time",
     "calculating": "Calculating...",
     "error_missing": "File not found (moved or deleted)",
-    "finished_in": "Finished in {{time}}"
+    "finished_in": "Finished in {{time}}",
+    "processing": "Processing & Converting…"
   },
   "media_modal": {
     "title": "Download Options",
@@ -42,6 +43,14 @@
     "audio": "Audio",
     "fps": "FPS",
     "native_fps": "Native",
+    "codec": "Codec",
+    "codec_h264": "H.264",
+    "codec_prores": "ProRes",
+    "codec_dnxhr": "DNxHR",
+    "editor_warning": "Resolutions above 1080p come in {{codec}}, which video editors (Premiere, DaVinci…) can't open. Choose 1080p or lower to get H.264, or convert this file to H.264 with an online converter.",
+    "audio_best": "Best (~160 kbps)",
+    "audio_medium": "Medium (128 kbps)",
+    "audio_low": "Low (96 kbps)",
     "download_png": "Download Image",
     "open_folder": "Open file location",
     "start_download": "Download"
@@ -81,16 +90,31 @@
       "limit": "Playlist Item Limit",
       "limit_info": "You can increase the limit to scan entire playlists. To avoid slowing down your machine and YouTube server blocks (Error 429), Flow will process downloads intelligently, downloading 3 videos at a time.",
       "quality": "Default Quality",
-      "language": "Interface Language"
+      "language": "Interface Language",
+      "engine": "Download Engine (yt-dlp)",
+      "update_engine": "Check for updates",
+      "update_now": "UPDATE",
+      "cookies": "Browser Cookies (YouTube login)",
+      "cookies_off": "Disabled",
+      "cookies_info": "If YouTube asks to 'confirm you're not a bot', pick the browser where you're logged in. Firefox is the most reliable on Windows.",
+      "cookies_file_choose": "Use a cookies.txt file…",
+      "cookies_file_info": "Is Flow Downloader showing the 'confirm you're not a bot' error? Use a cookies.txt file: export your YouTube cookies (while logged in) with a browser extension such as 'Get cookies.txt LOCALLY', then select the file here.",
+      "autopaste": "Auto-paste links",
+      "autopaste_info": "When you open or focus the app, automatically fill the bar with a link copied to your clipboard."
     },
     "visual": {
       "style": "Background Graphics Engine",
       "styles": {
         "lines": "Animated Lines",
         "liquid": "Black Hole",
-        "static": "Static"
+        "static": "Custom"
       },
       "color": "Color",
+      "presets": "Ready Backgrounds",
+      "animated": "Animated (GIF)",
+      "still": "Static (Image)",
+      "randomize": "Randomize on startup",
+      "wallpaper_credit": "Wallpapers from wallpaperaccess.com",
       "custom_colors": "Custom Colors",
       "quantity": "Line Quantity",
       "distance": "Spacing",
@@ -101,6 +125,8 @@
       "distortion": "Distortion",
       "noise": "Grain (Noise)",
       "base_color": "Background Color",
+      "static_or_image": "Static Color or Custom Image",
+      "static_color": "Static Color",
       "image": "Custom Wallpaper",
       "choose_image": "Browse Image",
       "image_defined": "Current Image",
@@ -109,7 +135,8 @@
       "darken": "Darken",
       "blur": "Blur"
     },
-    "done": "Done"
+    "done": "Done",
+    "no_languages": "No languages found"
   },
   "toast": {
     "error_empty": "Please insert a link.",
@@ -127,7 +154,15 @@
     "data_error": "Error parsing received data.",
     "video_not_found": "Video not found or unavailable.",
     "open_error": "Error opening location.",
-    "config_saved": "Settings applied!"
+    "config_saved": "Settings applied!",
+    "ytdlp_checking": "Checking for yt-dlp updates…",
+    "ytdlp_updated": "yt-dlp updated to the latest version!",
+    "ytdlp_uptodate": "yt-dlp is already up to date.",
+    "ytdlp_update_error": "Could not update yt-dlp.",
+    "youtube_bot_check": "YouTube blocked this request (bot check). Turn on Cookies in Settings → General.",
+    "cookie_error": "Couldn't read the browser's cookies. Try Firefox or a cookies.txt file.",
+    "no_formats": "No downloadable format for this video (it may be a live stream, premiere, or still processing).",
+    "clipboard_autopaste": "Link from your clipboard pasted automatically."
   },
   "support_flow": "Support Flow Downloader 🪙"
 }

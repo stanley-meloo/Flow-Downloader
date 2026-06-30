@@ -7,7 +7,7 @@
     "placeholder": "Incolla l'URL qui...",
     "analyzing_placeholder": "Ricerca metadati...",
     "paste_tooltip": "(CTRL + V) Incolla",
-    "analyze_tooltip": "Cerca",
+    "analyze_tooltip": "(ENTER) Cerca",
     "analyzing_tooltip": "Ricerca in corso..."
   },
   "queue": {
@@ -24,7 +24,8 @@
     "eta": "Tempo rimanente",
     "calculating": "Calcolo in corso...",
     "error_missing": "File non trovato (spostato o eliminato)",
-    "finished_in": "Completato in {{time}}"
+    "finished_in": "Completato in {{time}}",
+    "processing": "Elaborazione e conversione…"
   },
   "media_modal": {
     "title": "Opzioni di Download",
@@ -44,7 +45,15 @@
     "native_fps": "Nativo",
     "download_png": "Scarica Copertina",
     "open_folder": "Apri percorso file",
-    "start_download": "Scarica"
+    "start_download": "Scarica",
+    "codec": "Codec",
+    "codec_h264": "H.264",
+    "codec_prores": "ProRes",
+    "codec_dnxhr": "DNxHR",
+    "editor_warning": "Le risoluzioni superiori a 1080p sono in {{codec}}, che gli editor video (Premiere, DaVinci…) non possono aprire. Scegli 1080p o meno per avere l'H.264, oppure converti questo file in H.264 con un convertitore online.",
+    "audio_best": "Migliore (~160 kbps)",
+    "audio_medium": "Media (128 kbps)",
+    "audio_low": "Bassa (96 kbps)"
   },
   "playlist_modal": {
     "badge": "PLAYLIST",
@@ -81,14 +90,24 @@
       "limit": "Limite Elementi Playlist",
       "limit_info": "Puoi aumentare il limite per scansionare intere playlist. Per evitare rallentamenti e blocchi (Errore 429), Flow scaricherà 3 video alla volta.",
       "quality": "Qualità Predefinita",
-      "language": "Lingua Interfaccia"
+      "language": "Lingua Interfaccia",
+      "engine": "Motore di download (yt-dlp)",
+      "update_engine": "Cerca aggiornamenti",
+      "update_now": "AGGIORNA",
+      "cookies": "Cookie del browser (accesso YouTube)",
+      "cookies_off": "Disattivato",
+      "cookies_info": "Se YouTube chiede di «confermare che non sei un robot», scegli il browser in cui hai effettuato l'accesso. Firefox è il più affidabile su Windows.",
+      "cookies_file_choose": "Usa un file cookies.txt…",
+      "cookies_file_info": "Flow Downloader mostra l'errore 'conferma di non essere un robot'? Usa un file cookies.txt: esporta i cookie di YouTube (con l'accesso effettuato) con un'estensione del browser come 'Get cookies.txt LOCALLY', poi seleziona il file qui.",
+      "autopaste": "Incolla link automaticamente",
+      "autopaste_info": "All'apertura o al focus dell'app, riempie automaticamente la barra con un link presente negli appunti."
     },
     "visual": {
       "style": "Motore Grafico Sfondo",
       "styles": {
         "lines": "Linee Animate",
         "liquid": "Buco Nero",
-        "static": "Statico"
+        "static": "Personalizzato"
       },
       "color": "Colore",
       "custom_colors": "Colori Personalizzati",
@@ -101,15 +120,23 @@
       "distortion": "Distorsione",
       "noise": "Grana (Rumore)",
       "base_color": "Colore Sfondo",
+      "static_or_image": "Colore Statico o Immagine Personalizzata",
+      "static_color": "Colore Statico",
       "image": "Sfondo Personalizzato",
       "choose_image": "Sfoglia Immagine",
       "image_defined": "Immagine Attuale",
       "effects": "Filtri Post-Processing",
       "gradient": "Vignettatura Superiore",
       "darken": "Scurisci",
-      "blur": "Sfoca"
+      "blur": "Sfoca",
+      "presets": "Sfondi pronti",
+      "animated": "Animati (GIF)",
+      "still": "Statici (Immagine)",
+      "randomize": "Casuale all'avvio",
+      "wallpaper_credit": "Sfondi da wallpaperaccess.com"
     },
-    "done": "Fatto"
+    "done": "Fatto",
+    "no_languages": "Nessuna lingua trovata"
   },
   "toast": {
     "error_empty": "Per favore, inserisci un link.",
@@ -127,7 +154,15 @@
     "data_error": "Errore nei dati ricevuti.",
     "video_not_found": "Video non trovato o non disponibile.",
     "open_error": "Errore nell'apertura della posizione.",
-    "config_saved": "Impostazioni applicate!"
+    "config_saved": "Impostazioni applicate!",
+    "ytdlp_checking": "Ricerca aggiornamenti di yt-dlp…",
+    "ytdlp_updated": "yt-dlp aggiornato all'ultima versione!",
+    "ytdlp_uptodate": "yt-dlp è già aggiornato.",
+    "ytdlp_update_error": "Impossibile aggiornare yt-dlp.",
+    "youtube_bot_check": "YouTube ha bloccato la richiesta (verifica anti-bot). Attiva i cookie in Impostazioni → Generale.",
+    "cookie_error": "Impossibile leggere i cookie del browser. Prova Firefox o un file cookies.txt.",
+    "no_formats": "Nessun formato scaricabile per questo video (potrebbe essere una diretta, un'anteprima o ancora in elaborazione).",
+    "clipboard_autopaste": "Link degli appunti incollato automaticamente."
   },
   "support_flow": "Sostieni Flow Downloader 🪙"
 }

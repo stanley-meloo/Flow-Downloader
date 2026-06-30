@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Permissões Completas Flow Downloader",
+  "description": "Permissões Blindadas Flow Downloader",
   "windows": [
     "main"
   ],
@@ -10,11 +10,13 @@
     "dialog:default",
     "opener:default",
     "shell:allow-open",
+    "shell:allow-kill",
     "core:window:allow-minimize",
     "core:window:allow-maximize",
     "core:window:allow-unmaximize",
     "core:window:allow-toggle-maximize",
     "core:window:allow-close",
+    "core:window:allow-destroy",
     "core:window:allow-start-dragging",
     "clipboard-manager:default",
     "clipboard-manager:allow-read-text",
@@ -39,12 +41,6 @@
           "cmd": "ytdlp",
           "sidecar": true,
           "args": true
-        },
-        {
-          "name": "ffmpeg",
-          "cmd": "ffmpeg",
-          "sidecar": true,
-          "args": true
         }
       ]
     },
@@ -56,98 +52,59 @@
           "cmd": "ytdlp",
           "sidecar": true,
           "args": true
-        },
-        {
-          "name": "ffmpeg",
-          "cmd": "ffmpeg",
-          "sidecar": true,
-          "args": true
         }
       ]
     },
+
     {
       "identifier": "fs:allow-read-text-file",
       "allow": [
-        {
-          "path": "$APPCONFIG/**"
-        },
-        {
-          "path": "$APPDATA/**"
-        },
-        {
-          "path": "$HOME/**"
-        }
+        { "path": "$APPCONFIG/**" },
+        { "path": "$APPDATA/**" }
       ]
     },
     {
       "identifier": "fs:allow-write-text-file",
       "allow": [
-        {
-          "path": "$APPCONFIG/**"
-        },
-        {
-          "path": "$APPDATA/**"
-        },
-        {
-          "path": "$HOME/**"
-        }
+        { "path": "$APPCONFIG/**" },
+        { "path": "$APPDATA/**" }
       ]
     },
+
     {
       "identifier": "fs:allow-exists",
       "allow": [
-        {
-          "path": "$APPCONFIG/**"
-        },
-        {
-          "path": "$APPDATA/**"
-        },
-        {
-          "path": "$DOWNLOAD/**"
-        },
-        {
-          "path": "$HOME/**"
-        },
-        {
-          "path": "**"
-        }
+        { "path": "$APPCONFIG/**" },
+        { "path": "$APPDATA/**" },
+        { "path": "$DOWNLOAD/**" },
+        { "path": "$VIDEO/**" },
+        { "path": "$AUDIO/**" },
+        { "path": "$DESKTOP/**" },
+        { "path": "$DOCUMENT/**" },
+        { "path": "$HOME/**" }
       ]
     },
     {
       "identifier": "fs:allow-read-file",
       "allow": [
-        {
-          "path": "$APPCONFIG/**"
-        },
-        {
-          "path": "$APPDATA/**"
-        },
-        {
-          "path": "$DOWNLOAD/**"
-        },
-        {
-          "path": "$HOME/**"
-        },
-        {
-          "path": "**"
-        }
+        { "path": "$APPCONFIG/**" },
+        { "path": "$APPDATA/**" },
+        { "path": "$DOWNLOAD/**" },
+        { "path": "$VIDEO/**" },
+        { "path": "$AUDIO/**" },
+        { "path": "$DESKTOP/**" },
+        { "path": "$DOCUMENT/**" },
+        { "path": "$HOME/**" }
       ]
     },
     {
       "identifier": "fs:allow-mkdir",
       "allow": [
-        {
-          "path": "$APPCONFIG"
-        },
-        {
-          "path": "$APPCONFIG/**"
-        },
-        {
-          "path": "$APPDATA/**"
-        },
-        {
-          "path": "$DOWNLOAD/**"
-        }
+        { "path": "$APPCONFIG" },
+        { "path": "$APPCONFIG/**" },
+        { "path": "$APPDATA/**" },
+        { "path": "$DOWNLOAD/**" },
+        { "path": "$VIDEO/**" }
       ]
     }
   ]

@@ -1,14 +1,14 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  X, FolderOpen, Music, FilePlay, EarOff, Monitor, Camera, FileMusic, 
-  Activity, Download, Image as ImageIcon, ExternalLink, Check, ChevronDown, ListChecks
+  X, FolderOpen, Music, FilePlay, EarOff, Monitor, Camera, FileMusic,
+  Download, Image as ImageIcon, ExternalLink, Check, ChevronDown, ListChecks, AlertTriangle,
+  Video // fallback icon for playlist entries without a thumbnail
 } from "lucide-react";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { downloadDir, join } from "@tauri-apps/api/path";
 import { writeFile } from "@tauri-apps/plugin-fs";
-import { fetch } from "@tauri-apps/plugin-http";
-import { openMediaLocation } from "../../utils/fileSystem";
+import { openMediaLocation, fetchBestThumbnail } from "../../utils/fileSystem";
 import { useTranslation } from 'react-i18next';
 
 export default function PlaylistModal({
@@ -34,8 +34,6 @@ export default function PlaylistModal({
   const displayUploader = firstVideo?.uploader || firstVideo?.channel || mediaData.uploader || t('playlist_modal.unknown_uploader');
 
   const availableQualities = mediaData?.availableQualities?.length > 0 ? mediaData.availableQualities : [2160, 1440, 1080, 720, 480, 360, 240, 144];
-  const availableAudio = mediaData?.availableAudio?.length > 0 ? mediaData.availableAudio : [320, 256, 192, 128];
-  const cinematicFpsList = mediaData?.availableFps?.length > 0 ? ["Original", ...mediaData.availableFps] : ["Original", "60", "59.94", "50", "30", "29.97", "25", "24", "23.976"];
 
   const getInitialQuality = () => {
     if (!defaultQuality || defaultQuality === "best") return availableQualities[0].toString();
@@ -46,8 +44,7 @@ export default function PlaylistModal({
   };
 
   const [quality, setQuality] = useState(getInitialQuality());
-  const [audioKbps, setAudioKbps] = useState(`${availableAudio[0]}kb`);
-  const [fps, setFps] = useState("Original");
+  const [audioKbps, setAudioKbps] = useState('160kb'); // YouTube tops out at ~160 kbps (Opus)
   const [formatExt, setFormatExt] = useState(".mp4");
 
   const [thumbStatus, setThumbStatus] = useState("idle");
@@ -84,17 +81,28 @@ export default function PlaylistModal({
 
   const formatDuration = (seconds) => {
     if (!seconds) return null;
-    const mins = Math.floor(seconds / 60);
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
     const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+    if (h > 0) {
+      return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+    return `${m}:${secs.toString().padStart(2, '0')}`;
   };
 
   const qualityOptions = availableQualities.map(q => ({ value: q.toString(), label: `${q}p` }));
-  const audioOptions = availableAudio.map(a => ({ value: `${a}kb`, label: `${a}kbps` }));
-  const fpsOptions = cinematicFpsList.map(f => ({
-    value: f.toString(),
-    label: f.toString() === "Original" ? t('media_modal.native_fps') : `${f} FPS`
-  }));
+  const audioOptions = [
+    { value: '160kb', label: t('media_modal.audio_best', { defaultValue: 'Melhor (~160 kbps)' }) },
+    { value: '128kb', label: t('media_modal.audio_medium', { defaultValue: 'Média (128 kbps)' }) },
+    { value: '96kb', label: t('media_modal.audio_low', { defaultValue: 'Baixa (96 kbps)' }) }
+  ];
+  const currentAudioLabel = audioOptions.find(o => o.value === audioKbps)?.label || audioOptions[0].label;
+
+  // Editor-compatibility warning (same rule as the single-video modal):
+  // warn strictly above 1080p, where YouTube only serves VP9/AV1.
+  const selectedHeight = parseInt(quality, 10);
+  const warnCodec = mediaData?.highResCodec || 'AV1';
+  const showEditorWarning = selectedFormat !== 'audio' && !isNaN(selectedHeight) && selectedHeight > 1080;
 
   const formatOptions = selectedFormat === 'audio'
     ? [{ value: '.mp3', label: '.mp3' }, { value: '.wav', label: '.wav' }, { value: '.m4a', label: '.m4a' }, { value: '.aac', label: '.aac' }]
@@ -104,24 +112,21 @@ export default function PlaylistModal({
     if (!displayThumbnail) return;
     setThumbStatus("downloading");
     try {
-      const response = await fetch(displayThumbnail, { method: 'GET', connectTimeout: 30000 });
-      const buffer = await response.arrayBuffer();
-      const uint8Array = new Uint8Array(buffer);
+      // The playlist cover is the first video's thumbnail — use its id to grab
+      // the highest-resolution version (maxres -> sd -> hq -> fallback).
+      const videoId = mediaData.entries?.[0]?.id;
+      const { bytes, ext } = await fetchBestThumbnail(videoId, displayThumbnail);
       const downloadFolder = await downloadDir();
       const safeTitle = mediaData.title.replace(/[\\/:*?"<>|]/g, "").replace(/ /g, "_");
-      let ext = "jpg";
-      const urlLower = displayThumbnail.toLowerCase();
-      if (urlLower.includes(".webp")) ext = "webp";
-      else if (urlLower.includes(".png")) ext = "png";
       const fileName = `${safeTitle}_thumb.${ext}`;
       const fullPath = await join(downloadFolder, fileName);
-      await writeFile(fullPath, uint8Array);
+      await writeFile(fullPath, bytes);
       setSavedThumbPath(fullPath.replace(/\\/g, '/'));
       setThumbStatus("success");
-      showToast(t('success_thumb'), "success");
+      showToast("success_thumb", "success");
     } catch (err) {
       setThumbStatus("idle");
-      showToast(t('error_thumb'), "error");
+      showToast("error_thumb", "error");
     }
   }
 
@@ -132,7 +137,7 @@ export default function PlaylistModal({
     }
     const filteredEntries = mediaData.entries.filter((_, idx) => selectedVideos.includes(idx));
     const finalData = { ...mediaData, entries: filteredEntries };
-    onConfirm({ res: quality, ext: formatExt.replace('.', ''), audio: audioKbps.replace('kb', ''), fps: fps }, selectedFormat, finalData);
+    onConfirm({ res: quality, ext: formatExt.replace('.', ''), audio: audioKbps.replace('kb', '') }, selectedFormat, finalData);
   };
 
   return (
@@ -178,7 +183,9 @@ export default function PlaylistModal({
                       if (tooltipHandlers) tooltipHandlers.leave();
                       const dir = savedThumbPath.substring(0, savedThumbPath.lastIndexOf('/'));
                       const fullName = savedThumbPath.substring(savedThumbPath.lastIndexOf('/') + 1);
-                      openMediaLocation(dir, fullName.substring(0, fullName.lastIndexOf('.')), fullName.substring(fullName.lastIndexOf('.') + 1), showToast, t);
+                      // Pass the exact filename so the file itself gets highlighted
+                      // in the folder, like the download queue / video modal.
+                      openMediaLocation(dir, fullName, '', '', showToast);
                     }}
                     onMouseEnter={(e) => tooltipHandlers?.enter(e, t('media_modal.open_folder'), "left", "top")}
                     onMouseMove={tooltipHandlers?.move}
@@ -267,12 +274,23 @@ export default function PlaylistModal({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 shrink-0">
+          <div className="grid grid-cols-3 gap-3 shrink-0">
             <DropdownConfigBox label={t('media_modal.quality')} icon={Monitor} valueLabel={`${quality}p`} options={qualityOptions} active={selectedFormat !== 'audio'} onSelect={(val) => setQuality(val)} />
             <DropdownConfigBox label={t('media_modal.format')} icon={FilePlay} valueLabel={formatExt} options={formatOptions} active={true} onSelect={(val) => setFormatExt(val)} />
-            <DropdownConfigBox label={t('media_modal.audio')} icon={FileMusic} valueLabel={`${audioKbps.replace('kb', '')}kbps`} options={audioOptions} active={selectedFormat !== 'video_only'} onSelect={(val) => setAudioKbps(val)} />
-            <DropdownConfigBox label={t('media_modal.fps')} icon={Activity} valueLabel={fps === "Original" ? t('media_modal.native_fps') : `${fps} FPS`} options={fpsOptions} active={selectedFormat !== 'audio'} onSelect={(val) => setFps(val)} />
+            <DropdownConfigBox label={t('media_modal.audio')} icon={FileMusic} valueLabel={currentAudioLabel} options={audioOptions} active={selectedFormat !== 'video_only'} onSelect={(val) => setAudioKbps(val)} />
           </div>
+
+          {showEditorWarning && (
+            <div className="flex items-start gap-2.5 p-2.5 bg-amber-500/10 border border-amber-500/30 rounded-xl shrink-0">
+              <AlertTriangle size={16} className="text-amber-400 shrink-0 mt-0.5" />
+              <p className="text-[11px] text-amber-200/90 leading-snug">
+                {t('media_modal.editor_warning', {
+                  codec: warnCodec,
+                  defaultValue: `Resoluções acima de 1080p vêm em {{codec}}, que editores de vídeo (Premiere, DaVinci...) não abrem. Escolha 1080p ou menos para ter H.264, ou converta os arquivos para H.264 com um conversor online.`
+                })}
+              </p>
+            </div>
+          )}
 
           <div className="pt-4 border-t border-white/5 flex flex-col gap-2.5 flex-1 min-h-0">
             <div className="flex items-center justify-between px-1 shrink-0">

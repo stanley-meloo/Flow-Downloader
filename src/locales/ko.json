@@ -7,7 +7,7 @@
     "placeholder": "여기에 URL을 붙여넣으세요...",
     "analyzing_placeholder": "메타데이터를 가져오는 중...",
     "paste_tooltip": "(CTRL + V) 붙여넣기",
-    "analyze_tooltip": "검색",
+    "analyze_tooltip": "(ENTER) 검색",
     "analyzing_tooltip": "검색 중..."
   },
   "queue": {
@@ -24,7 +24,8 @@
     "eta": "남은 시간",
     "calculating": "계산 중...",
     "error_missing": "파일을 찾을 수 없음 (이동 또는 삭제됨)",
-    "finished_in": "{{time}} 만에 완료"
+    "finished_in": "{{time}} 만에 완료",
+    "processing": "처리 및 변환 중…"
   },
   "media_modal": {
     "title": "다운로드 옵션",
@@ -44,7 +45,15 @@
     "native_fps": "원본",
     "download_png": "이미지 다운로드",
     "open_folder": "파일 위치 열기",
-    "start_download": "다운로드"
+    "start_download": "다운로드",
+    "codec": "코덱",
+    "codec_h264": "H.264",
+    "codec_prores": "ProRes",
+    "codec_dnxhr": "DNxHR",
+    "editor_warning": "1080p 이상 해상도는 {{codec}} 형식이라 영상 편집기(Premiere, DaVinci…)에서 열 수 없습니다. H.264를 원하면 1080p 이하를 선택하거나, 온라인 변환기로 이 파일을 H.264로 변환하세요.",
+    "audio_best": "최고 (~160 kbps)",
+    "audio_medium": "보통 (128 kbps)",
+    "audio_low": "낮음 (96 kbps)"
   },
   "playlist_modal": {
     "badge": "재생목록",
@@ -81,14 +90,24 @@
       "limit": "재생목록 항목 제한",
       "limit_info": "재생목록 전체를 스캔하기 위해 제한을 늘릴 수 있습니다. PC 속도 저하 및 YouTube 서버 차단(오류 429)을 방지하기 위해 한 번에 3개씩 다운로드합니다.",
       "quality": "기본 화질",
-      "language": "인터페이스 언어"
+      "language": "인터페이스 언어",
+      "engine": "다운로드 엔진 (yt-dlp)",
+      "update_engine": "업데이트 확인",
+      "update_now": "업데이트",
+      "cookies": "브라우저 쿠키 (YouTube 로그인)",
+      "cookies_off": "사용 안 함",
+      "cookies_info": "YouTube가 '로봇이 아님을 확인'하라고 하면 로그인된 브라우저를 선택하세요. Windows에서는 Firefox가 가장 안정적입니다.",
+      "cookies_file_choose": "cookies.txt 파일 사용…",
+      "cookies_file_info": "Flow Downloader에 '로봇이 아님을 확인' 오류가 나타나나요? cookies.txt 파일을 사용하세요. 로그인한 상태에서 'Get cookies.txt LOCALLY' 같은 브라우저 확장으로 YouTube 쿠키를 내보낸 뒤 여기에서 파일을 선택하세요.",
+      "autopaste": "링크 자동 붙여넣기",
+      "autopaste_info": "앱을 열거나 포커스하면 클립보드에 있는 링크로 검색 바를 자동으로 채웁니다."
     },
     "visual": {
       "style": "배경 그래픽 엔진",
       "styles": {
         "lines": "애니메이션 라인",
         "liquid": "블랙홀",
-        "static": "정적"
+        "static": "사용자 지정"
       },
       "color": "색상",
       "custom_colors": "사용자 지정 색상",
@@ -101,15 +120,23 @@
       "distortion": "왜곡",
       "noise": "노이즈 (입자)",
       "base_color": "배경 색상",
+      "static_or_image": "정적 색상 또는 사용자 지정 이미지",
+      "static_color": "정적 색상",
       "image": "사용자 정의 배경화면",
       "choose_image": "이미지 찾기",
       "image_defined": "현재 이미지",
       "effects": "후처리 필터",
       "gradient": "상단 비네트",
       "darken": "어둡게",
-      "blur": "흐림 (블러)"
+      "blur": "흐림 (블러)",
+      "presets": "기본 배경",
+      "animated": "움직이는 (GIF)",
+      "still": "정적 (이미지)",
+      "randomize": "시작 시 무작위",
+      "wallpaper_credit": "배경화면 출처: wallpaperaccess.com"
     },
-    "done": "완료"
+    "done": "완료",
+    "no_languages": "언어를 찾을 수 없습니다"
   },
   "toast": {
     "error_empty": "링크를 삽입해 주세요",
@@ -127,7 +154,15 @@
     "data_error": "수신 데이터 오류.",
     "video_not_found": "비디오를 찾을 수 없거나 사용할 수 없습니다.",
     "open_error": "위치를 여는 중 오류가 발생했습니다.",
-    "config_saved": "설정이 적용되었습니다!"
+    "config_saved": "설정이 적용되었습니다!",
+    "ytdlp_checking": "yt-dlp 업데이트 확인 중…",
+    "ytdlp_updated": "yt-dlp가 최신 버전으로 업데이트되었습니다!",
+    "ytdlp_uptodate": "yt-dlp가 이미 최신 상태입니다.",
+    "ytdlp_update_error": "yt-dlp를 업데이트할 수 없습니다.",
+    "youtube_bot_check": "YouTube가 요청을 차단했습니다(봇 확인). 설정 → 일반에서 쿠키를 켜세요.",
+    "cookie_error": "브라우저 쿠키를 읽을 수 없습니다. Firefox 또는 cookies.txt 파일을 사용해 보세요.",
+    "no_formats": "이 동영상에는 다운로드 가능한 형식이 없습니다(라이브 스트림, 프리미어 또는 처리 중일 수 있습니다).",
+    "clipboard_autopaste": "클립보드의 링크가 자동으로 붙여넣어졌습니다."
   },
   "support_flow": "Flow Downloader 후원하기 🪙"
 }

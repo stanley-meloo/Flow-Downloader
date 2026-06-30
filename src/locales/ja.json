@@ -7,7 +7,7 @@
     "placeholder": "ここにURLを貼り付け...",
     "analyzing_placeholder": "メタデータを取得中...",
     "paste_tooltip": "(CTRL + V) 貼り付け",
-    "analyze_tooltip": "検索",
+    "analyze_tooltip": "(ENTER) 検索",
     "analyzing_tooltip": "検索中..."
   },
   "queue": {
@@ -24,7 +24,8 @@
     "eta": "残り時間",
     "calculating": "計算中...",
     "error_missing": "ファイルが見つかりません（移動または削除済み）",
-    "finished_in": "{{time}} で完了"
+    "finished_in": "{{time}} で完了",
+    "processing": "処理・変換中…"
   },
   "media_modal": {
     "title": "ダウンロードオプション",
@@ -44,7 +45,15 @@
     "native_fps": "ネイティブ",
     "download_png": "画像をダウンロード",
     "open_folder": "ファイルの場所を開く",
-    "start_download": "ダウンロード"
+    "start_download": "ダウンロード",
+    "codec": "コーデック",
+    "codec_h264": "H.264",
+    "codec_prores": "ProRes",
+    "codec_dnxhr": "DNxHR",
+    "editor_warning": "1080p を超える解像度は {{codec}} 形式で、動画編集ソフト（Premiere、DaVinci…）では開けません。H.264 にするには 1080p 以下を選ぶか、オンライン変換ツールでこのファイルを H.264 に変換してください。",
+    "audio_best": "最高 (~160 kbps)",
+    "audio_medium": "標準 (128 kbps)",
+    "audio_low": "低 (96 kbps)"
   },
   "playlist_modal": {
     "badge": "プレイリスト",
@@ -81,14 +90,24 @@
       "limit": "プレイリストの項目数制限",
       "limit_info": "制限を増やしてプレイリスト全体をスキャンできます。マシンの低速化やYouTubeサーバーのブロック（エラー429）を避けるため、Flowは3本ずつインテリジェントにダウンロードを処理します。",
       "quality": "デフォルトの品質",
-      "language": "インターフェース言語"
+      "language": "インターフェース言語",
+      "engine": "ダウンロードエンジン (yt-dlp)",
+      "update_engine": "更新を確認",
+      "update_now": "更新",
+      "cookies": "ブラウザの Cookie（YouTube ログイン）",
+      "cookies_off": "無効",
+      "cookies_info": "YouTube に「ロボットでないことを確認」と表示されたら、ログイン済みのブラウザを選んでください。Windows では Firefox が最も確実です。",
+      "cookies_file_choose": "cookies.txt ファイルを使用…",
+      "cookies_file_info": "Flow Downloader に「ロボットでないことを確認」エラーが出ますか？cookies.txt ファイルを使ってください。ログイン状態で 'Get cookies.txt LOCALLY' などのブラウザ拡張機能で YouTube の Cookie を書き出し、ここでそのファイルを選択します。",
+      "autopaste": "リンクを自動貼り付け",
+      "autopaste_info": "アプリを開いたりフォーカスしたりすると、クリップボードのリンクで検索バーを自動的に埋めます。"
     },
     "visual": {
       "style": "背景グラフィックエンジン",
       "styles": {
         "lines": "アニメーションライン",
         "liquid": "ブラックホール",
-        "static": "静的"
+        "static": "カスタム"
       },
       "color": "色",
       "custom_colors": "カスタムカラー",
@@ -101,15 +120,23 @@
       "distortion": "歪み",
       "noise": "ノイズ",
       "base_color": "背景色",
+      "static_or_image": "静的カラーまたはカスタム画像",
+      "static_color": "静的カラー",
       "image": "カスタム壁紙",
       "choose_image": "画像を参照",
       "image_defined": "現在の画像",
       "effects": "ポストプロセッシングフィルタ",
       "gradient": "上部ビネット",
       "darken": "暗くする",
-      "blur": "ぼかし"
+      "blur": "ぼかし",
+      "presets": "プリセット背景",
+      "animated": "アニメ (GIF)",
+      "still": "静止画 (画像)",
+      "randomize": "起動時にランダム",
+      "wallpaper_credit": "壁紙は wallpaperaccess.com より"
     },
-    "done": "完了"
+    "done": "完了",
+    "no_languages": "言語が見つかりません"
   },
   "toast": {
     "error_empty": "リンクを入力してください",
@@ -127,7 +154,15 @@
     "data_error": "受信データのエラー。",
     "video_not_found": "ビデオが見つからないか、利用不可能です。",
     "open_error": "場所を開く際にエラーが発生しました。",
-    "config_saved": "設定が適用されました！"
+    "config_saved": "設定が適用されました！",
+    "ytdlp_checking": "yt-dlp の更新を確認中…",
+    "ytdlp_updated": "yt-dlp を最新バージョンに更新しました！",
+    "ytdlp_uptodate": "yt-dlp はすでに最新です。",
+    "ytdlp_update_error": "yt-dlp を更新できませんでした。",
+    "youtube_bot_check": "YouTube がリクエストをブロックしました（ボット確認）。設定 → 一般で Cookie を有効にしてください。",
+    "cookie_error": "ブラウザの Cookie を読み取れませんでした。Firefox か cookies.txt ファイルを試してください。",
+    "no_formats": "この動画にダウンロード可能な形式がありません（ライブ配信、プレミア公開、または処理中の可能性があります）。",
+    "clipboard_autopaste": "クリップボードのリンクを自動的に貼り付けました。"
   },
   "support_flow": "Flow Downloader を支援する 🪙"
 }

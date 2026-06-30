@@ -1,5 +1,12 @@
 import { useState } from 'react';
 
+/**
+ * Shared cursor-following tooltip state.
+ *
+ * One instance lives at the app root; every element that wants a tooltip calls
+ * the returned handlers on mouse enter/move/leave. `align` / `vAlign` let the
+ * caller pick which corner the bubble grows from (so it never clips offscreen).
+ */
 export default function useTooltip() {
   const [tooltip, setTooltip] = useState({ visible: false, text: "", x: 0, y: 0, align: "right", vAlign: "bottom" });
 

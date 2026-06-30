@@ -7,7 +7,7 @@
     "placeholder": "यहाँ URL पेस्ट करें...",
     "analyzing_placeholder": "मेटाडेटा प्राप्त किया जा रहा है...",
     "paste_tooltip": "(CTRL + V) पेस्ट करें",
-    "analyze_tooltip": "खोजें",
+    "analyze_tooltip": "(ENTER) खोजें",
     "analyzing_tooltip": "खोजा जा रहा है..."
   },
   "queue": {
@@ -24,7 +24,8 @@
     "eta": "शेष समय",
     "calculating": "गणना की जा रही है...",
     "error_missing": "फ़ाइल नहीं मिली (स्थानांतरित या हटा दी गई)",
-    "finished_in": "{{time}} में पूरा हुआ"
+    "finished_in": "{{time}} में पूरा हुआ",
+    "processing": "प्रोसेसिंग और कन्वर्ज़न…"
   },
   "media_modal": {
     "title": "डाउनलोड विकल्प",
@@ -44,7 +45,15 @@
     "native_fps": "नेटिव",
     "download_png": "छवि डाउनलोड करें",
     "open_folder": "फ़ाइल का स्थान खोलें",
-    "start_download": "डाउनलोड करें"
+    "start_download": "डाउनलोड करें",
+    "codec": "कोडेक",
+    "codec_h264": "H.264",
+    "codec_prores": "ProRes",
+    "codec_dnxhr": "DNxHR",
+    "editor_warning": "1080p से ऊपर की रिज़ॉल्यूशन {{codec}} में आती हैं, जिन्हें वीडियो एडिटर (Premiere, DaVinci…) नहीं खोल सकते। H.264 पाने के लिए 1080p या उससे कम चुनें, या इस फ़ाइल को किसी ऑनलाइन कन्वर्टर से H.264 में बदलें।",
+    "audio_best": "सर्वोत्तम (~160 kbps)",
+    "audio_medium": "मध्यम (128 kbps)",
+    "audio_low": "कम (96 kbps)"
   },
   "playlist_modal": {
     "badge": "प्लेलिस्ट",
@@ -81,14 +90,24 @@
       "limit": "प्लेलिस्ट आइटम सीमा",
       "limit_info": "आप पूरी प्लेलिस्ट को स्कैन करने के लिए सीमा बढ़ा सकते हैं। मशीन को धीमा होने और YouTube सर्वर ब्लॉक (त्रुटि 429) से बचाने के लिए, Flow एक बार में 3 वीडियो डाउनलोड करेगा।",
       "quality": "डिफ़ॉल्ट गुणवत्ता",
-      "language": "इंटरफ़ेस भाषा"
+      "language": "इंटरफ़ेस भाषा",
+      "engine": "डाउनलोड इंजन (yt-dlp)",
+      "update_engine": "अपडेट जाँचें",
+      "update_now": "अपडेट",
+      "cookies": "ब्राउज़र कुकीज़ (YouTube लॉगिन)",
+      "cookies_off": "अक्षम",
+      "cookies_info": "अगर YouTube 'पुष्टि करें कि आप रोबोट नहीं हैं' कहे, तो वह ब्राउज़र चुनें जिसमें आप लॉग इन हैं। Windows पर Firefox सबसे विश्वसनीय है।",
+      "cookies_file_choose": "cookies.txt फ़ाइल का उपयोग करें…",
+      "cookies_file_info": "क्या Flow Downloader 'पुष्टि करें कि आप रोबोट नहीं हैं' एरर दिखा रहा है? cookies.txt फ़ाइल इस्तेमाल करें: लॉग इन रहते हुए 'Get cookies.txt LOCALLY' जैसी ब्राउज़र एक्सटेंशन से YouTube कुकीज़ एक्सपोर्ट करें, फिर यहाँ वह फ़ाइल चुनें।",
+      "autopaste": "लिंक अपने आप चिपकाएँ",
+      "autopaste_info": "ऐप खोलने या फ़ोकस करने पर, क्लिपबोर्ड में मौजूद लिंक से बार अपने आप भर जाता है।"
     },
     "visual": {
       "style": "पृष्ठभूमि ग्राफिक्स इंजन",
       "styles": {
         "lines": "एनिमेटेड लाइन्स",
         "liquid": "ब्लैक होल",
-        "static": "स्थिर"
+        "static": "कस्टम"
       },
       "color": "रंग",
       "custom_colors": "कस्टम रंग",
@@ -101,15 +120,23 @@
       "distortion": "विकृति",
       "noise": "शोर (Noise)",
       "base_color": "पृष्ठभूमि का रंग",
+      "static_or_image": "स्थिर रंग या कस्टम छवि",
+      "static_color": "स्थिर रंग",
       "image": "कस्टम वॉलपेपर",
       "choose_image": "छवि खोजें",
       "image_defined": "वर्तमान छवि",
       "effects": "पोस्ट-प्रोसेसिंग फिल्टर",
       "gradient": "शीर्ष विनेट",
       "darken": "अंधेरा करें",
-      "blur": "धुंधला करें"
+      "blur": "धुंधला करें",
+      "presets": "तैयार बैकग्राउंड",
+      "animated": "एनिमेटेड (GIF)",
+      "still": "स्थिर (इमेज)",
+      "randomize": "शुरू होने पर रैंडम",
+      "wallpaper_credit": "वॉलपेपर wallpaperaccess.com से"
     },
-    "done": "हो गया"
+    "done": "हो गया",
+    "no_languages": "कोई भाषा नहीं मिली"
   },
   "toast": {
     "error_empty": "कृपया एक लिंक डालें",
@@ -127,7 +154,15 @@
     "data_error": "प्राप्त डेटा में त्रुटि।",
     "video_not_found": "वीडियो नहीं मिला या उपलब्ध नहीं है।",
     "open_error": "स्थान खोलने में त्रुटि।",
-    "config_saved": "सेटिंग्स लागू की गईं!"
+    "config_saved": "सेटिंग्स लागू की गईं!",
+    "ytdlp_checking": "yt-dlp अपडेट जाँचे जा रहे हैं…",
+    "ytdlp_updated": "yt-dlp नवीनतम संस्करण में अपडेट हो गया!",
+    "ytdlp_uptodate": "yt-dlp पहले से ही अद्यतित है।",
+    "ytdlp_update_error": "yt-dlp अपडेट नहीं हो सका।",
+    "youtube_bot_check": "YouTube ने अनुरोध रोका (बॉट जाँच)। सेटिंग्स → सामान्य में कुकीज़ चालू करें।",
+    "cookie_error": "ब्राउज़र की कुकीज़ नहीं पढ़ी जा सकीं। Firefox या cookies.txt फ़ाइल आज़माएँ।",
+    "no_formats": "इस वीडियो के लिए कोई डाउनलोड करने योग्य फ़ॉर्मेट नहीं है (लाइव, प्रीमियर या अभी प्रोसेस हो रहा हो सकता है)।",
+    "clipboard_autopaste": "क्लिपबोर्ड का लिंक अपने आप चिपका दिया गया।"
   },
   "support_flow": "Flow Downloader का समर्थन करें 🪙"
 }

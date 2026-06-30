@@ -7,7 +7,7 @@
     "placeholder": "在此处粘贴 URL...",
     "analyzing_placeholder": "正在获取元数据...",
     "paste_tooltip": "(CTRL + V) 粘贴",
-    "analyze_tooltip": "搜索",
+    "analyze_tooltip": "(ENTER) 搜索",
     "analyzing_tooltip": "正在搜索..."
   },
   "queue": {
@@ -24,7 +24,8 @@
     "eta": "剩余时间",
     "calculating": "计算中...",
     "error_missing": "找不到文件（已移动或删除）",
-    "finished_in": "在 {{time}} 内完成"
+    "finished_in": "在 {{time}} 内完成",
+    "processing": "正在处理和转换…"
   },
   "media_modal": {
     "title": "下载选项",
@@ -44,7 +45,15 @@
     "native_fps": "原生",
     "download_png": "下载封面图",
     "open_folder": "打开文件位置",
-    "start_download": "下载"
+    "start_download": "下载",
+    "codec": "编码器",
+    "codec_h264": "H.264",
+    "codec_prores": "ProRes",
+    "codec_dnxhr": "DNxHR",
+    "editor_warning": "1080p 以上的分辨率为 {{codec}} 编码，视频编辑器（Premiere、DaVinci…）无法打开。选择 1080p 或更低即可获得 H.264，或用在线转换器把该文件转换为 H.264。",
+    "audio_best": "最佳 (~160 kbps)",
+    "audio_medium": "中等 (128 kbps)",
+    "audio_low": "较低 (96 kbps)"
   },
   "playlist_modal": {
     "badge": "播放列表",
@@ -81,14 +90,24 @@
       "limit": "播放列表项目限制",
       "limit_info": "您可以增加限制以扫描整个播放列表。为避免机器变慢和 YouTube 服务器封锁（错误 429），Flow 将智能处理下载，一次下载 3 个视频。",
       "quality": "默认质量",
-      "language": "界面语言"
+      "language": "界面语言",
+      "engine": "下载引擎 (yt-dlp)",
+      "update_engine": "检查更新",
+      "update_now": "更新",
+      "cookies": "浏览器 Cookie（YouTube 登录）",
+      "cookies_off": "已禁用",
+      "cookies_info": "如果 YouTube 要求“确认你不是机器人”，请选择你已登录的浏览器。在 Windows 上 Firefox 最可靠。",
+      "cookies_file_choose": "使用 cookies.txt 文件…",
+      "cookies_file_info": "Flow Downloader 出现“确认你不是机器人”的错误？请使用 cookies.txt 文件：在已登录的状态下，用浏览器扩展（如 'Get cookies.txt LOCALLY'）导出 YouTube 的 Cookie，然后在此选择该文件。",
+      "autopaste": "自动粘贴链接",
+      "autopaste_info": "当你打开或切换到应用时，自动用剪贴板中的链接填充搜索栏。"
     },
     "visual": {
       "style": "背景图形引擎",
       "styles": {
         "lines": "动态线条",
         "liquid": "黑洞",
-        "static": "静态"
+        "static": "自定义"
       },
       "color": "颜色",
       "custom_colors": "自定义颜色",
@@ -101,15 +120,23 @@
       "distortion": "扭曲",
       "noise": "颗粒 (噪点)",
       "base_color": "背景颜色",
+      "static_or_image": "静态颜色或自定义图片",
+      "static_color": "静态颜色",
       "image": "自定义壁纸",
       "choose_image": "浏览图片",
       "image_defined": "当前图片",
       "effects": "后期处理滤镜",
       "gradient": "顶部渐变",
       "darken": "变暗",
-      "blur": "模糊"
+      "blur": "模糊",
+      "presets": "现成背景",
+      "animated": "动态 (GIF)",
+      "still": "静态 (图片)",
+      "randomize": "启动时随机",
+      "wallpaper_credit": "壁纸来自 wallpaperaccess.com"
     },
-    "done": "完成"
+    "done": "完成",
+    "no_languages": "未找到语言"
   },
   "toast": {
     "error_empty": "请输入链接。",
@@ -127,7 +154,15 @@
     "data_error": "接收到的数据出错。",
     "video_not_found": "视频未找到或不可用。",
     "open_error": "打开位置时出错。",
-    "config_saved": "设置已应用！"
+    "config_saved": "设置已应用！",
+    "ytdlp_checking": "正在检查 yt-dlp 更新…",
+    "ytdlp_updated": "yt-dlp 已更新到最新版本！",
+    "ytdlp_uptodate": "yt-dlp 已是最新版本。",
+    "ytdlp_update_error": "无法更新 yt-dlp。",
+    "youtube_bot_check": "YouTube 拦截了请求（机器人验证）。请在“设置 → 常规”中启用 Cookie。",
+    "cookie_error": "无法读取浏览器的 Cookie。请尝试 Firefox 或 cookies.txt 文件。",
+    "no_formats": "该视频没有可下载的格式（可能是直播、首映或仍在处理中）。",
+    "clipboard_autopaste": "已自动粘贴剪贴板中的链接。"
   },
   "support_flow": "支持 Flow Downloader 🪙"
 }

@@ -7,7 +7,7 @@
     "placeholder": "Cole o URL aqui...",
     "analyzing_placeholder": "Buscando metadados...",
     "paste_tooltip": "(CTRL + V) Colar",
-    "analyze_tooltip": "Buscar",
+    "analyze_tooltip": "(ENTER) Buscar",
     "analyzing_tooltip": "Buscando..."
   },
   "queue": {
@@ -24,7 +24,8 @@
     "eta": "Tempo restante",
     "calculating": "Calculando...",
     "error_missing": "Arquivo não encontrado (movido ou excluído)",
-    "finished_in": "Concluído em {{time}}"
+    "finished_in": "Concluído em {{time}}",
+    "processing": "Processando e Convertendo…"
   },
   "media_modal": {
     "title": "Opções de Download",
@@ -42,6 +43,14 @@
     "audio": "Áudio",
     "fps": "FPS",
     "native_fps": "Nativo",
+    "codec": "Codec",
+    "codec_h264": "H.264",
+    "codec_prores": "ProRes",
+    "codec_dnxhr": "DNxHR",
+    "editor_warning": "Resoluções acima de 1080p vêm em {{codec}}, que editores de vídeo (Premiere, DaVinci…) não abrem. Escolha 1080p ou menos para ter H.264, ou converta este arquivo para H.264 com um conversor online.",
+    "audio_best": "Melhor (~160 kbps)",
+    "audio_medium": "Média (128 kbps)",
+    "audio_low": "Baixa (96 kbps)",
     "download_png": "Baixar Imagem",
     "open_folder": "Abrir local do arquivo",
     "start_download": "Baixar"
@@ -81,16 +90,31 @@
       "limit": "Limite de Itens na Playlist",
       "limit_info": "Você pode aumentar o limite para varrer playlists inteiras. Para evitar lentidão na tua máquina e bloqueios no servidor do YouTube (Erro 429), o Flow processará o download de forma inteligente, baixando 3 vídeos por vez.",
       "quality": "Qualidade Padrão",
-      "language": "Idioma da Interface"
+      "language": "Idioma da Interface",
+      "engine": "Motor de Download (yt-dlp)",
+      "update_engine": "Procurar atualizações",
+      "update_now": "ATUALIZAR",
+      "cookies": "Cookies do Navegador (login do YouTube)",
+      "cookies_off": "Desativado",
+      "cookies_info": "Se o YouTube pedir para 'confirmar que você não é um robô', escolha o navegador onde você está logado. O Firefox é o mais confiável no Windows.",
+      "cookies_file_choose": "Usar um arquivo cookies.txt…",
+      "cookies_file_info": "O Flow Downloader está dando o erro de 'confirme que você não é um robô'? Use um arquivo cookies.txt: exporte os cookies do YouTube (logado) com uma extensão de navegador como a 'Get cookies.txt LOCALLY' e selecione o arquivo aqui.",
+      "autopaste": "Colar links automaticamente",
+      "autopaste_info": "Ao abrir ou focar o app, preenche a barra automaticamente com um link que estiver na área de transferência."
     },
     "visual": {
       "style": "Motor Gráfico do Plano de Fundo",
       "styles": {
         "lines": "Linhas Animadas",
         "liquid": "Buraco Negro",
-        "static": "Estático"
+        "static": "Personalizado"
       },
       "color": "Cor",
+      "presets": "Fundos Prontos",
+      "animated": "Animados (GIF)",
+      "still": "Estáticos (Imagem)",
+      "randomize": "Randomizar ao iniciar",
+      "wallpaper_credit": "Wallpapers de wallpaperaccess.com",
       "custom_colors": "Cores Customizadas",
       "quantity": "Quantidade de Linhas",
       "distance": "Espaçamento",
@@ -101,6 +125,8 @@
       "distortion": "Distorção",
       "noise": "Granulação (Ruído)",
       "base_color": "Cor do Fundo",
+      "static_or_image": "Cor Estática ou Imagem Personalizada",
+      "static_color": "Cor Estática",
       "image": "Wallpaper Personalizado",
       "choose_image": "Procurar Imagem",
       "image_defined": "Imagem Atual",
@@ -109,7 +135,8 @@
       "darken": "Escurecer",
       "blur": "Desfocar"
     },
-    "done": "Concluído"
+    "done": "Concluído",
+    "no_languages": "Nenhum idioma encontrado"
   },
   "toast": {
     "error_empty": "Por favor, insira um link",
@@ -127,7 +154,15 @@
     "data_error": "Erro nos dados recebidos.",
     "video_not_found": "Vídeo não encontrado ou indisponível.",
     "open_error": "Erro ao abrir local.",
-    "config_saved": "Configurações aplicadas!"
+    "config_saved": "Configurações aplicadas!",
+    "ytdlp_checking": "Verificando atualizações do yt-dlp…",
+    "ytdlp_updated": "yt-dlp atualizado para a versão mais recente!",
+    "ytdlp_uptodate": "O yt-dlp já está atualizado.",
+    "ytdlp_update_error": "Não foi possível atualizar o yt-dlp.",
+    "youtube_bot_check": "O YouTube bloqueou (verificação de robô). Ative os Cookies em Configurações → Geral.",
+    "cookie_error": "Não foi possível ler os cookies do navegador. Tente o Firefox ou um arquivo cookies.txt.",
+    "no_formats": "Sem formato disponível para este vídeo (pode ser uma live, estreia ou ainda em processamento).",
+    "clipboard_autopaste": "Link da área de transferência colado automaticamente."
   },
   "support_flow": "Apoie o Flow Downloader 🪙"
 }

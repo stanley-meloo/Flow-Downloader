@@ -1,3 +1,9 @@
+// FloatingLines — animated, mouse-interactive WebGL background ("Floating Lines"
+// engine). It renders a full-screen plane with a custom GLSL fragment shader that
+// draws stacked sine waves ("lines") in three bands (top/middle/bottom). The lines
+// bend toward the cursor, support an optional color gradient, and react to a subtle
+// parallax. Everything below the imports is the shader source; the React component
+// only sets up three.js, feeds uniforms, and runs the render loop.
 import { useEffect, useRef, memo } from 'react';
 import {
   Scene,

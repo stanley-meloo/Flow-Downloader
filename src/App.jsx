@@ -4,7 +4,7 @@ import { Settings, Heart } from "lucide-react";
 import { readFile } from '@tauri-apps/plugin-fs';
 import { useTranslation } from 'react-i18next';
 
-import { open } from '@tauri-apps/plugin-shell'; // Importação para abrir links externos com segurança
+import { open } from '@tauri-apps/plugin-shell'; // safely opens external links in the default browser
 
 // Components
 import TitleBar from "./components/ui/TitleBar";
@@ -21,6 +21,7 @@ import PlaylistModal from "./components/modals/PlaylistModal";
 // Hooks & Utils
 import useSettings from "./hooks/useSettings";
 import useDownloader from "./hooks/useDownloader";
+import useYtdlpUpdater from "./hooks/useYtdlpUpdater";
 import useTooltip from "./hooks/useTooltip";
 import { handlePaste } from "./utils/fileSystem";
 
@@ -34,6 +35,7 @@ function App() {
 
   const settings = useSettings();
   const downloader = useDownloader(settings, showToast);
+  const ytdlpUpdater = useYtdlpUpdater(showToast);
   const { tooltip, handleTooltipEnter, handleTooltipMove, handleTooltipLeave } = useTooltip();
 
   const [showSettings, setShowSettings] = useState(false);
@@ -42,7 +44,7 @@ function App() {
 
   const tooltipHandlers = { enter: handleTooltipEnter, move: handleTooltipMove, leave: handleTooltipLeave };
 
-  // --- MEMOIZAÇÃO DE VISUAIS ---
+  // --- MEMOIZED VISUAL PROPS (avoid re-creating arrays every render) ---
   const activeGradient = useMemo(() => {
     return settings.visuals?.showColors ? settings.visuals.customColors : undefined;
   }, [settings.visuals?.showColors, settings.visuals?.customColors]);
@@ -64,38 +66,95 @@ function App() {
     }
   }, [settings.language, i18n]);
 
-  // --- CARREGAMENTO DE IMAGEM DE FUNDO ---
+  // --- BACKGROUND IMAGE LOADING ---
+  // Resolves settings.visuals.bgImage into a usable <img> src. Bundled presets
+  // are referenced by URL directly; user-imported images are local file paths
+  // that must be read off disk and exposed as an object URL.
   useEffect(() => {
+    let objectUrl = null;
+    let cancelled = false;
+
     const loadBgImage = async () => {
-      if (settings.visuals?.bgImage) {
-        try {
-          const fileBytes = await readFile(settings.visuals.bgImage);
-          const blob = new Blob([fileBytes]);
-          const url = URL.createObjectURL(blob);
-          setBgImageBlobUrl(url);
-        } catch (err) {
-          console.error("Falha ao ler imagem:", err);
-          showToast("error_thumb", "error");
-        }
-      } else {
-        setBgImageBlobUrl(null);
+      const img = settings.visuals?.bgImage;
+      if (!img) { setBgImageBlobUrl(null); return; }
+
+      // Built-in preset wallpaper: the value is "@preset:<url>" — use the URL directly.
+      if (img.startsWith("@preset:")) {
+        setBgImageBlobUrl(img.slice("@preset:".length));
+        return;
+      }
+
+      // User-imported image: a local file path; read the bytes into a blob URL.
+      try {
+        const fileBytes = await readFile(img);
+        if (cancelled) return;
+        const blob = new Blob([fileBytes]);
+        objectUrl = URL.createObjectURL(blob);
+        setBgImageBlobUrl(objectUrl);
+      } catch (err) {
+        console.error("Failed to read background image:", err);
+        showToast("error_thumb", "error");
       }
     };
     loadBgImage();
 
+    // Revokes the URL created by THIS effect run (no stale closure leak).
     return () => {
-      if (bgImageBlobUrl) URL.revokeObjectURL(bgImageBlobUrl);
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
   }, [settings.visuals?.bgImage]);
+
+  // --- GLOBAL KEYBOARD SHORTCUTS (Enter = search, Ctrl/Cmd+V = paste, Ctrl/Cmd+A = select bar) ---
+  // These work even when the input/button is not focused. The handler is stored
+  // in a ref that is reassigned on every render, so it always reads the latest
+  // state/URL without re-binding the window listener.
+  const keyHandlerRef = useRef(() => {});
+  keyHandlerRef.current = (e) => {
+    const tag = e.target?.tagName;
+    const inEditable = tag === 'INPUT' || tag === 'TEXTAREA' || e.target?.isContentEditable;
+    const modalOpen = downloader.mediaData || settings.showSetup || showSettings;
+
+    // Enter: trigger the link analysis when focus is not on a field/button.
+    if (e.key === 'Enter') {
+      if (inEditable || tag === 'BUTTON' || modalOpen || downloader.analyzing) return;
+      downloader.analyzeLink();
+      return;
+    }
+
+    // Ctrl/Cmd + V: paste the clipboard link into the search bar. Inside editable
+    // fields the native paste already handles it, so we only act outside them.
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'v' || e.key === 'V')) {
+      if (inEditable || modalOpen) return;
+      handlePaste(downloader.setUrl, showToast);
+      return;
+    }
+
+    // Ctrl/Cmd + A: select only the search bar contents (instead of the whole page).
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'a' || e.key === 'A')) {
+      if (inEditable || modalOpen) return; // inside fields, the native "select all" is fine
+      const input = document.getElementById('flow-search-input');
+      if (input) {
+        e.preventDefault();
+        input.focus();
+        input.select();
+      }
+    }
+  };
+  useEffect(() => {
+    const onKeyDown = (e) => keyHandlerRef.current(e);
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
 
   return (
     <div className="w-screen h-screen bg-zinc-950 rounded-xl border border-white overflow-hidden flex flex-col relative">
 
-      {/* BARRA DE TÍTULO */}
+      {/* TITLE BAR (custom window chrome: drag region + min/max/close) */}
       <div className="pointer-events-auto z-50"><TitleBar /></div>
       <Toast ref={toastRef} language={settings.language} />
 
-      {/* TOOLTIP FLUTUANTE */}
+      {/* FLOATING CURSOR-FOLLOWING TOOLTIP */}
       <AnimatePresence>
         {tooltip.visible && (
           <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1, x: tooltip.align === "left" ? tooltip.x - 15 : tooltip.x + 15, y: tooltip.vAlign === "top" ? tooltip.y - 15 : tooltip.y + 15 }} exit={{ opacity: 0, scale: 0.8 }} transition={tooltipPhysics} style={{ position: 'fixed', top: 0, left: 0, pointerEvents: 'none', zIndex: 9999, translateX: tooltip.align === "left" ? "-100%" : "0%", translateY: tooltip.vAlign === "top" ? "-100%" : "0%" }} className="bg-zinc-950/90 backdrop-blur-md border border-white/10 px-3 py-1.5 rounded-lg shadow-2xl">
@@ -104,7 +163,7 @@ function App() {
         )}
       </AnimatePresence>
 
-      {/* --- SISTEMA DE BACKGROUND --- */}
+      {/* --- BACKGROUND SYSTEM (one of three engines, crossfaded) --- */}
       <div className="fixed inset-0 z-0 bg-[#09090b]">
         <AnimatePresence mode="popLayout">
           {settings.visuals && (
@@ -117,7 +176,7 @@ function App() {
               className="absolute inset-0 w-full h-full"
             >
 
-              {/* Opção 1: Color Bends LIMPO (Apenas Cores) */}
+              {/* Engine 1: Color Bends (animated color field) */}
               {settings.visuals.activeBackground === 'colorBends' && (
                 <ColorBends
                   colors={settings.visuals.cb_showColors ? [
@@ -126,15 +185,15 @@ function App() {
                     settings.visuals.cb_color3 || '#06b6d4',
                     settings.visuals.cb_color4 || '#14b8a6'
                   ] : [
-                    '#6E0E3B', // Cor Padrão 1
-                    '#2A611F', // Cor Padrão 2
-                    '#0900AB', // Cor Padrão 3
-                    '#9C3A00'  // Cor Padrão 4
+                    '#6E0E3B', // default color 1
+                    '#2A611F', // default color 2
+                    '#0900AB', // default color 3
+                    '#9C3A00'  // default color 4
                   ]}
                 />
               )}
 
-              {/* Opção 2: Linhas Flutuantes */}
+              {/* Engine 2: Floating Lines (interactive WebGL lines) */}
               {settings.visuals.activeBackground === 'floatingLines' && (
                 <FloatingLines
                   linesGradient={settings.visuals.showColors ? [
@@ -149,29 +208,36 @@ function App() {
                 />
               )}
 
-              {/* Opção 3: Estático / Imagem */}
+              {/* Engine 3: Static color / custom wallpaper image */}
               {settings.visuals.activeBackground === 'static' && (
                 <div
                   className="w-full h-full relative overflow-hidden transition-colors duration-500"
                   style={{ backgroundColor: settings.visuals.staticColor }}
                 >
-                  {/* Imagem com Blur */}
-                  {bgImageBlobUrl && (
-                    <img
-                      src={bgImageBlobUrl}
-                      className="absolute inset-0 w-full h-full object-cover transition-all duration-300"
-                      style={{ filter: `blur(${settings.visuals.imageBlur}px)` }}
-                      alt="Background"
-                    />
-                  )}
+                  {/* Wallpaper image (with optional blur) — smooth crossfade on change */}
+                  <AnimatePresence>
+                    {bgImageBlobUrl && (
+                      <motion.img
+                        key={bgImageBlobUrl}
+                        src={bgImageBlobUrl}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.6, ease: "easeInOut" }}
+                        className="absolute inset-0 w-full h-full object-cover transition-[filter] duration-300"
+                        style={{ filter: `blur(${settings.visuals.imageBlur}px)` }}
+                        alt="Background"
+                      />
+                    )}
+                  </AnimatePresence>
 
-                  {/* Overlay Escuro */}
+                  {/* Darkening overlay (controls wallpaper brightness) */}
                   <div
                     className="absolute inset-0 pointer-events-none transition-opacity duration-300"
                     style={{ backgroundColor: 'black', opacity: settings.visuals.imageDarken }}
                   />
 
-                  {/* Gradiente Superior */}
+                  {/* Top vignette gradient */}
                   <AnimatePresence>
                     {settings.visuals.staticGradientEnabled && (
                       <motion.div
@@ -193,12 +259,12 @@ function App() {
         </AnimatePresence>
       </div>
 
-      {/* BOTÃO DE APOIO / DOAÇÃO */}
+      {/* SUPPORT / DONATION BUTTON */}
       <motion.button
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.95 }}
         transition={smoothTransition}
-        // Coloque o seu link do PayPal.Me, link de PIX ou Linktree aqui
+        // Put your own PayPal.Me, PIX, or Linktree link here
         onClick={() => open("https://linktr.ee/flow.downloader")}
         onMouseEnter={(e) => handleTooltipEnter(e, t('support_flow'), "left", "top")}
         onMouseMove={handleTooltipMove}
@@ -208,7 +274,7 @@ function App() {
         <Heart size={19} />
       </motion.button>
 
-      {/* BOTÃO DE CONFIGURAÇÕES */}
+      {/* SETTINGS BUTTON */}
       <motion.button
         whileHover={{ rotate: 90, scale: 1.1 }}
         transition={smoothTransition}
@@ -221,7 +287,7 @@ function App() {
         <Settings size={20} />
       </motion.button>
 
-      {/* --- CONTEÚDO PRINCIPAL --- */}
+      {/* --- MAIN CONTENT --- */}
       <main className="flex-1 flex flex-col items-center pt-24 px-6 w-full  max-w-4xl mx-auto z-10 h-full pointer-events-none">
         {/* LOGO */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-12 shrink-0">
@@ -233,7 +299,7 @@ function App() {
           </p>
         </motion.div>
 
-        {/* ÁREA INTERATIVA */}
+        {/* INTERACTIVE AREA: search bar + download queue */}
         <div className="w-full max-w-2xl pointer-events-auto flex flex-col items-center gap-0 flex-1 min-h-0">
           <SearchInput
             url={downloader.url}
@@ -248,8 +314,6 @@ function App() {
             queue={downloader.queue}
             tooltipHandlers={tooltipHandlers}
             showToast={showToast}
-            onPauseItem={downloader.pauseDownload}
-            onResumeItem={downloader.resumeDownload}
             onCancelItem={downloader.cancelDownload}
             onRetryItem={downloader.retryDownload}
             onRemoveItem={downloader.removeItem}
@@ -257,7 +321,7 @@ function App() {
         </div>
       </main>
 
-      {/* MODAIS */}
+      {/* MODALS: media options, first-run setup, settings */}
       <AnimatePresence>
         {downloader.mediaData && (
           downloader.mediaData.isPlaylist ? (
@@ -301,7 +365,7 @@ function App() {
 
       <AnimatePresence>
         {showSettings && (
-          <SettingsModal onClose={() => setShowSettings(false)} settings={settings} />
+          <SettingsModal onClose={() => setShowSettings(false)} settings={settings} ytdlpUpdater={ytdlpUpdater} />
         )}
       </AnimatePresence>
     </div>

@@ -1,3 +1,8 @@
+// ColorBends — animated WebGL "color field" background engine. A full-screen
+// plane runs a GLSL shader that warps and blends up to 8 colors into a slow,
+// liquid-like motion, with a subtle cursor-driven parallax/distortion. Visual
+// parameters (speed, scale, warp, noise...) are hardcoded below to safe values;
+// only the `colors` prop is configurable from Settings.
 import { useEffect, useRef, memo } from 'react';
 import * as THREE from 'three';
 

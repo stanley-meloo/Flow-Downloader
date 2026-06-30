@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X, FolderOpen, Settings, FileVideoCamera, Languages, Paintbrush, FileCog,
-  Layers, Image as ImageIcon, Trash2, Wand2, ChevronDown, ListVideo, Search, Check, HelpCircle
+  Layers, Image as ImageIcon, Trash2, Wand2, ChevronDown, ListVideo, Search, Check, HelpCircle,
+  RefreshCw, Loader2
 } from "lucide-react";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { useTranslation } from "react-i18next";
@@ -11,8 +12,87 @@ import imgLines from "../../assets/thumb-lines.jpg";
 import imgLiquid from "../../assets/thumb-bend.jpg";
 import imgStatic from "../../assets/thumb-satic.jpg";
 
-export default function SettingsModal({ onClose, settings }) {
-  const { defaultPath, playlistLimit, defaultQuality, language, visuals, saveSettings, changeDefaultPath } = settings;
+// Built-in wallpapers loaded from src/assets/backgrounds/{GIFs,JPGs,by Nipp}.
+// The selected one is stored in bgImage with a "@preset:" prefix to distinguish
+// it from a user-imported image (which is stored as a local file path).
+import { ANIMATED_PRESETS, STATIC_PRESETS, NIPP_PRESETS } from "../../utils/backgrounds";
+
+// Self-contained cookie SVG icon, used in both cookie selectors.
+const CookieIcon = ({ size = 20, className = "" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <circle cx="12" cy="12" r="9.5" />
+    <circle cx="8.5" cy="9" r="1" fill="currentColor" stroke="none" />
+    <circle cx="15" cy="8.5" r="1" fill="currentColor" stroke="none" />
+    <circle cx="12" cy="13" r="1" fill="currentColor" stroke="none" />
+    <circle cx="8.5" cy="15" r="1" fill="currentColor" stroke="none" />
+    <circle cx="15.5" cy="14.5" r="1" fill="currentColor" stroke="none" />
+  </svg>
+);
+
+// STATIC GIF preview: draws the GIF's first frame onto a canvas (which does not
+// animate), so the gallery thumbnails stay still while the GIF actually applied
+// to the background keeps animating normally.
+function GifThumb({ src, alt, className }) {
+  const canvasRef = useRef(null);
+  useEffect(() => {
+    let cancelled = false;
+    const img = new Image();
+    img.onload = () => {
+      const canvas = canvasRef.current;
+      if (cancelled || !canvas) return;
+      canvas.width = img.naturalWidth || 320;
+      canvas.height = img.naturalHeight || 180;
+      canvas.getContext('2d')?.drawImage(img, 0, 0, canvas.width, canvas.height);
+    };
+    img.src = src;
+    return () => { cancelled = true; };
+  }, [src]);
+  return <canvas ref={canvasRef} aria-label={alt} className={className} />;
+}
+
+// One category's wallpaper gallery: a labeled grid of thumbnails plus a
+// "randomize on startup" toggle. Renders nothing if the folder is empty.
+// GIFs (in any folder) show a frozen preview; everything else uses a plain <img>.
+function PresetGallery({ title, presets, randomKey, visuals, updateVisual, t }) {
+  if (!presets || presets.length === 0) return null;
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between px-1 gap-3">
+        <label className="text-[11px] font-black text-neutral-500 uppercase tracking-widest shrink-0">{title}</label>
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest">
+            {t('settings.visual.randomize', { defaultValue: 'Randomizar ao iniciar' })}
+          </span>
+          <ToggleSwitch active={!!visuals[randomKey]} onClick={() => updateVisual(randomKey, !visuals[randomKey])} />
+        </div>
+      </div>
+      <div className="grid grid-cols-4 gap-2.5">
+        {presets.map((p) => {
+          const active = visuals.bgImage === `@preset:${p.url}`;
+          const isGif = /\.gif(\?|$)/i.test(p.id);
+          return (
+            <button key={p.id} onClick={() => updateVisual('bgImage', `@preset:${p.url}`)} className="group flex flex-col gap-1 cursor-pointer outline-none">
+              <div className={`relative aspect-video rounded-lg overflow-hidden border transition-all ${active ? 'border-indigo-500 ring-2 ring-indigo-500/40' : 'border-white/10 group-hover:border-white/30'}`}>
+                {isGif
+                  ? <GifThumb src={p.url} alt={p.name} className="w-full h-full object-cover pointer-events-none" />
+                  : <img src={p.url} alt={p.name} loading="lazy" className="w-full h-full object-cover pointer-events-none" />}
+                {active && (
+                  <div className="absolute top-1 right-1 bg-indigo-500 text-white p-0.5 rounded-full shadow-lg"><Check size={9} strokeWidth={4} /></div>
+                )}
+              </div>
+              <span className={`block text-[11px] text-center truncate px-0.5 ${active ? 'text-white font-bold' : 'text-white/80'}`}>{p.name}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+export default function SettingsModal({ onClose, settings, ytdlpUpdater }) {
+  const { defaultPath, playlistLimit, defaultQuality, language, visuals, cookieBrowser, cookieFile, autoPaste, saveSettings, changeDefaultPath } = settings;
+  const { updating: updatingYtdlp = false, checkForUpdate } = ytdlpUpdater || {};
   const [activeTab, setActiveTab] = useState("general");
 
   const { t, i18n } = useTranslation();
@@ -79,6 +159,26 @@ export default function SettingsModal({ onClose, settings }) {
   const currentQualityLabel = qualityOptions.find(q => q.value === defaultQuality)?.label || "Best";
   const currentLangLabel = languageOptions.find(l => l.value === language)?.label || "System Default";
 
+  const cookieOptions = [
+    { value: "", label: t('settings.general.cookies_off', { defaultValue: 'Disabled' }) },
+    { value: "firefox", label: "Firefox" },
+    { value: "chrome", label: "Chrome" },
+    { value: "edge", label: "Edge" },
+    { value: "brave", label: "Brave" },
+    { value: "opera", label: "Opera" },
+    { value: "chromium", label: "Chromium" },
+    { value: "vivaldi", label: "Vivaldi" }
+  ];
+  const currentCookieLabel = cookieOptions.find(c => c.value === (cookieBrowser || ""))?.label
+    || t('settings.general.cookies_off', { defaultValue: 'Disabled' });
+  const handleCookieChange = (val) => saveSettings({ cookieBrowser: val });
+  const cookieFileName = cookieFile ? cookieFile.split(/[\\/]/).pop() : "";
+  const handlePickCookieFile = async () => {
+    const sel = await openDialog({ multiple: false, filters: [{ name: 'cookies.txt', extensions: ['txt'] }] });
+    if (sel) saveSettings({ cookieFile: (typeof sel === 'string' ? sel : sel.path || '').replace(/\\/g, '/') });
+  };
+  const clearCookieFile = () => saveSettings({ cookieFile: "" });
+
   return (
     <div className="fixed inset-0 z-30 flex items-center justify-center p-6">
       <motion.div
@@ -95,7 +195,7 @@ export default function SettingsModal({ onClose, settings }) {
         animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }}
         exit={{ opacity: 0, scale: 0.95, y: 15, filter: "blur(10px)", transition: { duration: 0.2, ease: "easeIn" } }}
         transition={{ type: "spring", stiffness: 300, damping: 25 }}
-        className="relative w-full max-w-2xl h-140 bg-zinc-950/1 backdrop-blur-2xl border border-white/10 rounded-xl shadow-2xl overflow-hidden flex flex-col"
+        className="relative w-full max-w-2xl h-140 bg-zinc-950/80 backdrop-blur-2xl border border-white/10 rounded-xl shadow-2xl overflow-hidden flex flex-col"
       >
         <div className="p-6 flex items-center justify-between border-b border-white/5 bg-transparent shrink-0 z-10">
           <div className="flex items-center gap-3">
@@ -144,7 +244,7 @@ export default function SettingsModal({ onClose, settings }) {
           </div>
         </div>
 
-        <div className={`px-8 pb-8 pt-4 flex flex-col flex-1 min-h-0 relative ${activeTab === 'visual' ? 'overflow-y-auto custom-scrollbar z-0' : 'z-30'}`}>
+        <div className={`px-8 pb-8 pt-4 flex flex-col flex-1 min-h-0 relative overflow-y-auto custom-scrollbar ${activeTab === 'visual' ? 'z-0' : 'z-30'}`}>
           <AnimatePresence mode="wait">
             {activeTab === "general" && (
               <motion.div
@@ -173,6 +273,32 @@ export default function SettingsModal({ onClose, settings }) {
                       {t('media_modal.change', { defaultValue: 'CHANGE' })}
                     </div>
                   </motion.div>
+                </div>
+
+                {/* Atualizador do yt-dlp */}
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-black text-neutral-500 uppercase tracking-widest px-1">
+                    {t('settings.general.engine', { defaultValue: 'Download Engine (yt-dlp)' })}
+                  </label>
+                  <motion.button
+                    whileHover={{ scale: updatingYtdlp ? 1 : 1.01 }}
+                    whileTap={{ scale: updatingYtdlp ? 1 : 0.98 }}
+                    onClick={() => !updatingYtdlp && checkForUpdate && checkForUpdate()}
+                    disabled={updatingYtdlp}
+                    className="w-full flex items-center gap-3 p-1.5 pl-3 h-[44px] bg-zinc-900/50 border border-white/5 rounded-lg hover:border-white/10 transition-colors cursor-pointer group disabled:cursor-wait"
+                  >
+                    {updatingYtdlp
+                      ? <Loader2 size={20} className="text-indigo-400 shrink-0 animate-spin" />
+                      : <RefreshCw size={20} className="text-neutral-200 group-hover:text-zinc-300 shrink-0" />}
+                    <span className="flex-1 text-left text-[12.5px] font-bold text-zinc-300">
+                      {updatingYtdlp
+                        ? t('toast.ytdlp_checking', { defaultValue: 'Checking for yt-dlp updates…' })
+                        : t('settings.general.update_engine', { defaultValue: 'Check for updates' })}
+                    </span>
+                    <div className="px-2.5 py-1.5 bg-zinc-800 rounded text-[11px] font-bold text-zinc-400 group-hover:text-white shrink-0 uppercase transition-colors">
+                      {t('settings.general.update_now', { defaultValue: 'UPDATE' })}
+                    </div>
+                  </motion.button>
                 </div>
 
                 <div className="space-y-2.5">
@@ -238,6 +364,59 @@ export default function SettingsModal({ onClose, settings }) {
                     placeholder={t('settings.search_language', { defaultValue: 'Search Language' })}
                   />
                 </div>
+
+                {/* Auto-paste a link from the clipboard on focus */}
+                <div className="flex items-center justify-between gap-4 p-3 bg-zinc-900/40 border border-white/5 rounded-lg">
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[12.5px] font-bold text-zinc-200">
+                      {t('settings.general.autopaste', { defaultValue: 'Auto-paste links' })}
+                    </div>
+                    <div className="text-[11px] text-neutral-500 mt-0.5 leading-snug">
+                      {t('settings.general.autopaste_info', { defaultValue: 'When you open or focus the app, automatically fill the bar with a link copied to your clipboard.' })}
+                    </div>
+                  </div>
+                  <div className="shrink-0">
+                    <ToggleSwitch active={autoPaste !== false} onClick={() => saveSettings({ autoPaste: !(autoPaste !== false) })} />
+                  </div>
+                </div>
+
+                {/* Browser cookies (works around YouTube's "confirm you're not a robot") */}
+                <div className="pt-2 space-y-1.5">
+                  <CustomSelect
+                    label={t('settings.general.cookies', { defaultValue: 'Browser Cookies (YouTube login)' })}
+                    icon={(props) => <CookieIcon className={props.className} size={20} />}
+                    valueLabel={currentCookieLabel}
+                    options={cookieOptions}
+                    onSelect={handleCookieChange}
+                  />
+                  <p className="text-[11px] text-neutral-500 leading-snug px-1">
+                    {t('settings.general.cookies_info', { defaultValue: "If YouTube asks to 'confirm you're not a bot', pick the browser where you're logged in. Firefox is the most reliable on Windows." })}
+                  </p>
+
+                  {/* Arquivo cookies.txt — mesmo tamanho/estilo do dropdown acima */}
+                  <div
+                    onClick={handlePickCookieFile}
+                    className="w-full flex items-center justify-between p-2.5 px-3 h-[44px] rounded-lg border bg-zinc-900/40 border-white/5 hover:bg-zinc-900 hover:border-white/10 transition-all duration-500 ease-in-out cursor-pointer active:scale-95 group"
+                  >
+                    <div className="flex items-center gap-2 overflow-hidden">
+                      <CookieIcon size={20} className={`shrink-0 ${cookieFile ? 'text-emerald-400' : 'text-neutral-200'}`} />
+                      <span className="text-[12.5px] font-bold text-zinc-200 truncate">
+                        {cookieFileName || t('settings.general.cookies_file_choose', { defaultValue: 'Use a cookies.txt file…' })}
+                      </span>
+                    </div>
+                    {cookieFile && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); clearCookieFile(); }}
+                        className="p-1 -mr-1 text-zinc-500 hover:text-red-400 rounded transition-colors shrink-0 cursor-pointer"
+                      >
+                        <X size={14} />
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-neutral-500 leading-snug px-1">
+                    {t('settings.general.cookies_file_info', { defaultValue: "Is Flow Downloader showing the 'confirm you're not a bot' error? Use a cookies.txt file: export your YouTube cookies (while logged in) with a browser extension such as 'Get cookies.txt LOCALLY', then select the file here." })}
+                  </p>
+                </div>
               </motion.div>
             )}
 
@@ -252,7 +431,7 @@ export default function SettingsModal({ onClose, settings }) {
               >
                 <div className="space-y-2.5">
                   <label className="text-[11px] font-black text-neutral-500 uppercase tracking-widest px-1 flex gap-1.5 items-center">
-                    <Layers size={12} />
+                    <Layers size={12} className="text-indigo-400 shrink-0" />
                     {t('settings.visual.style', { defaultValue: 'Background Graphic Engine' })}
                   </label>
                   <div className="grid grid-cols-3 gap-3">
@@ -384,35 +563,77 @@ export default function SettingsModal({ onClose, settings }) {
                       initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }}
                       className="space-y-8 pt-2 border-t border-white/5"
                     >
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-1.5">
-                          <label className="text-[11px] font-black text-neutral-500 uppercase tracking-widest px-1">
-                            {t('settings.visual.base_color', { defaultValue: 'Cor do Fundo' })}
-                          </label>
-                          <div className="flex items-center gap-3 bg-zinc-900/50 p-2 h-[44px] rounded-lg border border-white/5 relative">
-                            <div className="relative w-7 h-7 rounded border border-white/10 overflow-hidden shadow-inner shrink-0 cursor-pointer ring-1 ring-white/5">
-                              <SmartColorPickerRaw colorKey="staticColor" defaultColor="#000000" visuals={visuals} updateVisual={updateVisual} />
-                            </div>
-                            <div className="text-[11px] font-bold text-zinc-300 uppercase tracking-widest">{visuals.staticColor || '#000000'}</div>
+                      {/* Built-in wallpaper galleries (loaded from src/assets/backgrounds/{GIFs,JPGs,by Nipp}) */}
+                      <PresetGallery
+                        title={t('settings.visual.animated', { defaultValue: 'Animados (GIF)' })}
+                        presets={ANIMATED_PRESETS}
+                        randomKey="randomGif"
+                        visuals={visuals}
+                        updateVisual={updateVisual}
+                        t={t}
+                      />
+                      <div className="border-t border-white/10" />
+                      <PresetGallery
+                        title={t('settings.visual.still', { defaultValue: 'Estáticos (Imagem)' })}
+                        presets={STATIC_PRESETS}
+                        randomKey="randomJpg"
+                        visuals={visuals}
+                        updateVisual={updateVisual}
+                        t={t}
+                      />
+                      {(ANIMATED_PRESETS.length > 0 || STATIC_PRESETS.length > 0) && (
+                        <p className="text-[11.5px] text-white/70 px-1 -mt-2">
+                          {t('settings.visual.wallpaper_credit', { defaultValue: 'Wallpapers de wallpaperaccess.com' })}
+                        </p>
+                      )}
+
+                      <div className="border-t border-white/10" />
+                      {/* Artes do Nipp (artista convidado) — nome fixo em todos os idiomas */}
+                      <PresetGallery
+                        title="Nipp"
+                        presets={NIPP_PRESETS}
+                        randomKey="randomNipp"
+                        visuals={visuals}
+                        updateVisual={updateVisual}
+                        t={t}
+                      />
+                      <div className="border-t border-white/10" />
+
+                      <div className="space-y-2.5">
+                        <label className="flex items-center gap-2 text-[11px] font-black text-neutral-500 uppercase tracking-widest px-1">
+                          <Paintbrush size={13} className="text-indigo-400 shrink-0" />
+                          {t('settings.visual.static_or_image', { defaultValue: 'Cor estática ou imagem personalizada' })}
+                        </label>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-1.5">
+                            <label className="text-[11px] font-black text-neutral-500 uppercase tracking-widest px-1">
+                              {t('settings.visual.image', { defaultValue: 'Wallpaper Personalizado' })}
+                            </label>
+                            {visuals.bgImage ? (
+                              <div className="flex items-center justify-between px-3 bg-zinc-900/50 h-[44px] rounded-lg border border-indigo-500/30">
+                                <span className="text-[11px] font-bold text-indigo-400 uppercase tracking-widest truncate">
+                                  {t('settings.visual.image_defined', { defaultValue: 'Imagem Ativa' })}
+                                </span>
+                                <button onClick={() => updateVisual("bgImage", null)} className="p-1.5 bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white rounded-md transition-colors"><Trash2 size={14} /></button>
+                              </div>
+                            ) : (
+                              <button onClick={handleSelectBgImage} className="w-full h-[44px] border border-dashed border-white/10 rounded-lg hover:border-white/30 hover:bg-white/5 transition-colors flex items-center justify-center gap-2 text-zinc-400 text-[11px] font-bold uppercase tracking-widest">
+                                <ImageIcon size={14} />
+                                {t('settings.visual.choose_image', { defaultValue: 'Procurar Imagem' })}
+                              </button>
+                            )}
                           </div>
-                        </div>
-                        <div className="space-y-1.5">
-                          <label className="text-[11px] font-black text-neutral-500 uppercase tracking-widest px-1">
-                            {t('settings.visual.image', { defaultValue: 'Wallpaper Personalizado' })}
-                          </label>
-                          {visuals.bgImage ? (
-                            <div className="flex items-center justify-between px-3 bg-zinc-900/50 h-[44px] rounded-lg border border-indigo-500/30">
-                              <span className="text-[11px] font-bold text-indigo-400 uppercase tracking-widest truncate">
-                                {t('settings.visual.image_defined', { defaultValue: 'Imagem Ativa' })}
-                              </span>
-                              <button onClick={() => updateVisual("bgImage", null)} className="p-1.5 bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white rounded-md transition-colors"><Trash2 size={14} /></button>
+                          <div className="space-y-1.5">
+                            <label className="text-[11px] font-black text-neutral-500 uppercase tracking-widest px-1">
+                              {t('settings.visual.static_color', { defaultValue: 'Cor Estática' })}
+                            </label>
+                            <div className="flex items-center gap-3 bg-zinc-900/50 p-2 h-[44px] rounded-lg border border-white/5 relative">
+                              <div className="relative w-7 h-7 rounded border border-white/10 overflow-hidden shadow-inner shrink-0 cursor-pointer ring-1 ring-white/5">
+                                <SmartColorPickerRaw colorKey="staticColor" defaultColor="#000000" visuals={visuals} updateVisual={updateVisual} />
+                              </div>
+                              <div className="text-[11px] font-bold text-zinc-300 uppercase tracking-widest">{visuals.staticColor || '#000000'}</div>
                             </div>
-                          ) : (
-                            <button onClick={handleSelectBgImage} className="w-full h-[44px] border border-dashed border-white/10 rounded-lg hover:border-white/30 hover:bg-white/5 transition-colors flex items-center justify-center gap-2 text-zinc-400 text-[11px] font-bold uppercase tracking-widest">
-                              <ImageIcon size={14} />
-                              {t('settings.visual.choose_image', { defaultValue: 'Procurar Imagem' })}
-                            </button>
-                          )}
+                          </div>
                         </div>
                       </div>
 
@@ -546,6 +767,7 @@ function CustomSelect({ label, icon: Icon, valueLabel, options, onSelect }) {
 }
 
 function SearchableSelect({ label, icon: Icon, valueLabel, options, onSelect, placeholder }) {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const filteredOptions = options.filter(opt => opt.label.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -577,7 +799,7 @@ function SearchableSelect({ label, icon: Icon, valueLabel, options, onSelect, pl
                       <button key={i} onClick={() => { onSelect(opt.value); setIsOpen(false); setSearchTerm(""); }} className={`w-full text-left px-3 py-2.5 text-[11px] font-bold transition-colors hover:bg-zinc-800 ${valueLabel === opt.label ? 'text-indigo-400 bg-zinc-800/50' : 'text-zinc-400'}`}>{opt.label}</button>
                     ))
                   ) : (
-                    <div className="px-3 py-5 text-center text-[11px] text-neutral-500 font-bold uppercase tracking-widest">No languages found</div>
+                    <div className="px-3 py-5 text-center text-[11px] text-neutral-500 font-bold uppercase tracking-widest">{t('settings.no_languages', { defaultValue: 'No languages found' })}</div>
                   )}
                 </div>
               </motion.div>

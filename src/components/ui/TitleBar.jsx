@@ -7,7 +7,7 @@ import appLogo from "../../assets/logo.png";
 export default function TitleBar() {
   const [appWindow, setAppWindow] = useState(null);
 
-  // SO Detection
+  // OS detection: macOS gets traffic-light controls, Windows/Linux get min/max/close.
   const isMac = navigator.userAgent.toLowerCase().includes('mac');
 
   useEffect(() => {
@@ -15,7 +15,7 @@ export default function TitleBar() {
     setAppWindow(win);
   }, []);
 
-  // --- WINDOWS RENDR ---
+  // --- Hover/tap animation variants for the Windows/Linux caption buttons ---
   const buttonLightVariants = {
     initial: { opacity: 0.6, scale: 1, background: "radial-gradient(closest-side at center, rgba(255,255,255,0) 0%, rgba(255,255,255,0) 100%)", color: "rgb(161 161 170)" },
     hover: { opacity: 1, scale: 1.1, background: "radial-gradient(closest-side at center, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 100%)", color: "rgb(255 255 255)", transition: { type: "spring", stiffness: 300, damping: 25 } },
@@ -79,7 +79,7 @@ export default function TitleBar() {
     );
   }
 
-  // RENDERIZAÇÃO WINDOWS / LINUX
+  // --- WINDOWS / LINUX RENDER ---
   return (
     <div className="fixed top-0 left-0 right-0 h-10 flex select-none z-[10000]">
       <div data-tauri-drag-region className="flex-1 flex items-center pl-4 gap-3 cursor-default">

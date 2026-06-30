@@ -7,7 +7,7 @@
     "placeholder": "الصق الرابط هنا...",
     "analyzing_placeholder": "جاري جلب البيانات...",
     "paste_tooltip": "(CTRL + V) لصق",
-    "analyze_tooltip": "بحث",
+    "analyze_tooltip": "(ENTER) بحث",
     "analyzing_tooltip": "جاري البحث..."
   },
   "queue": {
@@ -24,7 +24,8 @@
     "eta": "الوقت المتبقي",
     "calculating": "جاري الحساب...",
     "error_missing": "الملف غير موجود (تم نقله أو حذفه)",
-    "finished_in": "اكتمل في {{time}}"
+    "finished_in": "اكتمل في {{time}}",
+    "processing": "جارٍ المعالجة والتحويل…"
   },
   "media_modal": {
     "title": "خيارات التنزيل",
@@ -44,7 +45,15 @@
     "native_fps": "أصلي",
     "download_png": "تنزيل الصورة",
     "open_folder": "افتح موقع الملف",
-    "start_download": "تنزيل"
+    "start_download": "تنزيل",
+    "codec": "الترميز",
+    "codec_h264": "H.264",
+    "codec_prores": "ProRes",
+    "codec_dnxhr": "DNxHR",
+    "editor_warning": "الدقات الأعلى من 1080p تأتي بترميز {{codec}} الذي لا تستطيع برامج تحرير الفيديو (Premiere وDaVinci…) فتحه. اختر 1080p أو أقل للحصول على H.264، أو حوّل هذا الملف إلى H.264 باستخدام مُحوّل عبر الإنترنت.",
+    "audio_best": "الأفضل (~160 kbps)",
+    "audio_medium": "متوسط (128 kbps)",
+    "audio_low": "منخفض (96 kbps)"
   },
   "playlist_modal": {
     "badge": "قائمة تشغيل",
@@ -81,14 +90,24 @@
       "limit": "حد عناصر قائمة التشغيل",
       "limit_info": "يمكنك زيادة الحد لمسح قوائم التشغيل الكاملة. لتجنب بطء جهازك وحظر خوادم يوتيوب (خطأ 429)، سيقوم Flow بتنزيل 3 فيديوهات في المرة الواحدة.",
       "quality": "الجودة الافتراضية",
-      "language": "لغة الواجهة"
+      "language": "لغة الواجهة",
+      "engine": "محرّك التنزيل (yt-dlp)",
+      "update_engine": "البحث عن تحديثات",
+      "update_now": "تحديث",
+      "cookies": "ملفات تعريف الارتباط للمتصفح (تسجيل دخول YouTube)",
+      "cookies_off": "معطّل",
+      "cookies_info": "إذا طلب YouTube «تأكيد أنك لست روبوتًا»، اختر المتصفح الذي سجّلت الدخول فيه. فايرفوكس هو الأكثر موثوقية على ويندوز.",
+      "cookies_file_choose": "استخدام ملف cookies.txt…",
+      "cookies_file_info": "هل يُظهر Flow Downloader خطأ «أكّد أنك لست روبوتًا»؟ استخدم ملف cookies.txt: صدّر ملفات تعريف الارتباط الخاصة بـ YouTube (وأنت مسجّل الدخول) باستخدام إضافة متصفح مثل 'Get cookies.txt LOCALLY'، ثم اختر الملف هنا.",
+      "autopaste": "لصق الروابط تلقائيًا",
+      "autopaste_info": "عند فتح التطبيق أو تنشيطه، يملأ الشريط تلقائيًا برابط موجود في الحافظة."
     },
     "visual": {
       "style": "محرك رسوميات الخلفية",
       "styles": {
         "lines": "خطوط متحركة",
         "liquid": "ثقب أسود",
-        "static": "ثابت"
+        "static": "مخصّص"
       },
       "color": "اللون",
       "custom_colors": "ألوان مخصصة",
@@ -101,15 +120,23 @@
       "distortion": "التشويه",
       "noise": "ضجيج (Noise)",
       "base_color": "لون الخلفية",
+      "static_or_image": "لون ثابت أو صورة مخصصة",
+      "static_color": "لون ثابت",
       "image": "خلفية مخصصة",
       "choose_image": "تصفح الصور",
       "image_defined": "الصورة الحالية",
       "effects": "فلاتر معالجة لاحقة",
       "gradient": "تظليل علوي",
       "darken": "تعتيم",
-      "blur": "تغبيش"
+      "blur": "تغبيش",
+      "presets": "خلفيات جاهزة",
+      "animated": "متحركة (GIF)",
+      "still": "ثابتة (صورة)",
+      "randomize": "عشوائي عند البدء",
+      "wallpaper_credit": "الخلفيات من wallpaperaccess.com"
     },
-    "done": "تم"
+    "done": "تم",
+    "no_languages": "لم يتم العثور على لغات"
   },
   "toast": {
     "error_empty": "يرجى إدخال رابط",
@@ -127,7 +154,15 @@
     "data_error": "خطأ في البيانات المستلمة.",
     "video_not_found": "الفيديو غير موجود أو غير متاح.",
     "open_error": "خطأ في فتح الموقع.",
-    "config_saved": "تم تطبيق الإعدادات!"
+    "config_saved": "تم تطبيق الإعدادات!",
+    "ytdlp_checking": "جارٍ البحث عن تحديثات yt-dlp…",
+    "ytdlp_updated": "تم تحديث yt-dlp إلى أحدث إصدار!",
+    "ytdlp_uptodate": "yt-dlp محدّث بالفعل.",
+    "ytdlp_update_error": "تعذّر تحديث yt-dlp.",
+    "youtube_bot_check": "حظر YouTube الطلب (فحص الروبوت). فعّل ملفات تعريف الارتباط من الإعدادات ← عام.",
+    "cookie_error": "تعذّرت قراءة ملفات تعريف الارتباط للمتصفح. جرّب فايرفوكس أو ملف cookies.txt.",
+    "no_formats": "لا يوجد تنسيق قابل للتنزيل لهذا الفيديو (قد يكون بثًا مباشرًا أو عرضًا أوّليًا أو ما زال قيد المعالجة).",
+    "clipboard_autopaste": "تم لصق الرابط من الحافظة تلقائيًا."
   },
   "support_flow": "دعم Flow Downloader 🪙"
 }
