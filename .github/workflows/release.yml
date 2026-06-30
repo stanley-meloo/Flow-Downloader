@@ -8,33 +8,36 @@ on:
 jobs:
   build-mac:
     runs-on: macos-latest
-    
+
     steps:
-      - name: Checkout do repositório
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 24.12.0 
+          node-version: 24.12.0
 
-      - name: Instalar Dependências do Frontend
+      - name: Install frontend dependencies
         run: npm install
 
-      - name: Setup Rust Toolchain
+      - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
+          # Both targets are required to build a universal (Intel + Apple Silicon) binary.
           targets: aarch64-apple-darwin, x86_64-apple-darwin
 
-      - name: Compilar Flow Downloader (Tauri)
+      - name: Build Flow Downloader (Tauri)
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: app-v__VERSION__ 
+          # Release tag matches the pushed trigger tag (e.g. v1.1.0) — no "app-" prefix.
+          tagName: v__VERSION__
           releaseName: 'Flow Downloader v__VERSION__'
-          releaseBody: 'Nova compilação automatizada do Flow Downloader para macOS.'
+          releaseBody: 'Automated macOS build of Flow Downloader.'
           releaseDraft: true
           prerelease: false
-          
-          args: --target aarch64-apple-darwin
+
+          # Universal build: one .dmg that runs on both Intel and Apple Silicon Macs.
+          args: --target universal-apple-darwin
