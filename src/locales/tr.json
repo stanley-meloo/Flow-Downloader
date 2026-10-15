@@ -1,7 +1,6 @@
 {
   "hero": {
-    "title": "FlowDownloader",
-    "subtitle": "Her şeyi, her yerden, her zaman indirin."
+    "subtitle": "Her şeyi, her an, 2 tıkla indir"
   },
   "search": {
     "placeholder": "URL'yi buraya yapıştırın...",
@@ -12,7 +11,6 @@
   },
   "queue": {
     "title": "İndirme Kuyruğu",
-    "empty": "Kuyruğunuz boş",
     "open_folder": "Dosyaya git",
     "cancel": "İndirmeyi iptal et",
     "retry": "Yeniden dene",
@@ -22,18 +20,14 @@
     "error": "İndirme Hatası",
     "speed": "Hız",
     "eta": "Kalan süre",
-    "calculating": "Hesaplanıyor...",
-    "error_missing": "Dosya bulunamadı (taşınmış veya silinmiş)",
     "finished_in": "{{time}} içinde tamamlandı",
-    "processing": "İşleniyor ve dönüştürülüyor…"
+    "processing": "İşleniyor ve dönüştürülüyor…",
+    "items_one": "{{count}} öğe",
+    "items_other": "{{count}} öğe"
   },
   "media_modal": {
-    "title": "İndirme Seçenekleri",
     "format": "Format",
     "quality": "Kalite",
-    "directory": "Şuraya kaydet",
-    "cancel": "İptal",
-    "download": "Şimdi İndir",
     "output_format": "Ne indirmek istediğinizi seçin",
     "format_video_audio": "Video + Ses",
     "format_video_only": "Sadece Video",
@@ -41,19 +35,19 @@
     "destination": "Hedef",
     "change": "Değiştir",
     "audio": "Ses",
-    "fps": "FPS",
-    "native_fps": "Yerel",
     "download_png": "Kapağı İndir",
     "open_folder": "Dosya konumunu aç",
     "start_download": "İndir",
-    "codec": "Codec",
-    "codec_h264": "H.264",
-    "codec_prores": "ProRes",
-    "codec_dnxhr": "DNxHR",
     "editor_warning": "1080p üzeri çözünürlükler {{codec}} formatında gelir ve video düzenleyiciler (Premiere, DaVinci…) bunu açamaz. H.264 için 1080p veya daha düşüğünü seçin ya da bu dosyayı çevrimiçi bir dönüştürücüyle H.264'e dönüştürün.",
     "audio_best": "En iyi (~160 kbps)",
     "audio_medium": "Orta (128 kbps)",
-    "audio_low": "Düşük (96 kbps)"
+    "audio_low": "Düşük (96 kbps)",
+    "edit_title": "Başlığı düzenle",
+    "save_title": "Başlığı kaydet",
+    "cancel_edit": "İptal",
+    "reset_title": "Orijinal başlığı geri yükle",
+    "file_name": "Dosya adı",
+    "title_placeholder": "Özel başlık…"
   },
   "playlist_modal": {
     "badge": "OYNATMA LISTESI",
@@ -70,8 +64,7 @@
   "setup_modal": {
     "title": "FlowDownloader'a Hoş Geldiniz!",
     "subtitle": "İlk indirme konumunuzu ayarlayalım",
-    "select_folder": "Varsayılan İndirme Klasörünü Seçin",
-    "finish": "Başla"
+    "select_folder": "Varsayılan İndirme Klasörünü Seçin"
   },
   "settings": {
     "title": "Ayarlar",
@@ -83,12 +76,13 @@
     "search_language": "Dil ara...",
     "tabs": {
       "general": "Genel",
-      "visual": "Görünüm"
+      "visual": "Görünüm",
+      "shortcuts": "Kısayollar"
     },
     "general": {
       "path": "Varsayılan İndirme Yolu",
       "limit": "Oynatma Listesi Sınırı",
-      "limit_info": "Tüm listeleri taramak için sınırı artırabilirsiniz. Bilgisayarın yavaşlamasını ve sunucu engellerini (Hata 429) önlemek için Flow, 3 video aynı anda indirir.",
+      "limit_info": "Tüm listeleri taramak için sınırı artırabilirsiniz. Bilgisayarın yavaşlamasını ve sunucu engellerini (Hata 429) önlemek için Flow, {{n}} video aynı anda indirir.",
       "quality": "Varsayılan Kalite",
       "language": "Arayüz Dili",
       "engine": "İndirme motoru (yt-dlp)",
@@ -100,7 +94,13 @@
       "cookies_file_choose": "cookies.txt dosyası kullan…",
       "cookies_file_info": "Flow Downloader 'robot olmadığınızı doğrulayın' hatası mı veriyor? Bir cookies.txt dosyası kullanın: oturum açıkken 'Get cookies.txt LOCALLY' gibi bir tarayıcı uzantısıyla YouTube çerezlerinizi dışa aktarın ve dosyayı burada seçin.",
       "autopaste": "Bağlantıları otomatik yapıştır",
-      "autopaste_info": "Uygulamayı açtığınızda veya odaklandığınızda, panodaki bağlantıyla çubuğu otomatik doldurur."
+      "autopaste_info": "Uygulamayı açtığınızda veya odaklandığınızda, panodaki bağlantıyla çubuğu otomatik doldurur.",
+      "concurrent": "Eşzamanlı indirmeler",
+      "concurrent_info": "Aynı anda daha fazlası iyi bağlantıda daha hızlıdır, ancak çok fazlası sitelerin sizi yavaşlatmasına neden olabilir (hata 429).",
+      "engine_uptodate": "Güncel",
+      "engine_updated": "Güncellendi",
+      "engine_error": "Güncellenemedi. Tekrar deneyin",
+      "license": "MIT Lisansı"
     },
     "visual": {
       "style": "Arka Plan Grafik Motoru",
@@ -114,12 +114,6 @@
       "quantity": "Çizgi Miktarı",
       "distance": "Aralık",
       "radius": "Etkileşim (Fare)",
-      "strength": "Güç (Fare)",
-      "speed": "Hız",
-      "scale": "Ölçek",
-      "distortion": "Bozulma",
-      "noise": "Kumlanma (Gürültü)",
-      "base_color": "Arka Plan Rengi",
       "static_or_image": "Sabit Renk veya Özel Görsel",
       "static_color": "Sabit Renk",
       "image": "Özel Duvar Kağıdı",
@@ -129,40 +123,131 @@
       "gradient": "Üst Vinyet",
       "darken": "Karart",
       "blur": "Bulanıklaştır",
-      "presets": "Hazır arka planlar",
       "animated": "Hareketli (GIF)",
       "still": "Sabit (Resim)",
       "randomize": "Başlangıçta rastgele",
-      "wallpaper_credit": "Duvar kağıtları: wallpaperaccess.com"
+      "wallpaper_credit": "Duvar kağıtları: wallpaperaccess.com",
+      "film_grain": "Film greni",
+      "film_grain_info": "Tüm uygulamanın üzerinde hafif renk sapmalı sinematik gren. 0 kapatır."
     },
     "done": "Tamam",
-    "no_languages": "Dil bulunamadı"
+    "no_languages": "Dil bulunamadı",
+    "shortcuts": {
+      "main_group": "Ana pencere",
+      "modal_group": "İndirme penceresi",
+      "info": "Bir kısayola tıklayın, ardından yeni tuş kombinasyonuna basın. İptal etmek için Esc'ye basın.",
+      "press_key": "Bir tuşa basın…",
+      "reset": "Varsayılana dön",
+      "reset_all": "Tümünü varsayılana döndür",
+      "conflict": "Bu kombinasyon zaten “{{action}}” tarafından kullanılıyor.",
+      "actions": {
+        "search": "Bağlantıyı ara",
+        "paste": "Bağlantıyı yapıştır",
+        "selectBar": "Arama çubuğunu seç",
+        "openSettings": "Ayarları aç",
+        "download": "İndirmeyi başlat",
+        "closeModal": "Pencereyi kapat"
+      }
+    }
   },
   "toast": {
-    "error_empty": "Lütfen bir bağlantı girin",
     "error_invalid": "Geçersiz veya desteklenmeyen bağlantı",
     "success_added": "Video sıraya eklendi!",
     "success_thumb": "Küçük resim başarıyla indirildi!",
     "error_thumb": "Küçük resim indirilemedi",
-    "download_started": "İndirme başlatıldı!",
-    "download_finished": "Her şey hazır! İndirme tamamlandı.",
-    "error_generic": "Bir şeyler ters gitti. Tekrar deneyin.",
     "clipboard_success": "Bağlantı başarıyla yapıştırıldı!",
     "clipboard_empty": "Pano boş.",
-    "clipboard_error": "Panoya erişim hatası.",
-    "link_error": "Lütfen geçerli bir bağlantı yapıştırın.",
-    "data_error": "Alınan verilerde hata.",
-    "video_not_found": "Video bulunamadı veya kullanılamıyor.",
-    "open_error": "Konum açılırken hata oluştu.",
-    "config_saved": "Ayarlar uygulandı!",
-    "ytdlp_checking": "yt-dlp güncellemeleri kontrol ediliyor…",
-    "ytdlp_updated": "yt-dlp en son sürüme güncellendi!",
-    "ytdlp_uptodate": "yt-dlp zaten güncel.",
-    "ytdlp_update_error": "yt-dlp güncellenemedi.",
+    "clipboard_error": "Pano okunamadı.",
+    "open_error": "Dosya veya klasör açılamadı.",
+    "ytdlp_checking": "İndirme motoru güncellemeleri kontrol ediliyor…",
+    "ytdlp_updated": "İndirme motoru güncellendi.",
+    "ytdlp_uptodate": "İndirme motoru zaten güncel.",
+    "ytdlp_update_error": "İndirme motoru güncellenemedi.",
     "youtube_bot_check": "YouTube isteği engelledi (bot doğrulaması). Ayarlar → Genel'den Çerezleri açın.",
     "cookie_error": "Tarayıcı çerezleri okunamadı. Firefox'u veya bir cookies.txt dosyasını deneyin.",
     "no_formats": "Bu video için indirilebilir bir format yok (canlı yayın, prömiyer olabilir ya da hâlâ işleniyor olabilir).",
-    "clipboard_autopaste": "Panodaki bağlantı otomatik olarak yapıştırıldı."
+    "clipboard_autopaste": "Panodaki bağlantı otomatik olarak yapıştırıldı.",
+    "err_age": "Yaş kısıtlamalı: indirmek için Ayarlar'dan çerezlerinizi ekleyin.",
+    "err_private": "Özel veya yalnızca üyelere açık: erişimi olan bir hesabın çerezleri gerekir.",
+    "err_geo": "Ülkenizde kullanılamıyor.",
+    "err_live": "Bu canlı yayın veya prömiyer henüz başlamadı.",
+    "err_unavailable": "Bu video kullanılamıyor veya kaldırıldı.",
+    "err_disk": "Dosya kaydedilemedi. Klasörü ve boş disk alanını kontrol edin.",
+    "err_ffmpeg": "Dosya tamamlanamadı. Tekrar deneyin veya başka bir biçim seçin.",
+    "err_network": "Bağlantı sorunu. İnternetinizi kontrol edip tekrar deneyin.",
+    "err_unsupported": "Bu bağlantı desteklenmiyor.",
+    "err_download": "İndirme başarısız. Tekrar deneyin veya Ayarlar'dan motoru güncelleyin.",
+    "app_update_error": "Güncelleme denetlenemedi veya yüklenemedi.",
+    "app_update_wait": "Güncellemeden önce indirmelerin bitmesini bekleyin.",
+    "diagnostics_error": "Tanılama oluşturulamadı.",
+    "console_copied": "Konsol tanılaması kopyalandı. Yardım isterken yapıştırın.",
+    "screenshot_saved": "Ekran görüntüsü <path>Resimler/Flow Downloader</path> klasörüne kaydedildi ve panoya kopyalandı.",
+    "screenshot_error": "Ekran görüntüsü alınamadı.",
+    "link_copied": "Bağlantı kopyalandı.",
+    "title_copied": "Başlık kopyalandı.",
+    "image_copied": "Resim panoya kopyalandı.",
+    "image_copy_error": "Resim kopyalanamadı.",
+    "titles": {
+      "success": "Tamam",
+      "error": "Hata",
+      "info": "Bilgi",
+      "download": "İndirme"
+    },
+    "close": "Kapat"
   },
-  "support_flow": "Flow Downloader'ı destekleyin 🪙"
+  "support_flow": "Flow Downloader'ı destekleyin 🪙",
+  "folder_picker": {
+    "title": "İndirme klasörünü seçin",
+    "ok": "Klasörü seç",
+    "file_name": "Bu klasör",
+    "filter_media": "Video, ses ve görseller",
+    "filter_all": "Tüm dosyalar"
+  },
+  "close_prompt": {
+    "title": "Flow Downloader kapatılsın mı?",
+    "count": "İndirilen dosyalar: {{n}}",
+    "message": "Uygulamayı şimdi kapatırsanız bu indirmeler iptal edilir ve tamamlanmamış dosyalar silinir.",
+    "waiting": "Sırada bekleyen: {{n}}",
+    "keep": "İndirmeye devam et",
+    "close": "Yine de kapat",
+    "closing": "Kapatılıyor…"
+  },
+  "update": {
+    "available": "Flow Downloader {{version}} kullanılabilir",
+    "install": "Güncelle",
+    "installing": "Yükleniyor…",
+    "dismiss": "Kapat"
+  },
+  "context_menu": {
+    "copy": "Kopyala",
+    "cut": "Kes",
+    "paste": "Yapıştır",
+    "reload": "Yeniden yükle",
+    "copy_console": "Konsol tanılamasını kopyala",
+    "screenshot": "Ekran görüntüsü",
+    "paste_search": "Bağlantıyı yapıştır ve ara",
+    "open_last_folder": "Son indirme klasörünü aç",
+    "settings": "Ayarlar",
+    "always_on_top": "Pencereyi üstte tut",
+    "open_file": "Dosyayı aç",
+    "show_in_folder": "Klasörde göster",
+    "copy_link": "Orijinal bağlantıyı kopyala",
+    "retry": "Tekrar dene",
+    "download_again": "Başka kalitede yeniden indir",
+    "cancel": "İptal",
+    "remove": "Listeden kaldır",
+    "clear": "Temizle",
+    "recent": "Son kullanılanlar",
+    "save_thumbnail": "Küçük resmi kaydet",
+    "copy_image": "Resmi kopyala",
+    "copy_title": "Başlığı kopyala",
+    "clear_finished": "Tamamlananları temizle",
+    "cancel_all": "Tümünü iptal et"
+  },
+  "tooltips": {
+    "minimize": "Simge durumuna küçült",
+    "maximize": "Ekranı kapla",
+    "close": "Kapat",
+    "remove": "Kaldır"
+  }
 }

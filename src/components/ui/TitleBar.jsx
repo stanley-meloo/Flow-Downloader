@@ -1,14 +1,20 @@
 import { useState, useEffect } from "react";
+import BrandShine from "./BrandShine";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { X, Minus, Square, Maximize2 } from "lucide-react";
 import { motion } from "framer-motion";
 import appLogo from "../../assets/logo.png";
+import { useTranslation } from "react-i18next";
+import { IS_MAC } from "../../utils/keybinds";
 
 export default function TitleBar() {
   const [appWindow, setAppWindow] = useState(null);
-
-  // OS detection: macOS gets traffic-light controls, Windows/Linux get min/max/close.
-  const isMac = navigator.userAgent.toLowerCase().includes('mac');
+  const { t } = useTranslation();
+  const tip = {
+    minimize: t('tooltips.minimize', { defaultValue: 'Minimize' }),
+    maximize: t('tooltips.maximize', { defaultValue: 'Maximize' }),
+    close: t('tooltips.close', { defaultValue: 'Close' }),
+  };
 
   useEffect(() => {
     const win = getCurrentWindow();
@@ -29,7 +35,8 @@ export default function TitleBar() {
   };
 
   // --- MAC OS RENDER ---
-  if (isMac) {
+  // macOS gets traffic-light controls, Windows/Linux get min/max/close.
+  if (IS_MAC) {
     return (
       <div className="fixed top-0 left-0 right-0 h-10 flex items-center select-none z-[10000]">
         
@@ -42,6 +49,7 @@ export default function TitleBar() {
           {/* Close button (red) */}
           <button 
             onClick={() => appWindow?.close()} 
+            data-tooltip={tip.close}
             className="w-3.5 h-3.5 rounded-full flex items-center justify-center bg-[#FF5F56] border border-[#E0443E] hover:bg-[#FF5F56] active:bg-[#C24139] transition-colors"
           >
             <X size={8} strokeWidth={3} className="text-black/60 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -50,6 +58,7 @@ export default function TitleBar() {
           {/* Minimize button (yellow) */}
           <button 
             onClick={() => appWindow?.minimize()} 
+            data-tooltip={tip.minimize}
             className="w-3.5 h-3.5 rounded-full flex items-center justify-center bg-[#FFBD2E] border border-[#DEA123] hover:bg-[#FFBD2E] active:bg-[#B8861E] transition-colors"
           >
             <Minus size={8} strokeWidth={4} className="text-black/60 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -58,6 +67,7 @@ export default function TitleBar() {
           {/* Maximize button (green) */}
           <button 
             onClick={() => appWindow?.toggleMaximize()} 
+            data-tooltip={tip.maximize}
             className="w-3.5 h-3.5 rounded-full flex items-center justify-center bg-[#27C93F] border border-[#1AAB29] hover:bg-[#27C93F] active:bg-[#1D912C] transition-colors"
           >
             <Maximize2 size={7} strokeWidth={3} className="text-black/60 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -70,10 +80,8 @@ export default function TitleBar() {
           animate={{ opacity: 0.7, y: 0 }}
           className="w-full flex justify-center items-center gap-2 pointer-events-none z-0"
         >
-           <img src={appLogo} alt="Flow Logo" className="w-4 h-4" />
-           <span className="text-[10px] font-bold text-zinc-300 tracking-[0.2em] uppercase">
-             FLOW DOWNLOADER
-           </span>
+           {/* Logo + name with a light sweep every 10 s (BrandShine) */}
+           <BrandShine logo={appLogo} logoClass="w-4 h-4" />
         </motion.div>
       </div>
     );
@@ -88,17 +96,15 @@ export default function TitleBar() {
           animate={{ opacity: 0.7, x: 0 }}
           className="pointer-events-none flex items-center gap-2"
         >
-           <img src={appLogo} alt="Flow Logo" className="w-5 h-5" />
-           <span className="text-[10px] font-bold text-zinc-300 tracking-[0.2em] uppercase">
-             FLOW DOWNLOADER
-           </span>
+           {/* Logo + name with a light sweep every 10 s (BrandShine) */}
+           <BrandShine logo={appLogo} logoClass="w-5 h-5" />
         </motion.div>
       </div>
 
       <div className="flex items-center px-2 gap-2">
-        <motion.div variants={buttonLightVariants} initial="initial" whileHover="hover" whileTap="tap" onClick={() => appWindow?.minimize()} className="h-8 w-10 flex items-center justify-center rounded-lg cursor-pointer relative"><Minus size={16} /></motion.div>
-        <motion.div variants={buttonLightVariants} initial="initial" whileHover="hover" whileTap="tap" onClick={() => appWindow?.toggleMaximize()} className="h-8 w-10 flex items-center justify-center rounded-lg cursor-pointer relative"><Square size={14} /></motion.div>
-        <motion.div variants={closeLightVariants} initial="initial" whileHover="hover" whileTap="tap" onClick={() => appWindow?.close()} className="h-8 w-10 flex items-center justify-center rounded-lg cursor-pointer relative"><X size={16} /></motion.div>
+        <motion.div variants={buttonLightVariants} initial="initial" whileHover="hover" whileTap="tap" onClick={() => appWindow?.minimize()} data-tooltip={tip.minimize} className="h-8 w-10 flex items-center justify-center rounded-lg cursor-pointer relative"><Minus size={16} /></motion.div>
+        <motion.div variants={buttonLightVariants} initial="initial" whileHover="hover" whileTap="tap" onClick={() => appWindow?.toggleMaximize()} data-tooltip={tip.maximize} className="h-8 w-10 flex items-center justify-center rounded-lg cursor-pointer relative"><Square size={14} /></motion.div>
+        <motion.div variants={closeLightVariants} initial="initial" whileHover="hover" whileTap="tap" onClick={() => appWindow?.close()} data-tooltip={tip.close} className="h-8 w-10 flex items-center justify-center rounded-lg cursor-pointer relative"><X size={16} /></motion.div>
       </div>
     </div>
   );

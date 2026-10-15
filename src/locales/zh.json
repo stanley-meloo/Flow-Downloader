@@ -1,7 +1,6 @@
 {
   "hero": {
-    "title": "FlowDownloader",
-    "subtitle": "随时随地下载任何内容。"
+    "subtitle": "随时下载任何内容，只需 2 次点击"
   },
   "search": {
     "placeholder": "在此处粘贴 URL...",
@@ -12,7 +11,6 @@
   },
   "queue": {
     "title": "下载队列",
-    "empty": "您的队列是空的",
     "open_folder": "查看文件",
     "cancel": "取消下载",
     "retry": "重试",
@@ -22,18 +20,13 @@
     "error": "下载错误",
     "speed": "速度",
     "eta": "剩余时间",
-    "calculating": "计算中...",
-    "error_missing": "找不到文件（已移动或删除）",
     "finished_in": "在 {{time}} 内完成",
-    "processing": "正在处理和转换…"
+    "processing": "正在处理和转换…",
+    "items_other": "{{count}} 项"
   },
   "media_modal": {
-    "title": "下载选项",
     "format": "格式",
     "quality": "质量",
-    "directory": "保存到",
-    "cancel": "取消",
-    "download": "立即下载",
     "output_format": "选择您想要下载的内容",
     "format_video_audio": "视频 + 音频",
     "format_video_only": "仅视频",
@@ -41,19 +34,19 @@
     "destination": "目标路径",
     "change": "更改",
     "audio": "音频",
-    "fps": "帧率 (FPS)",
-    "native_fps": "原生",
     "download_png": "下载封面图",
     "open_folder": "打开文件位置",
     "start_download": "下载",
-    "codec": "编码器",
-    "codec_h264": "H.264",
-    "codec_prores": "ProRes",
-    "codec_dnxhr": "DNxHR",
     "editor_warning": "1080p 以上的分辨率为 {{codec}} 编码，视频编辑器（Premiere、DaVinci…）无法打开。选择 1080p 或更低即可获得 H.264，或用在线转换器把该文件转换为 H.264。",
     "audio_best": "最佳 (~160 kbps)",
     "audio_medium": "中等 (128 kbps)",
-    "audio_low": "较低 (96 kbps)"
+    "audio_low": "较低 (96 kbps)",
+    "edit_title": "编辑标题",
+    "save_title": "保存标题",
+    "cancel_edit": "取消",
+    "reset_title": "恢复原标题",
+    "file_name": "文件名",
+    "title_placeholder": "自定义标题…"
   },
   "playlist_modal": {
     "badge": "播放列表",
@@ -70,8 +63,7 @@
   "setup_modal": {
     "title": "欢迎使用 FlowDownloader!",
     "subtitle": "让我们设置您的初始下载位置",
-    "select_folder": "选择默认下载文件夹",
-    "finish": "开始使用"
+    "select_folder": "选择默认下载文件夹"
   },
   "settings": {
     "title": "设置",
@@ -83,12 +75,13 @@
     "search_language": "搜索语言...",
     "tabs": {
       "general": "常规",
-      "visual": "外观"
+      "visual": "外观",
+      "shortcuts": "快捷键"
     },
     "general": {
       "path": "默认下载路径",
       "limit": "播放列表项目限制",
-      "limit_info": "您可以增加限制以扫描整个播放列表。为避免机器变慢和 YouTube 服务器封锁（错误 429），Flow 将智能处理下载，一次下载 3 个视频。",
+      "limit_info": "您可以增加限制以扫描整个播放列表。为避免机器变慢和 YouTube 服务器封锁（错误 429），Flow 将智能处理下载，一次下载 {{n}} 个视频。",
       "quality": "默认质量",
       "language": "界面语言",
       "engine": "下载引擎 (yt-dlp)",
@@ -100,7 +93,13 @@
       "cookies_file_choose": "使用 cookies.txt 文件…",
       "cookies_file_info": "Flow Downloader 出现“确认你不是机器人”的错误？请使用 cookies.txt 文件：在已登录的状态下，用浏览器扩展（如 'Get cookies.txt LOCALLY'）导出 YouTube 的 Cookie，然后在此选择该文件。",
       "autopaste": "自动粘贴链接",
-      "autopaste_info": "当你打开或切换到应用时，自动用剪贴板中的链接填充搜索栏。"
+      "autopaste_info": "当你打开或切换到应用时，自动用剪贴板中的链接填充搜索栏。",
+      "concurrent": "同时下载数",
+      "concurrent_info": "同时下载越多，在网速好时越快，但太多可能会被网站限速（错误 429）。",
+      "engine_uptodate": "已是最新",
+      "engine_updated": "已更新",
+      "engine_error": "无法更新，请重试",
+      "license": "MIT 许可证"
     },
     "visual": {
       "style": "背景图形引擎",
@@ -114,12 +113,6 @@
       "quantity": "线条数量",
       "distance": "间距",
       "radius": "交互 (鼠标)",
-      "strength": "力度 (鼠标)",
-      "speed": "速度",
-      "scale": "比例",
-      "distortion": "扭曲",
-      "noise": "颗粒 (噪点)",
-      "base_color": "背景颜色",
       "static_or_image": "静态颜色或自定义图片",
       "static_color": "静态颜色",
       "image": "自定义壁纸",
@@ -129,40 +122,131 @@
       "gradient": "顶部渐变",
       "darken": "变暗",
       "blur": "模糊",
-      "presets": "现成背景",
       "animated": "动态 (GIF)",
       "still": "静态 (图片)",
       "randomize": "启动时随机",
-      "wallpaper_credit": "壁纸来自 wallpaperaccess.com"
+      "wallpaper_credit": "壁纸来自 wallpaperaccess.com",
+      "film_grain": "胶片颗粒",
+      "film_grain_info": "在整个应用上叠加带轻微色差的电影颗粒。设为 0 即关闭。"
     },
     "done": "完成",
-    "no_languages": "未找到语言"
+    "no_languages": "未找到语言",
+    "shortcuts": {
+      "main_group": "主窗口",
+      "modal_group": "下载窗口",
+      "info": "点击一个快捷键，然后按下新的组合键。按 Esc 取消。",
+      "press_key": "请按下按键…",
+      "reset": "恢复默认",
+      "reset_all": "全部恢复默认",
+      "conflict": "该组合键已被“{{action}}”使用。",
+      "actions": {
+        "search": "搜索链接",
+        "paste": "粘贴链接",
+        "selectBar": "选中搜索栏",
+        "openSettings": "打开设置",
+        "download": "开始下载",
+        "closeModal": "关闭窗口"
+      }
+    }
   },
   "toast": {
-    "error_empty": "请输入链接。",
     "error_invalid": "链接无效或不受支持。",
     "success_added": "视频已添加到队列！",
     "success_thumb": "封面图下载成功！",
     "error_thumb": "无法下载封面图。",
-    "download_started": "下载已开始！",
-    "download_finished": "全部完成！下载结束。",
-    "error_generic": "出错了，请重试。",
     "clipboard_success": "链接粘贴成功！",
     "clipboard_empty": "剪贴板为空。",
-    "clipboard_error": "访问剪贴板时出错。",
-    "link_error": "请粘贴有效的链接。",
-    "data_error": "接收到的数据出错。",
-    "video_not_found": "视频未找到或不可用。",
-    "open_error": "打开位置时出错。",
-    "config_saved": "设置已应用！",
-    "ytdlp_checking": "正在检查 yt-dlp 更新…",
-    "ytdlp_updated": "yt-dlp 已更新到最新版本！",
-    "ytdlp_uptodate": "yt-dlp 已是最新版本。",
-    "ytdlp_update_error": "无法更新 yt-dlp。",
+    "clipboard_error": "无法读取剪贴板。",
+    "open_error": "无法打开文件或文件夹。",
+    "ytdlp_checking": "正在检查下载引擎更新…",
+    "ytdlp_updated": "下载引擎已更新。",
+    "ytdlp_uptodate": "下载引擎已是最新版本。",
+    "ytdlp_update_error": "无法更新下载引擎。",
     "youtube_bot_check": "YouTube 拦截了请求（机器人验证）。请在“设置 → 常规”中启用 Cookie。",
     "cookie_error": "无法读取浏览器的 Cookie。请尝试 Firefox 或 cookies.txt 文件。",
     "no_formats": "该视频没有可下载的格式（可能是直播、首映或仍在处理中）。",
-    "clipboard_autopaste": "已自动粘贴剪贴板中的链接。"
+    "clipboard_autopaste": "已自动粘贴剪贴板中的链接。",
+    "err_age": "有年龄限制：请在设置中添加 Cookie 后再下载。",
+    "err_private": "私享或仅限会员：需要有访问权限的账号的 Cookie。",
+    "err_geo": "在你所在的国家/地区不可用。",
+    "err_live": "该直播或首映尚未开始。",
+    "err_unavailable": "该视频不可用或已被删除。",
+    "err_disk": "无法保存文件。请检查文件夹和磁盘剩余空间。",
+    "err_ffmpeg": "无法完成文件。请重试或选择其他格式。",
+    "err_network": "网络连接有问题。请检查网络后重试。",
+    "err_unsupported": "不支持此链接。",
+    "err_download": "下载失败。请重试，或在设置中更新下载引擎。",
+    "app_update_error": "无法检查或安装更新。",
+    "app_update_wait": "请等待下载完成后再更新。",
+    "diagnostics_error": "无法生成诊断信息。",
+    "console_copied": "已复制控制台诊断。寻求帮助时请粘贴。",
+    "screenshot_saved": "截图已保存到 <path>图片/Flow Downloader</path> 并复制到剪贴板。",
+    "screenshot_error": "无法截图。",
+    "link_copied": "已复制链接。",
+    "title_copied": "已复制标题。",
+    "image_copied": "图片已复制到剪贴板。",
+    "image_copy_error": "无法复制图片。",
+    "titles": {
+      "success": "完成",
+      "error": "错误",
+      "info": "提示",
+      "download": "下载"
+    },
+    "close": "关闭"
   },
-  "support_flow": "支持 Flow Downloader 🪙"
+  "support_flow": "支持 Flow Downloader 🪙",
+  "folder_picker": {
+    "title": "选择下载文件夹",
+    "ok": "选择文件夹",
+    "file_name": "此文件夹",
+    "filter_media": "视频、音频和图片",
+    "filter_all": "所有文件"
+  },
+  "close_prompt": {
+    "title": "关闭 Flow Downloader？",
+    "count": "正在下载的文件：{{n}}",
+    "message": "如果现在关闭应用，这些下载将被取消，未完成的文件也会被删除。",
+    "waiting": "队列中等待：{{n}}",
+    "keep": "继续下载",
+    "close": "仍然关闭",
+    "closing": "正在关闭…"
+  },
+  "update": {
+    "available": "Flow Downloader {{version}} 已可用",
+    "install": "更新",
+    "installing": "正在安装…",
+    "dismiss": "关闭"
+  },
+  "context_menu": {
+    "copy": "复制",
+    "cut": "剪切",
+    "paste": "粘贴",
+    "reload": "重新加载",
+    "copy_console": "复制控制台诊断",
+    "screenshot": "截图",
+    "paste_search": "粘贴链接并搜索",
+    "open_last_folder": "打开上次的下载文件夹",
+    "settings": "设置",
+    "always_on_top": "窗口置顶",
+    "open_file": "打开文件",
+    "show_in_folder": "在文件夹中显示",
+    "copy_link": "复制原始链接",
+    "retry": "重试",
+    "download_again": "以其他画质重新下载",
+    "cancel": "取消",
+    "remove": "从列表中移除",
+    "clear": "清除",
+    "recent": "最近",
+    "save_thumbnail": "保存缩略图",
+    "copy_image": "复制图片",
+    "copy_title": "复制标题",
+    "clear_finished": "清除已完成",
+    "cancel_all": "全部取消"
+  },
+  "tooltips": {
+    "minimize": "最小化",
+    "maximize": "最大化",
+    "close": "关闭",
+    "remove": "移除"
+  }
 }

@@ -1,6 +1,6 @@
 [package]
 name = "flow-downloader"
-version = "1.1.0"
+version = "1.2.0"
 description = "Download videos, audio, and playlists from the web."
 authors = ["you"]
 edition = "2021"
@@ -21,9 +21,28 @@ tauri-build = { version = "2", features = [] }
 tauri = { version = "2", features = [] }
 tauri-plugin-opener = "2"
 serde = { version = "1", features = ["derive"] }
+# Not used by our own code, but required: tauri::generate_context!() expands to serde_json calls.
 serde_json = "1"
 tauri-plugin-shell = "2"
 tauri-plugin-dialog = "2"
 tauri-plugin-fs = "2"
 tauri-plugin-clipboard-manager = "2"
+# Only its bundled HTTP client (reqwest) is used, by the Rust thumbnail saver.
 tauri-plugin-http = "2"
+tauri-plugin-updater = "2"
+tauri-plugin-process = "2"
+# Right-click menu "Print": captures only the app window (src/screenshot.rs).
+xcap = "0.9"
+image = { version = "0.25", default-features = false, features = ["png", "jpeg", "webp", "gif"] }
+chrono = { version = "0.4", default-features = false, features = ["clock"] }
+
+# Windows only: native folder dialog (IFileOpenDialog) that also shows files.
+# Its HWND is rebuilt from Tauri's raw handle, so this doesn't have to match the
+# `windows` version Tauri itself uses.
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.61", features = [
+  "Win32_Foundation",
+  "Win32_System_Com",
+  "Win32_UI_Shell",
+  "Win32_UI_Shell_Common",
+] }

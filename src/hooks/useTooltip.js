@@ -1,24 +1,30 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 
 /**
- * Shared cursor-following tooltip state.
+ * Shared tooltip state (one instance at the app root, rendered by <Tooltip>).
  *
- * One instance lives at the app root; every element that wants a tooltip calls
- * the returned handlers on mouse enter/move/leave. `align` / `vAlign` let the
- * caller pick which corner the bubble grows from (so it never clips offscreen).
+ * The bubble is anchored to the hovered element (not the cursor): centered
+ * below it, or above / to the left when there's no room (see Tooltip.jsx).
+ *
+ * Two ways to get a tooltip:
+ *   - declarative: any element with data-tooltip="text" (optional
+ *     data-tooltip-place="top|bottom|left|right", and data-tooltip-variant="text"
+ *     for a sentence instead of a short label) — handled by <Tooltip>;
+ *   - imperative (older call sites): enter(e, text) / move / leave handlers.
+ *     The old align/vAlign arguments are accepted and ignored.
  */
 export default function useTooltip() {
-  const [tooltip, setTooltip] = useState({ visible: false, text: "", x: 0, y: 0, align: "right", vAlign: "bottom" });
+  const [tooltip, setTooltip] = useState({ visible: false, text: "", rect: null, place: null, source: null });
 
-  const handleTooltipEnter = (e, text, align = "right", vAlign = "bottom") => {
-    setTooltip({ visible: true, text, x: e.clientX, y: e.clientY, align, vAlign });
-  };
-  const handleTooltipMove = (e) => {
-    if (tooltip.visible) setTooltip(prev => ({ ...prev, x: e.clientX, y: e.clientY }));
-  };
-  const handleTooltipLeave = () => {
-    setTooltip(prev => ({ ...prev, visible: false }));
-  };
+  const show = useCallback((el, text, place = null, source = "handler", variant = "label") => {
+    if (!el || !text) return;
+    const r = el.getBoundingClientRect();
+    setTooltip({ visible: true, text, rect: { left: r.left, top: r.top, right: r.right, bottom: r.bottom, width: r.width, height: r.height }, place, source, variant, el });
+  }, []);
 
-  return { tooltip, handleTooltipEnter, handleTooltipMove, handleTooltipLeave };
+  const handleTooltipEnter = useCallback((e, text) => show(e.currentTarget, text), [show]);
+  const handleTooltipMove = useCallback(() => {}, []); // anchored: nothing to follow
+  const handleTooltipLeave = useCallback(() => setTooltip((prev) => (prev.visible ? { ...prev, visible: false } : prev)), []);
+
+  return { tooltip, show, handleTooltipEnter, handleTooltipMove, handleTooltipLeave };
 }

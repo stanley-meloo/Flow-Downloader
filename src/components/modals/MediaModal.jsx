@@ -1,13 +1,15 @@
-import { useState, useEffect, useMemo } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  X, FolderOpen, Music, Camera, EarOff, Monitor, FilePlay,
-  FileMusic, Download, Image as ImageIcon, ExternalLink, Check, ChevronDown, AlertTriangle
-} from "lucide-react";
-import { open as openDialog } from "@tauri-apps/plugin-dialog";
-import { downloadDir, join } from "@tauri-apps/api/path";
-import { writeFile } from "@tauri-apps/plugin-fs";
-import { openMediaLocation, fetchBestThumbnail } from "../../utils/fileSystem";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { motion } from "framer-motion";
+import { Music, Camera, EarOff, Monitor, FilePlay, FileMusic, Image as ImageIcon, AlertTriangle, Pencil, X } from "lucide-react";
+import { FolderOpenIcon as FolderOpen, DownloadIcon as Download, RotateCcwIcon as RotateCcw, ExternalLinkIcon as ExternalLink, CheckIcon as Check } from "../ui/AnimatedIcons"; // animated (lucide-animated)
+import { openMediaLocation, saveBestThumbnail } from "../../utils/fileSystem";
+import { pickFolder } from "../../utils/folderPicker";
+import { Swap, Collapse, Pop } from "../ui/Motion";
+import LiquidGlass from "../ui/liquidGlass/LiquidGlass";
+import { DIALOG_GLASS } from "../ui/liquidGlass/presets";
+import { DEFAULT_KEYBINDS, matchesBind } from "../../utils/keybinds";
+import { isYouTubeExtractor, sanitizeTitle } from "../../utils/media";
+import { qualitiesOf, initialQuality, qualityOptionsOf, audioOptionsOf, formatOptionsOf, needsEditorWarning, formatDuration, DropdownConfigBox } from "./downloadOptions";
 
 import { useTranslation } from 'react-i18next';
 
@@ -21,40 +23,94 @@ export default function MediaModal({
   setDownloadPath,
   showToast,
   tooltipHandlers,
-  defaultQuality 
+  defaultQuality,
+  keybinds
 }) {
   const { t } = useTranslation();
+  const kb = keybinds || DEFAULT_KEYBINDS;
 
-  // --- YT-DLP DYNAMIC DATA ---
-  const availableQualities = mediaData?.availableQualities?.length > 0 ? mediaData.availableQualities : [2160, 1440, 1080, 720, 480, 360, 240, 144];
-
-  // --- AUTOMATIC QUALITY CALCULATION ---
-  const getInitialQuality = () => {
-    if (!defaultQuality || defaultQuality === "best") return availableQualities[0].toString();
-
-    const targetQuality = parseInt(defaultQuality.replace("p", ""));
-
-    if (availableQualities.includes(targetQuality)) {
-      return targetQuality.toString();
-    }
-
-    const closestQuality = availableQualities.find(q => q <= targetQuality);
-    return closestQuality ? closestQuality.toString() : availableQualities[0].toString();
-  };
+  // Qualities yt-dlp reported (shared helpers: ./downloadOptions)
+  const availableQualities = qualitiesOf(mediaData);
 
   // --- STATES ---
-  const [quality, setQuality] = useState(getInitialQuality()); // seeded from the Settings default-quality logic
+  const [quality, setQuality] = useState(() => initialQuality(availableQualities, defaultQuality)); // Settings default, or the closest lower
   const [audioKbps, setAudioKbps] = useState('160kb'); // YouTube tops out at ~160 kbps (Opus)
   const [formatExt, setFormatExt] = useState(".mp4");
 
   const [thumbStatus, setThumbStatus] = useState("idle");
   const [savedThumbPath, setSavedThumbPath] = useState("");
 
+  // --- CUSTOM TITLE ---
+  // The user can rename the download. The (custom) title becomes the filename,
+  // still sanitized by the downloader (spaces -> "_", illegal chars removed).
+  const originalTitle = mediaData?.title || '';
+  const [customTitle, setCustomTitle] = useState(originalTitle);
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [draftTitle, setDraftTitle] = useState(originalTitle);
+
+  // The dialog widens for long titles (within design limits) instead of only
+  // growing taller: the title is measured and the card gets the width that
+  // fits it in 2 lines — between max-w-3xl (768) and 1024 px, never wider
+  // than the window allows.
+  const [viewportW, setViewportW] = useState(() => window.innerWidth);
   useEffect(() => {
-    const handleEsc = (e) => { if (e.key === "Escape") close(); };
-    window.addEventListener("keydown", handleEsc);
-    return () => window.removeEventListener("keydown", handleEsc);
-  }, [close]);
+    const onResize = () => setViewportW(window.innerWidth);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  // Thumbnail follows the info column's height (keeping 16:9), so a tall
+  // 2-line title doesn't leave an empty gap under it: width = height · 16/9,
+  // between 192 (md:w-48) and THUMB_MAX_W. Only in the side-by-side layout.
+  const infoRef = useRef(null);
+  const [thumbW, setThumbW] = useState(THUMB_MIN_W);
+  useEffect(() => {
+    const el = infoRef.current;
+    if (!el) return;
+    const measure = () => {
+      if (window.innerWidth < 768) { setThumbW(THUMB_MIN_W); return; } // stacked layout (below md)
+      const w = Math.round(Math.min(THUMB_MAX_W, Math.max(THUMB_MIN_W, (el.offsetHeight * 16) / 9)));
+      setThumbW((prev) => (Math.abs(prev - w) > 1 ? w : prev));
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  // The card also gives back the room the bigger thumbnail takes.
+  const cardWidth = useMemo(
+    () => dialogWidthForTitle(customTitle, viewportW, thumbW - THUMB_MIN_W),
+    [customTitle, viewportW, thumbW]
+  );
+  const titleChanged = customTitle !== originalTitle;
+
+  const startEditTitle = () => { tooltipHandlers?.leave(); setDraftTitle(customTitle); setEditingTitle(true); };
+  const commitTitle = () => { tooltipHandlers?.leave(); setCustomTitle(draftTitle.trim() || originalTitle); setEditingTitle(false); };
+  const cancelEditTitle = () => { tooltipHandlers?.leave(); setDraftTitle(customTitle); setEditingTitle(false); };
+  const resetTitle = () => { tooltipHandlers?.leave(); setCustomTitle(originalTitle); setDraftTitle(originalTitle); };
+
+  // Set once the download was submitted, so double-clicks / a held Enter key
+  // can't add the same video to the queue twice.
+  const submittedRef = useRef(false);
+  const confirmRef = useRef(null);
+
+  // Modal shortcuts (configurable in Settings → Shortcuts): download (Enter by
+  // default) and close (Escape by default). Ignored while typing in an input,
+  // e.g. while editing the title (that input handles its own Enter/Escape).
+  useEffect(() => {
+    const onKey = (e) => {
+      const tag = e.target?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+      if (matchesBind(e, kb.closeModal)) { e.preventDefault(); close(); return; }
+      if (matchesBind(e, kb.download)) {
+        e.preventDefault(); // also stops a focused button from being "clicked" by Enter
+        if (!e.repeat) confirmRef.current?.();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [close, kb.closeModal, kb.download]);
 
   useEffect(() => {
     return () => tooltipHandlers?.leave();
@@ -65,45 +121,25 @@ export default function MediaModal({
   }, [selectedFormat]);
 
   // --- DROPDOWN OPTIONS ---
-  const qualityOptions = availableQualities.map(q => ({ value: q.toString(), label: `${q}p` }));
-  // YouTube's real audio ceiling is ~160 kbps (Opus) / 128 kbps (AAC) — there is
-  // no 320 kbps source, so these are the honest tiers.
-  const audioOptions = [
-    { value: '160kb', label: t('media_modal.audio_best', { defaultValue: 'Melhor (~160 kbps)' }) },
-    { value: '128kb', label: t('media_modal.audio_medium', { defaultValue: 'Média (128 kbps)' }) },
-    { value: '96kb', label: t('media_modal.audio_low', { defaultValue: 'Baixa (96 kbps)' }) }
-  ];
+  const qualityOptions = qualityOptionsOf(availableQualities);
+  const audioOptions = audioOptionsOf(t);
   const currentAudioLabel = audioOptions.find(o => o.value === audioKbps)?.label || audioOptions[0].label;
-
-  // Editor-compatibility warning. YouTube always serves H.264 (avc1) up to 1080p;
-  // ONLY above 1080p is the stream VP9/AV1, which many editors (Premiere/DaVinci)
-  // can't open. So we warn strictly above 1080p — never at 1080p or below. (We do
-  // NOT rely on the detected h264MaxHeight here, since format detection can
-  // under-report and produce false warnings at 1080p.)
-  const selectedHeight = parseInt(quality, 10);
   const warnCodec = mediaData?.highResCodec || 'AV1';
-  const showEditorWarning = selectedFormat !== 'audio' && !isNaN(selectedHeight) && selectedHeight > 1080;
-
-  const formatOptions = selectedFormat === 'audio'
-    ? [{ value: '.mp3', label: '.mp3' }, { value: '.wav', label: '.wav' }, { value: '.m4a', label: '.m4a' }, { value: '.aac', label: '.aac' }]
-    : [{ value: '.mp4', label: '.mp4' }, { value: '.mkv', label: '.mkv' }, { value: '.webm', label: '.webm' }];
+  const showEditorWarning = needsEditorWarning(selectedFormat, quality);
+  const formatOptions = formatOptionsOf(selectedFormat);
 
   async function downloadThumbnail() {
     setThumbStatus("downloading");
     try {
-      // Fetch the highest-resolution thumbnail (maxres -> sd -> hq -> fallback).
-      const { bytes, ext } = await fetchBestThumbnail(mediaData.id, mediaData.thumbnail);
-
-      const downloadFolder = await downloadDir();
-      const safeTitle = mediaData.title.replace(/[\\/:*?"<>|]/g, "").replace(/ /g, "_");
-
-      const fileName = `${safeTitle}_thumb.${ext}`;
-      const fullPath = await join(downloadFolder, fileName);
-
-      await writeFile(fullPath, bytes);
-
-      const normalizedPath = fullPath.replace(/\\/g, '/');
-      setSavedThumbPath(normalizedPath);
+      // Highest resolution available (YouTube: maxres -> sd -> hq), then the
+      // URL yt-dlp reported. Saved (with the signature) by the Rust side.
+      const savedPath = await saveBestThumbnail({
+        videoId: mediaData.id,
+        isYouTube: isYouTubeExtractor(mediaData.extractor_key),
+        fallbackUrl: mediaData.thumbnail,
+        title: customTitle,
+      });
+      setSavedThumbPath(savedPath);
       setThumbStatus("success");
       showToast("success_thumb", "success");
     } catch (err) {
@@ -113,57 +149,74 @@ export default function MediaModal({
     }
   }
 
-  const formatTime = (seconds) => {
-    const s = Number(seconds);
-    if (isNaN(s) || s <= 0) return "00:00";
-    const h = Math.floor(s / 3600);
-    const m = Math.floor((s % 3600) / 60);
-    const secs = Math.floor(s % 60);
-    if (h > 0) {
-      return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    }
-    return `${m}:${secs.toString().padStart(2, '0')}`;
-  };
-
   const handleConfirm = () => {
-    onConfirm({ res: quality, ext: formatExt.replace('.', ''), audio: audioKbps.replace('kb', '') }, selectedFormat);
+    if (submittedRef.current) return; // already submitted — ignore repeats
+    submittedRef.current = true;
+    // If the title editor is still open, use what's typed there.
+    const finalTitle = editingTitle ? (draftTitle.trim() || originalTitle) : customTitle;
+    onConfirm(
+      { res: quality, ext: formatExt.replace('.', ''), audio: audioKbps.replace('kb', '') },
+      selectedFormat,
+      { ...mediaData, title: finalTitle }
+    );
   };
+  confirmRef.current = handleConfirm;
+
+  // Exact filename the download will get (same sanitizing as the downloader).
+  const previewExt = formatExt.replace('.', '');
+  const fileNamePreview = `${sanitizeTitle(editingTitle ? (draftTitle.trim() || originalTitle) : customTitle)}.${previewExt}`;
 
   return (
     <div className="fixed inset-0 z-20 flex items-center justify-center p-6">
       <motion.div
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
         onClick={close}
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+        // No dark tint here: the dimming is done inside the app background
+        // (App.jsx), so this dialog's liquid glass sees it too.
+        className="absolute inset-0 backdrop-blur-sm"
       />
 
       <motion.div
         initial={{ opacity: 0, scale: 0.98, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.98, y: 10 }}
-        className="relative w-full max-w-3xl bg-zinc-950/80 border border-white/10 rounded-xl shadow-2xl overflow-visible"
+        style={{ maxWidth: cardWidth }}
+        className="relative isolate w-full rounded-[36px] shadow-2xl overflow-visible backdrop-blur-md transition-[max-width] duration-300 ease-out" /* no CSS bg/border: the glass draws them */
       >
+        {/* Liquid glass background — same material as the Settings dialog.
+            Behind all the content (negative z inside the isolated dialog). */}
+        <LiquidGlass
+          variant="dark"
+          settings={DIALOG_GLASS}
+          radius={36}
+          className="absolute inset-0 -z-10 pointer-events-none rounded-[36px]"
+          fallbackClassName="bg-zinc-950/80 backdrop-blur-2xl border border-white/10"
+        />
         <div className="p-6 flex flex-col md:flex-row gap-5 border-b border-white/5 bg-transparent">
 
           {/* Thumbnail */}
           <div
-            className={`w-full md:w-48 aspect-video rounded-md overflow-hidden shrink-0 relative group transition-all 
+            style={viewportW >= 768 ? { width: thumbW } : undefined}
+            className={`w-full aspect-video md:self-center rounded-xl overflow-hidden isolate [transform:translateZ(0)] shrink-0 relative group transition-[width] duration-300 ease-out 
             ${thumbStatus === 'success' ? 'ring-1 ring-emerald-500 cursor-default' : 'cursor-pointer'} 
           `}
             onClick={thumbStatus === 'idle' ? downloadThumbnail : undefined}
+            data-ctx="media-thumb" /* right-click menu */
           >
             <img
               src={mediaData.thumbnail}
-              className={`w-full h-full object-cover transition-all duration-500 ${thumbStatus === 'success' ? '' : ''} group-hover:blur-[2px]`}
+              className="w-full h-full object-cover transition-all duration-500 group-hover:blur-[2px] group-hover:scale-105"
               referrerPolicy="no-referrer"
             />
 
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-all duration-300">
+              {/* idle → downloading → success crossfade into each other */}
+              <Swap id={thumbStatus} as="div" className="flex flex-col items-center justify-center">
               {thumbStatus === 'idle' && (
                 <>
                   <ImageIcon size={20} className="text-white mb-1" />
                   <span className="text-[12px] font-bold text-white uppercase tracking-tighter">
-                    {t('media_modal.download_png', { defaultValue: 'Baixar Imagem' })}
+                    {t('media_modal.download_png', { defaultValue: 'Download Image' })}
                   </span>
                 </>
               )}
@@ -183,7 +236,7 @@ export default function MediaModal({
                     // in the folder (revealItemInDir), like the download queue does.
                     openMediaLocation(dir, fullName, '', '', showToast);
                   }}
-                  onMouseEnter={(e) => tooltipHandlers?.enter(e, t('media_modal.open_folder', { defaultValue: 'Abrir local do arquivo' }), "left", "top")}
+                  onMouseEnter={(e) => tooltipHandlers?.enter(e, t('media_modal.open_folder', { defaultValue: 'Open file location' }), "left", "top")}
                   onMouseMove={tooltipHandlers?.move}
                   onMouseLeave={tooltipHandlers?.leave}
                   className="bg-emerald-500 text-white p-2 rounded-full hover:scale-110 transition-transform shadow-lg cursor-pointer pointer-events-auto z-20 relative"
@@ -191,32 +244,73 @@ export default function MediaModal({
                   <ExternalLink size={16} />
                 </button>
               )}
+              </Swap>
             </div>
 
-            {thumbStatus === 'success' && (
-              <div className="absolute top-2 right-2 bg-emerald-500 text-white p-1 rounded-sm shadow-lg pointer-events-none">
-                <Check size={10} strokeWidth={4} />
-              </div>
-            )}
+            <Pop show={thumbStatus === 'success'} as="div" className="absolute top-2 right-2 bg-emerald-500 text-white p-1 rounded shadow-lg pointer-events-none">
+              <Check size={10} strokeWidth={4} />
+            </Pop>
           </div>
 
           {/* Video Info */}
-          <div className="flex-1 min-w-0 flex flex-col justify-center pt-1">
+          <div ref={infoRef} className="flex-1 min-w-0 flex flex-col justify-center pt-1">
             <span className="text-[12px] font-black text-zinc-600 uppercase tracking-widest mb-1">
               {mediaData.extractor_key || "Web"}
             </span>
-            <h3 className="text-white text-lg font-bold leading-snug line-clamp-2 mb-0.5 pr-6">
-              {mediaData.title}
-            </h3>
+            {/* Title — editable: the (custom) title becomes the downloaded filename.
+                The title and its editor crossfade into each other. */}
+            <Swap id={editingTitle ? 'editing' : 'view'} as="div" className="block">
+            {editingTitle ? (
+              <div className="flex items-center gap-1.5 mb-1 pr-8">
+                <input
+                  autoFocus
+                  value={draftTitle}
+                  onChange={(e) => setDraftTitle(e.target.value)}
+                  onFocus={(e) => e.target.select()}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') { e.preventDefault(); commitTitle(); }
+                    else if (e.key === 'Escape') { e.preventDefault(); cancelEditTitle(); }
+                  }}
+                  placeholder={t('media_modal.title_placeholder', { defaultValue: 'Custom title…' })}
+                  className="flex-1 min-w-0 bg-zinc-900/70 border border-indigo-500/50 focus:border-indigo-400 rounded-md px-2.5 py-1.5 text-white text-[15px] font-bold outline-none"
+                />
+                <TitleButton onClick={commitTitle} label={t('media_modal.save_title', { defaultValue: 'Save title' })} tooltipHandlers={tooltipHandlers} className="text-emerald-400 hover:bg-emerald-500/10">
+                  <Check size={16} strokeWidth={3} />
+                </TitleButton>
+                <TitleButton onClick={cancelEditTitle} label={t('media_modal.cancel_edit', { defaultValue: 'Cancel' })} tooltipHandlers={tooltipHandlers} className="text-zinc-400 hover:text-white hover:bg-white/5">
+                  <X size={16} />
+                </TitleButton>
+              </div>
+            ) : (
+              <div className="flex items-start gap-1 mb-0.5 pr-8">
+                <Swap id={customTitle} as="h3" className="text-white text-lg font-bold leading-snug line-clamp-2">
+                  {customTitle}
+                </Swap>
+                <TitleButton onClick={startEditTitle} label={t('media_modal.edit_title', { defaultValue: 'Edit title' })} tooltipHandlers={tooltipHandlers} className="text-zinc-500 hover:text-white hover:bg-white/5 mt-0.5">
+                  <Pencil size={14} />
+                </TitleButton>
+                <Pop show={titleChanged} className="flex">
+                  <TitleButton onClick={resetTitle} label={t('media_modal.reset_title', { defaultValue: 'Restore original title' })} tooltipHandlers={tooltipHandlers} className="text-zinc-500 hover:text-amber-300 hover:bg-white/5 mt-0.5">
+                    <RotateCcw size={13} />
+                  </TitleButton>
+                </Pop>
+              </div>
+            )}
+            </Swap>
             <p className="text-zinc-400 text-sm font-semibold hover:text-zinc-200 transition-colors cursor-default">
               {mediaData.uploader || t('playlist_modal.unknown_uploader', { defaultValue: 'Unknown channel' })}
             </p>
             <div className="flex items-center gap-1 text-zinc-500 text-[12px] font-semibold mt-1">
-              <span>{formatTime(mediaData.duration)}</span>
+              <span>{formatDuration(mediaData.duration)}</span>
+            </div>
+            {/* Filename preview (shows the "_" for spaces rule) */}
+            <div className="text-[11px] text-zinc-500 mt-1 truncate pr-8" data-tooltip={fileNamePreview}>
+              {t('media_modal.file_name', { defaultValue: 'File name' })}:{' '}
+              <span className={`font-mono transition-colors duration-300 ${titleChanged ? 'text-indigo-300' : 'text-zinc-400'}`}>{fileNamePreview}</span>
             </div>
           </div>
 
-          <button onClick={close} className="absolute top-4 right-4 p-1 text-zinc-600 hover:text-white hover:bg-white/5 rounded-lg transition-all cursor-pointer">
+          <button onClick={close} data-tooltip={t('tooltips.close', { defaultValue: 'Close' })} className="absolute top-4 right-4 p-1 text-zinc-600 hover:text-white hover:bg-white/5 rounded-full transition-all cursor-pointer">
             <X size={20} />
           </button>
         </div>
@@ -227,9 +321,9 @@ export default function MediaModal({
             {/* Type Selector */}
             <div className="md:col-span-3 space-y-2.5">
               <label className="text-[12px] font-black text-zinc-600 uppercase tracking-widest px-1">
-                {t('media_modal.output_format', { defaultValue: 'Formato de Saída' })}
+                {t('media_modal.output_format', { defaultValue: 'Choose what you want to download' })}
               </label>
-              <div className="flex bg-zinc-900/50 p-1 h-[44px] rounded-lg border border-white/5 relative">
+              <div className="flex bg-zinc-900/50 p-1 h-[44px] rounded-xl border border-white/5 relative">
                 {[
                   { id: 'video', icon: Camera, labelKey: 'media_modal.format_video_audio', defaultLabel: 'Video + Audio' },
                   { id: 'video_only', icon: EarOff, labelKey: 'media_modal.format_video_only', defaultLabel: 'Apenas Video' },
@@ -240,9 +334,9 @@ export default function MediaModal({
                     <button
                       key={type.id}
                       onClick={() => setSelectedFormat(type.id)}
-                      className={`relative flex-1 flex items-center justify-center h-full px-2 rounded-md cursor-pointer outline-none transition-colors z-10 ${isActive ? "text-black font-bold" : "text-zinc-500 hover:text-zinc-300 font-medium"}`}
+                      className={`relative flex-1 flex items-center justify-center h-full px-2 rounded-lg cursor-pointer outline-none transition-colors z-10 ${isActive ? "text-black font-bold" : "text-zinc-500 hover:text-zinc-300 font-medium"}`}
                     >
-                      {isActive && <motion.div layoutId="activeFormatBackground" className="absolute inset-0 bg-white rounded-md shadow-sm" transition={{ type: "spring", stiffness: 350, damping: 25 }} />}
+                      {isActive && <motion.div layoutId="activeFormatBackground" className="absolute inset-0 bg-white rounded-lg shadow-sm" transition={{ type: "spring", stiffness: 350, damping: 25 }} />}
                       <span className="relative z-20 flex items-center gap-1.5">
                         <type.icon size={15} />
                         <span className="text-[10.5px] tracking-wide whitespace-nowrap">
@@ -258,16 +352,16 @@ export default function MediaModal({
             {/* Path */}
             <div className="md:col-span-2 space-y-2.5">
               <label className="text-[12px] font-black text-zinc-600 uppercase tracking-widest px-1">
-                {t('media_modal.destination', { defaultValue: 'Destino' })}
+                {t('media_modal.destination', { defaultValue: 'Destination' })}
               </label>
               <div
-                onClick={() => openDialog({ directory: true, multiple: false, defaultPath: downloadPath }).then(s => s && setDownloadPath(s.replace(/\\/g, "/")))}
-                className="flex items-center gap-3 p-1.5 pl-3 h-[44px] bg-zinc-900/50 border border-white/5 rounded-lg hover:border-white/10 transition-all cursor-pointer group"
+                onClick={() => pickFolder(downloadPath).then(s => s && setDownloadPath(s))}
+                className="flex items-center gap-3 p-1.5 pl-3 h-[44px] bg-zinc-900/50 border border-white/5 rounded-xl hover:border-white/10 transition-all cursor-pointer group"
               >
-                <FolderOpen size={14} className="text-zinc-600 group-hover:text-zinc-400 shrink-0" />
-                <span className="flex-1 text-[12px] text-zinc-400 truncate font-mono">{downloadPath || "Downloads"}</span>
-                <div className="px-2.5 py-1 bg-zinc-800 rounded text-[12px] font-bold text-zinc-500 group-hover:text-white shrink-0 uppercase">
-                  {t('media_modal.change', { defaultValue: 'ALTERAR' })}
+                <FolderOpen size={14} className="text-zinc-600 group-hover:text-zinc-400 shrink-0 transition-colors" />
+                <Swap id={downloadPath} className="flex-1 min-w-0 block text-[12px] text-zinc-400 truncate font-path">{downloadPath || "Downloads"}</Swap>
+                <div className="px-2.5 py-1 bg-zinc-800 rounded-md text-[12px] font-bold text-zinc-500 group-hover:text-white shrink-0 uppercase transition-colors">
+                  {t('media_modal.change', { defaultValue: 'Change' })}
                 </div>
               </div>
             </div>
@@ -276,7 +370,7 @@ export default function MediaModal({
           {/* CONFIG BOXES */}
           <div className="grid grid-cols-3 gap-3">
             <DropdownConfigBox
-              label={t('media_modal.quality', { defaultValue: 'Qualidade' })}
+              label={t('media_modal.quality', { defaultValue: 'Quality' })}
               icon={Monitor}
               valueLabel={`${quality}p`}
               options={qualityOptions}
@@ -284,7 +378,7 @@ export default function MediaModal({
               onSelect={(val) => setQuality(val)}
             />
             <DropdownConfigBox
-              label={t('media_modal.format', { defaultValue: 'Formato' })}
+              label={t('media_modal.format', { defaultValue: 'Format' })}
               icon={FilePlay}
               valueLabel={formatExt}
               options={formatOptions}
@@ -292,7 +386,7 @@ export default function MediaModal({
               onSelect={(val) => setFormatExt(val)}
             />
             <DropdownConfigBox
-              label={t('media_modal.audio', { defaultValue: 'Áudio' })}
+              label={t('media_modal.audio', { defaultValue: 'Audio' })}
               icon={FileMusic}
               valueLabel={currentAudioLabel}
               options={audioOptions}
@@ -301,25 +395,26 @@ export default function MediaModal({
             />
           </div>
 
-          {/* Editor-compatibility warning (shown for >1080p VP9/AV1 downloads) */}
-          {showEditorWarning && (
+          {/* Editor-compatibility warning (shown for >1080p VP9/AV1 downloads).
+              Slides open/closed; gap = this container's space-y-6 (24px). */}
+          <Collapse show={showEditorWarning} gap={24}>
             <div className="flex items-start gap-2.5 p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl">
               <AlertTriangle size={16} className="text-amber-400 shrink-0 mt-0.5" />
               <p className="text-[11.5px] text-amber-200/90 leading-snug">
                 {t('media_modal.editor_warning', {
                   codec: warnCodec,
-                  defaultValue: `Resoluções acima de 1080p vêm em {{codec}}, que editores de vídeo (Premiere, DaVinci...) não abrem. Escolha 1080p ou menos para ter H.264, ou converta este arquivo para H.264 com um conversor online.`
+                  defaultValue: `Resolutions above 1080p come in {{codec}}, which video editors (Premiere, DaVinci…) can't open. Choose 1080p or lower to get H.264, or convert this file to H.264 with an online converter.`
                 })}
               </p>
             </div>
-          )}
+          </Collapse>
 
           {/* START DOWNLOAD BUTTON */}
           <motion.button
             whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.98 }}
             onClick={handleConfirm}
-            className="relative w-full py-4 rounded-lg bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white font-black text-sm flex items-center justify-center gap-3 cursor-pointer group overflow-hidden border border-indigo-400/30 shadow-[0_0_30px_-5px_rgba(79,70,229,0.5)] hover:shadow-[0_0_40px_0px_rgba(79,70,229,0.7)] transition-all"
+            className="relative w-full py-4 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white font-black text-sm flex items-center justify-center gap-3 cursor-pointer group overflow-hidden border border-indigo-400/30 shadow-[0_0_30px_-5px_rgba(79,70,229,0.5)] hover:shadow-[0_0_40px_0px_rgba(79,70,229,0.7)] transition-all"
           >
             <motion.div
               animate={{ left: ["-100%", "200%"] }}
@@ -345,7 +440,7 @@ export default function MediaModal({
               </motion.div>
 
               <span className="uppercase tracking-widest text-[13px] drop-shadow-md">
-                {t('media_modal.start_download', { defaultValue: 'Iniciar Download' })}
+                {t('media_modal.start_download', { defaultValue: 'Download' })}
               </span>
             </div>
           </motion.button>
@@ -355,59 +450,47 @@ export default function MediaModal({
   );
 }
 
-function DropdownConfigBox({ label, icon: Icon, valueLabel, options, active, onSelect }) {
-  const [isOpen, setIsOpen] = useState(false);
-
+// Small icon button used by the title editor (edit / save / cancel / reset),
+// with the app's tooltip.
+// stopPropagation keeps clicks from bubbling to parents (e.g. a selectable card).
+function TitleButton({ onClick, label, tooltipHandlers, className = '', children }) {
   return (
-    <div className="flex flex-col"> 
-      <label className="text-[11px] font-black text-zinc-600 uppercase tracking-widest px-1 mb-1.5">
-        {label}
-      </label>
-
-      <div className="relative">
-        <button
-          onClick={() => active && setIsOpen(!isOpen)}
-          className={`w-full flex items-center justify-between p-2.5 px-3 rounded-lg border transition-all duration-500 ease-in-out h-[44px] ${active
-              ? isOpen
-                ? "bg-zinc-800 border-white/20 shadow-inner"
-                : "bg-zinc-900/40 border-white/5 hover:bg-zinc-900 hover:border-white/10 cursor-pointer active:scale-95"
-              : "opacity-10 grayscale cursor-not-allowed"
-            }`}
-        >
-          <div className="flex items-center gap-2 overflow-hidden">
-            <Icon size={14} className="text-zinc-500 shrink-0" />
-            <span className="text-[11.5px] font-bold text-zinc-200 truncate">{valueLabel}</span>
-          </div>
-
-          {active && <ChevronDown size={12} className={`text-zinc-500 transition-transform duration-300 shrink-0 ${isOpen ? 'rotate-180' : ''}`} />}
-        </button>
-
-        <AnimatePresence>
-          {isOpen && active && (
-            <>
-              <div className="fixed inset-0 z-30" onClick={(e) => { e.stopPropagation(); setIsOpen(false); }} />
-              <motion.div
-                initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                transition={{ duration: 0.15 }}
-                className="absolute bottom-full left-0 right-0 mb-1 bg-zinc-900 border border-zinc-800 rounded-lg shadow-2xl z-40 overflow-hidden py-1 max-h-48 overflow-y-auto custom-scrollbar ring-1 ring-black/50 origin-bottom"
-              >
-                {options.map((opt, i) => (
-                  <button
-                    key={i}
-                    onClick={() => { onSelect(opt.value); setIsOpen(false); }}
-                    className={`w-full text-left px-3 py-2.5 text-[12px] font-bold transition-colors hover:bg-zinc-800 ${valueLabel === opt.label ? 'text-white bg-zinc-800/50' : 'text-zinc-400'
-                      }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </motion.div>
-            </>
-          )}
-        </AnimatePresence>
-      </div>
-    </div>
+    <button
+      type="button"
+      onClick={(e) => { e.stopPropagation(); onClick(); }}
+      onMouseEnter={(e) => tooltipHandlers?.enter?.(e, label, "left", "top")}
+      onMouseMove={tooltipHandlers?.move}
+      onMouseLeave={tooltipHandlers?.leave}
+      aria-label={label}
+      className={`p-1 rounded-md transition-colors cursor-pointer shrink-0 ${className}`}
+    >
+      {children}
+    </button>
   );
+}
+
+// --- Dialog width for a title ----------------------------------------------
+// Card layout (md+): 24 padding · 192 thumbnail · 20 gap · title column · 32
+// right space for the ✕ · 24 padding; the title row also holds the edit button
+// (~30 px). The title is text-lg bold (18 px Quicksand) and may use 2 lines.
+const DIALOG_MIN_W = 768;   // max-w-3xl, the original width
+const DIALOG_MAX_W = 1024;  // design limit
+const DIALOG_CHROME_W = 24 + 192 + 20 + 32 + 24 + 30;
+const THUMB_MIN_W = 192;    // md:w-48
+const THUMB_MAX_W = 288;    // 162 px tall at 16:9
+let measureCtx = null;
+
+function dialogWidthForTitle(title, viewportW, extraThumbW = 0) {
+  const fitWindow = Math.max(320, viewportW - 48); // the overlay's p-6 on both sides
+  let wanted = DIALOG_MIN_W;
+  try {
+    measureCtx ??= document.createElement("canvas").getContext("2d");
+    measureCtx.font = "700 18px Quicksand, ui-sans-serif, system-ui, sans-serif";
+    const textW = measureCtx.measureText(title || "").width;
+    // half the text per line, +12 % because lines break at word boundaries
+    wanted = Math.ceil((textW / 2) * 1.12 + DIALOG_CHROME_W + extraThumbW);
+  } catch {
+    /* no canvas: keep the default width */
+  }
+  return Math.min(fitWindow, Math.max(DIALOG_MIN_W, Math.min(DIALOG_MAX_W, wanted)));
 }

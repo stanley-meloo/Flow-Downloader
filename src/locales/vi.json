@@ -1,7 +1,6 @@
 {
   "hero": {
-    "title": "FlowDownloader",
-    "subtitle": "Tải xuống mọi thứ từ mọi nơi và bất cứ khi nào."
+    "subtitle": "Tải mọi thứ, mọi lúc, chỉ với 2 cú nhấp"
   },
   "search": {
     "placeholder": "Dán URL vào đây...",
@@ -12,7 +11,6 @@
   },
   "queue": {
     "title": "Hàng đợi tải xuống",
-    "empty": "Hàng đợi của bạn đang trống",
     "open_folder": "Đến tệp tin",
     "cancel": "Hủy tải xuống",
     "retry": "Thử lại",
@@ -22,18 +20,13 @@
     "error": "Lỗi tải xuống",
     "speed": "Tốc độ",
     "eta": "Thời gian còn lại",
-    "calculating": "Đang tính toán...",
-    "error_missing": "Không tìm thấy tệp (đã bị di chuyển hoặc xóa)",
     "finished_in": "Hoàn thành trong {{time}}",
-    "processing": "Đang xử lý và chuyển đổi…"
+    "processing": "Đang xử lý và chuyển đổi…",
+    "items_other": "{{count}} mục"
   },
   "media_modal": {
-    "title": "Tùy chọn tải xuống",
     "format": "Định dạng",
     "quality": "Chất lượng",
-    "directory": "Lưu vào",
-    "cancel": "Hủy",
-    "download": "Tải xuống ngay",
     "output_format": "Chọn những gì bạn muốn tải xuống",
     "format_video_audio": "Video + Âm thanh",
     "format_video_only": "Chỉ Video",
@@ -41,19 +34,19 @@
     "destination": "Đích đến",
     "change": "Thay đổi",
     "audio": "Âm thanh",
-    "fps": "FPS",
-    "native_fps": "Gốc",
     "download_png": "Tải ảnh bìa",
     "open_folder": "Mở vị trí tệp",
     "start_download": "Tải xuống",
-    "codec": "Codec",
-    "codec_h264": "H.264",
-    "codec_prores": "ProRes",
-    "codec_dnxhr": "DNxHR",
     "editor_warning": "Độ phân giải trên 1080p ở định dạng {{codec}}, mà các trình chỉnh sửa video (Premiere, DaVinci…) không mở được. Hãy chọn 1080p trở xuống để có H.264, hoặc chuyển tệp này sang H.264 bằng công cụ chuyển đổi trực tuyến.",
     "audio_best": "Tốt nhất (~160 kbps)",
     "audio_medium": "Trung bình (128 kbps)",
-    "audio_low": "Thấp (96 kbps)"
+    "audio_low": "Thấp (96 kbps)",
+    "edit_title": "Sửa tiêu đề",
+    "save_title": "Lưu tiêu đề",
+    "cancel_edit": "Hủy",
+    "reset_title": "Khôi phục tiêu đề gốc",
+    "file_name": "Tên tệp",
+    "title_placeholder": "Tiêu đề tùy chỉnh…"
   },
   "playlist_modal": {
     "badge": "DANH SÁCH PHÁT",
@@ -70,8 +63,7 @@
   "setup_modal": {
     "title": "Chào mừng bạn đến với FlowDownloader!",
     "subtitle": "Hãy thiết lập vị trí tải xuống ban đầu của bạn",
-    "select_folder": "Chọn thư mục tải xuống mặc định",
-    "finish": "Bắt đầu"
+    "select_folder": "Chọn thư mục tải xuống mặc định"
   },
   "settings": {
     "title": "Cài đặt",
@@ -83,12 +75,13 @@
     "search_language": "Tìm ngôn ngữ...",
     "tabs": {
       "general": "Chung",
-      "visual": "Giao diện"
+      "visual": "Giao diện",
+      "shortcuts": "Phím tắt"
     },
     "general": {
       "path": "Đường dẫn tải xuống mặc định",
       "limit": "Giới hạn danh sách phát",
-      "limit_info": "Bạn có thể tăng giới hạn để quét toàn bộ danh sách phát. Để tránh làm chậm máy và bị YouTube chặn (Lỗi 429), Flow sẽ tải 3 video cùng lúc.",
+      "limit_info": "Bạn có thể tăng giới hạn để quét toàn bộ danh sách phát. Để tránh làm chậm máy và bị YouTube chặn (Lỗi 429), Flow sẽ tải {{n}} video cùng lúc.",
       "quality": "Chất lượng mặc định",
       "language": "Ngôn ngữ giao diện",
       "engine": "Công cụ tải xuống (yt-dlp)",
@@ -100,7 +93,13 @@
       "cookies_file_choose": "Dùng tệp cookies.txt…",
       "cookies_file_info": "Flow Downloader có hiện lỗi 'xác nhận bạn không phải robot' không? Hãy dùng tệp cookies.txt: khi đã đăng nhập, xuất cookie YouTube bằng một tiện ích trình duyệt như 'Get cookies.txt LOCALLY', rồi chọn tệp tại đây.",
       "autopaste": "Tự động dán liên kết",
-      "autopaste_info": "Khi bạn mở hoặc chuyển sang ứng dụng, tự động điền vào thanh tìm kiếm liên kết có trong bộ nhớ tạm."
+      "autopaste_info": "Khi bạn mở hoặc chuyển sang ứng dụng, tự động điền vào thanh tìm kiếm liên kết có trong bộ nhớ tạm.",
+      "concurrent": "Tải xuống đồng thời",
+      "concurrent_info": "Tải nhiều cùng lúc sẽ nhanh hơn khi mạng tốt, nhưng quá nhiều có thể khiến trang web giới hạn tốc độ (lỗi 429).",
+      "engine_uptodate": "Đã là bản mới nhất",
+      "engine_updated": "Đã cập nhật",
+      "engine_error": "Không thể cập nhật. Hãy thử lại",
+      "license": "Giấy phép MIT"
     },
     "visual": {
       "style": "Công cụ đồ họa nền",
@@ -114,12 +113,6 @@
       "quantity": "Số lượng đường kẻ",
       "distance": "Khoảng cách",
       "radius": "Tương tác (Chuột)",
-      "strength": "Lực (Chuột)",
-      "speed": "Tốc độ",
-      "scale": "Tỷ lệ",
-      "distortion": "Biến dạng",
-      "noise": "Độ nhiễu (Noise)",
-      "base_color": "Màu nền",
       "static_or_image": "Màu Tĩnh hoặc Ảnh Tùy Chỉnh",
       "static_color": "Màu Tĩnh",
       "image": "Hình nền tùy chỉnh",
@@ -129,40 +122,131 @@
       "gradient": "Vignette trên",
       "darken": "Làm tối",
       "blur": "Làm mờ",
-      "presets": "Hình nền có sẵn",
       "animated": "Động (GIF)",
       "still": "Tĩnh (Ảnh)",
       "randomize": "Ngẫu nhiên khi khởi động",
-      "wallpaper_credit": "Hình nền từ wallpaperaccess.com"
+      "wallpaper_credit": "Hình nền từ wallpaperaccess.com",
+      "film_grain": "Hạt phim",
+      "film_grain_info": "Hạt điện ảnh với chút quang sai màu phủ toàn bộ ứng dụng. 0 là tắt."
     },
     "done": "Xong",
-    "no_languages": "Không tìm thấy ngôn ngữ"
+    "no_languages": "Không tìm thấy ngôn ngữ",
+    "shortcuts": {
+      "main_group": "Cửa sổ chính",
+      "modal_group": "Cửa sổ tải xuống",
+      "info": "Nhấp vào một phím tắt, sau đó nhấn tổ hợp phím mới. Nhấn Esc để hủy.",
+      "press_key": "Nhấn một phím…",
+      "reset": "Khôi phục mặc định",
+      "reset_all": "Khôi phục tất cả mặc định",
+      "conflict": "Tổ hợp này đã được dùng cho “{{action}}”.",
+      "actions": {
+        "search": "Tìm liên kết",
+        "paste": "Dán liên kết",
+        "selectBar": "Chọn thanh tìm kiếm",
+        "openSettings": "Mở cài đặt",
+        "download": "Bắt đầu tải xuống",
+        "closeModal": "Đóng cửa sổ"
+      }
+    }
   },
   "toast": {
-    "error_empty": "Vui lòng chèn một liên kết",
     "error_invalid": "Liên kết không hợp lệ hoặc không được hỗ trợ",
     "success_added": "Đã thêm video vào hàng đợi!",
     "success_thumb": "Đã tải xuống hình thu nhỏ thành công!",
     "error_thumb": "Không thể tải xuống hình thu nhỏ",
-    "download_started": "Đã bắt đầu tải xuống!",
-    "download_finished": "Tất cả đã xong! Tải xuống hoàn tất.",
-    "error_generic": "Đã xảy ra lỗi. Vui lòng thử lại.",
     "clipboard_success": "Đã dán liên kết thành công!",
     "clipboard_empty": "Bộ nhớ tạm trống.",
-    "clipboard_error": "Lỗi khi truy cập bộ nhớ tạm.",
-    "link_error": "Vui lòng dán một liên kết hợp lệ.",
-    "data_error": "Lỗi trong dữ liệu nhận được.",
-    "video_not_found": "Không tìm thấy video hoặc không khả dụng.",
-    "open_error": "Lỗi khi mở vị trí.",
-    "config_saved": "Đã áp dụng cài đặt!",
-    "ytdlp_checking": "Đang kiểm tra cập nhật yt-dlp…",
-    "ytdlp_updated": "Đã cập nhật yt-dlp lên phiên bản mới nhất!",
-    "ytdlp_uptodate": "yt-dlp đã ở phiên bản mới nhất.",
-    "ytdlp_update_error": "Không thể cập nhật yt-dlp.",
+    "clipboard_error": "Không thể đọc bộ nhớ tạm.",
+    "open_error": "Không thể mở tệp hoặc thư mục.",
+    "ytdlp_checking": "Đang kiểm tra cập nhật công cụ tải xuống…",
+    "ytdlp_updated": "Đã cập nhật công cụ tải xuống.",
+    "ytdlp_uptodate": "Công cụ tải xuống đã là bản mới nhất.",
+    "ytdlp_update_error": "Không thể cập nhật công cụ tải xuống.",
     "youtube_bot_check": "YouTube đã chặn yêu cầu (kiểm tra bot). Bật Cookie trong Cài đặt → Chung.",
     "cookie_error": "Không đọc được cookie trình duyệt. Hãy thử Firefox hoặc tệp cookies.txt.",
     "no_formats": "Không có định dạng tải xuống cho video này (có thể là phát trực tiếp, công chiếu hoặc đang xử lý).",
-    "clipboard_autopaste": "Đã tự động dán liên kết từ bộ nhớ tạm."
+    "clipboard_autopaste": "Đã tự động dán liên kết từ bộ nhớ tạm.",
+    "err_age": "Giới hạn độ tuổi: thêm cookie trong Cài đặt để tải xuống.",
+    "err_private": "Riêng tư hoặc chỉ dành cho hội viên: cần cookie của tài khoản có quyền truy cập.",
+    "err_geo": "Không khả dụng ở quốc gia của bạn.",
+    "err_live": "Buổi phát trực tiếp hoặc công chiếu này chưa bắt đầu.",
+    "err_unavailable": "Video này không khả dụng hoặc đã bị xóa.",
+    "err_disk": "Không thể lưu tệp. Hãy kiểm tra thư mục và dung lượng trống.",
+    "err_ffmpeg": "Không thể hoàn tất tệp. Hãy thử lại hoặc chọn định dạng khác.",
+    "err_network": "Lỗi kết nối. Hãy kiểm tra internet và thử lại.",
+    "err_unsupported": "Liên kết này không được hỗ trợ.",
+    "err_download": "Tải xuống thất bại. Hãy thử lại hoặc cập nhật công cụ trong Cài đặt.",
+    "app_update_error": "Không thể kiểm tra hoặc cài đặt bản cập nhật.",
+    "app_update_wait": "Hãy chờ các lượt tải xong rồi mới cập nhật.",
+    "diagnostics_error": "Không thể tạo thông tin chẩn đoán.",
+    "console_copied": "Đã sao chép chẩn đoán console. Hãy dán khi cần trợ giúp.",
+    "screenshot_saved": "Đã lưu ảnh chụp vào <path>Hình ảnh/Flow Downloader</path> và sao chép vào bộ nhớ tạm.",
+    "screenshot_error": "Không thể chụp màn hình.",
+    "link_copied": "Đã sao chép liên kết.",
+    "title_copied": "Đã sao chép tiêu đề.",
+    "image_copied": "Đã sao chép ảnh vào bộ nhớ tạm.",
+    "image_copy_error": "Không thể sao chép ảnh.",
+    "titles": {
+      "success": "Xong",
+      "error": "Lỗi",
+      "info": "Thông báo",
+      "download": "Tải xuống"
+    },
+    "close": "Đóng"
   },
-  "support_flow": "Hỗ trợ Flow Downloader 🪙"
+  "support_flow": "Hỗ trợ Flow Downloader 🪙",
+  "folder_picker": {
+    "title": "Chọn thư mục tải xuống",
+    "ok": "Chọn thư mục",
+    "file_name": "Thư mục này",
+    "filter_media": "Video, âm thanh và hình ảnh",
+    "filter_all": "Tất cả tệp"
+  },
+  "close_prompt": {
+    "title": "Đóng Flow Downloader?",
+    "count": "Tệp đang tải xuống: {{n}}",
+    "message": "Nếu bạn đóng ứng dụng bây giờ, các lượt tải này sẽ bị hủy và tệp chưa hoàn tất sẽ bị xóa.",
+    "waiting": "Đang chờ trong hàng đợi: {{n}}",
+    "keep": "Tiếp tục tải xuống",
+    "close": "Vẫn đóng",
+    "closing": "Đang đóng…"
+  },
+  "update": {
+    "available": "Đã có Flow Downloader {{version}}",
+    "install": "Cập nhật",
+    "installing": "Đang cài đặt…",
+    "dismiss": "Bỏ qua"
+  },
+  "context_menu": {
+    "copy": "Sao chép",
+    "cut": "Cắt",
+    "paste": "Dán",
+    "reload": "Tải lại",
+    "copy_console": "Sao chép chẩn đoán console",
+    "screenshot": "Chụp màn hình",
+    "paste_search": "Dán liên kết và tìm",
+    "open_last_folder": "Mở thư mục tải xuống gần nhất",
+    "settings": "Cài đặt",
+    "always_on_top": "Giữ cửa sổ luôn ở trên",
+    "open_file": "Mở tệp",
+    "show_in_folder": "Hiện trong thư mục",
+    "copy_link": "Sao chép liên kết gốc",
+    "retry": "Thử lại",
+    "download_again": "Tải lại với chất lượng khác",
+    "cancel": "Hủy",
+    "remove": "Xóa khỏi danh sách",
+    "clear": "Xóa",
+    "recent": "Gần đây",
+    "save_thumbnail": "Lưu ảnh thu nhỏ",
+    "copy_image": "Sao chép ảnh",
+    "copy_title": "Sao chép tiêu đề",
+    "clear_finished": "Xóa mục đã xong",
+    "cancel_all": "Hủy tất cả"
+  },
+  "tooltips": {
+    "minimize": "Thu nhỏ",
+    "maximize": "Phóng to",
+    "close": "Đóng",
+    "remove": "Xóa"
+  }
 }

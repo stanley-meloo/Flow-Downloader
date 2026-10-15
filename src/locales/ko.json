@@ -1,7 +1,6 @@
 {
   "hero": {
-    "title": "FlowDownloader",
-    "subtitle": "언제 어디서나 무엇이든 다운로드하세요"
+    "subtitle": "무엇이든, 언제든, 2번의 클릭으로 다운로드"
   },
   "search": {
     "placeholder": "여기에 URL을 붙여넣으세요...",
@@ -12,7 +11,6 @@
   },
   "queue": {
     "title": "다운로드 대기열",
-    "empty": "대기열이 비어 있습니다",
     "open_folder": "파일로 이동",
     "cancel": "다운로드 취소",
     "retry": "재시도",
@@ -22,18 +20,13 @@
     "error": "다운로드 오류",
     "speed": "속도",
     "eta": "남은 시간",
-    "calculating": "계산 중...",
-    "error_missing": "파일을 찾을 수 없음 (이동 또는 삭제됨)",
     "finished_in": "{{time}} 만에 완료",
-    "processing": "처리 및 변환 중…"
+    "processing": "처리 및 변환 중…",
+    "items_other": "{{count}}개 항목"
   },
   "media_modal": {
-    "title": "다운로드 옵션",
     "format": "형식",
     "quality": "화질",
-    "directory": "저장 위치",
-    "cancel": "취소",
-    "download": "지금 다운로드",
     "output_format": "다운로드할 항목을 선택하세요",
     "format_video_audio": "비디오 + 오디오",
     "format_video_only": "비디오만",
@@ -41,19 +34,19 @@
     "destination": "저장 경로",
     "change": "변경",
     "audio": "오디오",
-    "fps": "FPS",
-    "native_fps": "원본",
     "download_png": "이미지 다운로드",
     "open_folder": "파일 위치 열기",
     "start_download": "다운로드",
-    "codec": "코덱",
-    "codec_h264": "H.264",
-    "codec_prores": "ProRes",
-    "codec_dnxhr": "DNxHR",
     "editor_warning": "1080p 이상 해상도는 {{codec}} 형식이라 영상 편집기(Premiere, DaVinci…)에서 열 수 없습니다. H.264를 원하면 1080p 이하를 선택하거나, 온라인 변환기로 이 파일을 H.264로 변환하세요.",
     "audio_best": "최고 (~160 kbps)",
     "audio_medium": "보통 (128 kbps)",
-    "audio_low": "낮음 (96 kbps)"
+    "audio_low": "낮음 (96 kbps)",
+    "edit_title": "제목 편집",
+    "save_title": "제목 저장",
+    "cancel_edit": "취소",
+    "reset_title": "원래 제목 복원",
+    "file_name": "파일 이름",
+    "title_placeholder": "사용자 지정 제목…"
   },
   "playlist_modal": {
     "badge": "재생목록",
@@ -70,8 +63,7 @@
   "setup_modal": {
     "title": "FlowDownloader에 오신 것을 환영합니다!",
     "subtitle": "초기 다운로드 위치를 설정해 봅시다",
-    "select_folder": "기본 다운로드 폴더 선택",
-    "finish": "시작하기"
+    "select_folder": "기본 다운로드 폴더 선택"
   },
   "settings": {
     "title": "설정",
@@ -83,12 +75,13 @@
     "search_language": "언어 검색...",
     "tabs": {
       "general": "일반",
-      "visual": "모양"
+      "visual": "모양",
+      "shortcuts": "단축키"
     },
     "general": {
       "path": "기본 다운로드 경로",
       "limit": "재생목록 항목 제한",
-      "limit_info": "재생목록 전체를 스캔하기 위해 제한을 늘릴 수 있습니다. PC 속도 저하 및 YouTube 서버 차단(오류 429)을 방지하기 위해 한 번에 3개씩 다운로드합니다.",
+      "limit_info": "재생목록 전체를 스캔하기 위해 제한을 늘릴 수 있습니다. PC 속도 저하 및 YouTube 서버 차단(오류 429)을 방지하기 위해 한 번에 {{n}}개씩 다운로드합니다.",
       "quality": "기본 화질",
       "language": "인터페이스 언어",
       "engine": "다운로드 엔진 (yt-dlp)",
@@ -100,7 +93,13 @@
       "cookies_file_choose": "cookies.txt 파일 사용…",
       "cookies_file_info": "Flow Downloader에 '로봇이 아님을 확인' 오류가 나타나나요? cookies.txt 파일을 사용하세요. 로그인한 상태에서 'Get cookies.txt LOCALLY' 같은 브라우저 확장으로 YouTube 쿠키를 내보낸 뒤 여기에서 파일을 선택하세요.",
       "autopaste": "링크 자동 붙여넣기",
-      "autopaste_info": "앱을 열거나 포커스하면 클립보드에 있는 링크로 검색 바를 자동으로 채웁니다."
+      "autopaste_info": "앱을 열거나 포커스하면 클립보드에 있는 링크로 검색 바를 자동으로 채웁니다.",
+      "concurrent": "동시 다운로드",
+      "concurrent_info": "동시에 많이 받을수록 빠르지만, 너무 많으면 사이트에서 속도를 제한할 수 있어요(오류 429).",
+      "engine_uptodate": "최신 버전",
+      "engine_updated": "업데이트됨",
+      "engine_error": "업데이트할 수 없습니다. 다시 시도하세요",
+      "license": "MIT 라이선스"
     },
     "visual": {
       "style": "배경 그래픽 엔진",
@@ -114,12 +113,6 @@
       "quantity": "라인 수",
       "distance": "간격",
       "radius": "상호작용 (마우스)",
-      "strength": "강도 (마우스)",
-      "speed": "속도",
-      "scale": "크기",
-      "distortion": "왜곡",
-      "noise": "노이즈 (입자)",
-      "base_color": "배경 색상",
       "static_or_image": "정적 색상 또는 사용자 지정 이미지",
       "static_color": "정적 색상",
       "image": "사용자 정의 배경화면",
@@ -129,40 +122,131 @@
       "gradient": "상단 비네트",
       "darken": "어둡게",
       "blur": "흐림 (블러)",
-      "presets": "기본 배경",
       "animated": "움직이는 (GIF)",
       "still": "정적 (이미지)",
       "randomize": "시작 시 무작위",
-      "wallpaper_credit": "배경화면 출처: wallpaperaccess.com"
+      "wallpaper_credit": "배경화면 출처: wallpaperaccess.com",
+      "film_grain": "필름 그레인",
+      "film_grain_info": "앱 전체에 은은한 색수차가 있는 필름 질감을 더합니다. 0이면 꺼집니다."
     },
     "done": "완료",
-    "no_languages": "언어를 찾을 수 없습니다"
+    "no_languages": "언어를 찾을 수 없습니다",
+    "shortcuts": {
+      "main_group": "메인 창",
+      "modal_group": "다운로드 창",
+      "info": "단축키를 클릭한 다음 새 키 조합을 누르세요. 취소하려면 Esc를 누르세요.",
+      "press_key": "키를 누르세요…",
+      "reset": "기본값 복원",
+      "reset_all": "모두 기본값으로 복원",
+      "conflict": "이 조합은 이미 “{{action}}”에서 사용 중입니다.",
+      "actions": {
+        "search": "링크 검색",
+        "paste": "링크 붙여넣기",
+        "selectBar": "검색창 선택",
+        "openSettings": "설정 열기",
+        "download": "다운로드 시작",
+        "closeModal": "창 닫기"
+      }
+    }
   },
   "toast": {
-    "error_empty": "링크를 삽입해 주세요",
     "error_invalid": "유효하지 않거나 지원되지 않는 링크입니다",
     "success_added": "비디오가 대기열에 추가되었습니다!",
     "success_thumb": "썸네일을 성공적으로 다운로드했습니다!",
     "error_thumb": "썸네일을 다운로드할 수 없습니다",
-    "download_started": "다운로드가 시작되었습니다!",
-    "download_finished": "완료되었습니다! 다운로드가 끝났습니다.",
-    "error_generic": "문제가 발생했습니다. 다시 시도해 주세요.",
     "clipboard_success": "링크를 성공적으로 붙여넣었습니다!",
     "clipboard_empty": "클립보드가 비어 있습니다.",
-    "clipboard_error": "클립보드 접근 오류.",
-    "link_error": "유효한 링크를 붙여넣어 주세요.",
-    "data_error": "수신 데이터 오류.",
-    "video_not_found": "비디오를 찾을 수 없거나 사용할 수 없습니다.",
-    "open_error": "위치를 여는 중 오류가 발생했습니다.",
-    "config_saved": "설정이 적용되었습니다!",
-    "ytdlp_checking": "yt-dlp 업데이트 확인 중…",
-    "ytdlp_updated": "yt-dlp가 최신 버전으로 업데이트되었습니다!",
-    "ytdlp_uptodate": "yt-dlp가 이미 최신 상태입니다.",
-    "ytdlp_update_error": "yt-dlp를 업데이트할 수 없습니다.",
+    "clipboard_error": "클립보드를 읽을 수 없습니다.",
+    "open_error": "파일이나 폴더를 열 수 없습니다.",
+    "ytdlp_checking": "다운로드 엔진 업데이트를 확인하는 중…",
+    "ytdlp_updated": "다운로드 엔진을 업데이트했습니다.",
+    "ytdlp_uptodate": "다운로드 엔진이 이미 최신입니다.",
+    "ytdlp_update_error": "다운로드 엔진을 업데이트할 수 없습니다.",
     "youtube_bot_check": "YouTube가 요청을 차단했습니다(봇 확인). 설정 → 일반에서 쿠키를 켜세요.",
     "cookie_error": "브라우저 쿠키를 읽을 수 없습니다. Firefox 또는 cookies.txt 파일을 사용해 보세요.",
     "no_formats": "이 동영상에는 다운로드 가능한 형식이 없습니다(라이브 스트림, 프리미어 또는 처리 중일 수 있습니다).",
-    "clipboard_autopaste": "클립보드의 링크가 자동으로 붙여넣어졌습니다."
+    "clipboard_autopaste": "클립보드의 링크가 자동으로 붙여넣어졌습니다.",
+    "err_age": "연령 제한 영상입니다. 설정에서 쿠키를 추가하면 다운로드할 수 있어요.",
+    "err_private": "비공개 또는 멤버 전용입니다. 접근 권한이 있는 계정의 쿠키가 필요해요.",
+    "err_geo": "해당 국가에서는 이용할 수 없습니다.",
+    "err_live": "이 라이브 또는 최초 공개가 아직 시작되지 않았습니다.",
+    "err_unavailable": "이 영상은 이용할 수 없거나 삭제되었습니다.",
+    "err_disk": "파일을 저장할 수 없습니다. 폴더와 디스크 여유 공간을 확인하세요.",
+    "err_ffmpeg": "파일을 완성할 수 없습니다. 다시 시도하거나 다른 형식을 선택하세요.",
+    "err_network": "연결에 문제가 있습니다. 인터넷을 확인하고 다시 시도하세요.",
+    "err_unsupported": "지원하지 않는 링크입니다.",
+    "err_download": "다운로드에 실패했습니다. 다시 시도하거나 설정에서 엔진을 업데이트하세요.",
+    "app_update_error": "업데이트를 확인하거나 설치할 수 없습니다.",
+    "app_update_wait": "다운로드가 끝난 뒤에 업데이트하세요.",
+    "diagnostics_error": "진단 정보를 만들 수 없습니다.",
+    "console_copied": "콘솔 진단을 복사했습니다. 도움을 요청할 때 붙여넣으세요.",
+    "screenshot_saved": "스크린샷을 <path>사진/Flow Downloader</path>에 저장하고 클립보드에 복사했습니다.",
+    "screenshot_error": "스크린샷을 찍을 수 없습니다.",
+    "link_copied": "링크를 복사했습니다.",
+    "title_copied": "제목을 복사했습니다.",
+    "image_copied": "이미지를 클립보드에 복사했습니다.",
+    "image_copy_error": "이미지를 복사할 수 없습니다.",
+    "titles": {
+      "success": "완료",
+      "error": "오류",
+      "info": "알림",
+      "download": "다운로드"
+    },
+    "close": "닫기"
   },
-  "support_flow": "Flow Downloader 후원하기 🪙"
+  "support_flow": "Flow Downloader 후원하기 🪙",
+  "folder_picker": {
+    "title": "다운로드 폴더 선택",
+    "ok": "폴더 선택",
+    "file_name": "이 폴더",
+    "filter_media": "동영상, 오디오 및 이미지",
+    "filter_all": "모든 파일"
+  },
+  "close_prompt": {
+    "title": "Flow Downloader를 종료할까요?",
+    "count": "다운로드 중인 파일: {{n}}",
+    "message": "지금 앱을 종료하면 이 다운로드가 취소되고 완료되지 않은 파일이 삭제됩니다.",
+    "waiting": "대기열에서 대기 중: {{n}}",
+    "keep": "계속 다운로드",
+    "close": "그래도 종료",
+    "closing": "종료하는 중…"
+  },
+  "update": {
+    "available": "Flow Downloader {{version}} 사용 가능",
+    "install": "업데이트",
+    "installing": "설치 중…",
+    "dismiss": "닫기"
+  },
+  "context_menu": {
+    "copy": "복사",
+    "cut": "잘라내기",
+    "paste": "붙여넣기",
+    "reload": "새로고침",
+    "copy_console": "콘솔 진단 복사",
+    "screenshot": "스크린샷",
+    "paste_search": "링크 붙여넣고 검색",
+    "open_last_folder": "마지막 다운로드 폴더 열기",
+    "settings": "설정",
+    "always_on_top": "창을 항상 위에 유지",
+    "open_file": "파일 열기",
+    "show_in_folder": "폴더에서 보기",
+    "copy_link": "원본 링크 복사",
+    "retry": "다시 시도",
+    "download_again": "다른 화질로 다시 다운로드",
+    "cancel": "취소",
+    "remove": "목록에서 제거",
+    "clear": "지우기",
+    "recent": "최근",
+    "save_thumbnail": "썸네일 저장",
+    "copy_image": "이미지 복사",
+    "copy_title": "제목 복사",
+    "clear_finished": "완료된 항목 지우기",
+    "cancel_all": "모두 취소"
+  },
+  "tooltips": {
+    "minimize": "최소화",
+    "maximize": "최대화",
+    "close": "닫기",
+    "remove": "제거"
+  }
 }

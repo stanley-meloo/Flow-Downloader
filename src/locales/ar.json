@@ -1,7 +1,6 @@
 {
   "hero": {
-    "title": "FlowDownloader",
-    "subtitle": "قم بتنزيل كل شيء من أي مكان وفي أي وقت"
+    "subtitle": "نزّل أي شيء، في أي وقت، بنقرتين فقط"
   },
   "search": {
     "placeholder": "الصق الرابط هنا...",
@@ -12,7 +11,6 @@
   },
   "queue": {
     "title": "قائمة التنزيلات",
-    "empty": "قائمة التنزيلات فارغة",
     "open_folder": "انتقل إلى الملف",
     "cancel": "إلغاء التنزيل",
     "retry": "إعادة المحاولة",
@@ -22,18 +20,18 @@
     "error": "خطأ في التنزيل",
     "speed": "السرعة",
     "eta": "الوقت المتبقي",
-    "calculating": "جاري الحساب...",
-    "error_missing": "الملف غير موجود (تم نقله أو حذفه)",
     "finished_in": "اكتمل في {{time}}",
-    "processing": "جارٍ المعالجة والتحويل…"
+    "processing": "جارٍ المعالجة والتحويل…",
+    "items_zero": "{{count}} عنصر",
+    "items_one": "عنصر واحد",
+    "items_two": "عنصران",
+    "items_few": "{{count}} عناصر",
+    "items_many": "{{count}} عنصرًا",
+    "items_other": "{{count}} عنصر"
   },
   "media_modal": {
-    "title": "خيارات التنزيل",
     "format": "التنسيق",
     "quality": "الجودة",
-    "directory": "حفظ في",
-    "cancel": "إلغاء",
-    "download": "تنزيل الآن",
     "output_format": "اختر ما تريد تنزيله",
     "format_video_audio": "فيديو + صوت",
     "format_video_only": "فيديو فقط",
@@ -41,19 +39,19 @@
     "destination": "الوجهة",
     "change": "تغيير",
     "audio": "صوت",
-    "fps": "إطار في الثانية",
-    "native_fps": "أصلي",
     "download_png": "تنزيل الصورة",
     "open_folder": "افتح موقع الملف",
     "start_download": "تنزيل",
-    "codec": "الترميز",
-    "codec_h264": "H.264",
-    "codec_prores": "ProRes",
-    "codec_dnxhr": "DNxHR",
     "editor_warning": "الدقات الأعلى من 1080p تأتي بترميز {{codec}} الذي لا تستطيع برامج تحرير الفيديو (Premiere وDaVinci…) فتحه. اختر 1080p أو أقل للحصول على H.264، أو حوّل هذا الملف إلى H.264 باستخدام مُحوّل عبر الإنترنت.",
     "audio_best": "الأفضل (~160 kbps)",
     "audio_medium": "متوسط (128 kbps)",
-    "audio_low": "منخفض (96 kbps)"
+    "audio_low": "منخفض (96 kbps)",
+    "edit_title": "تعديل العنوان",
+    "save_title": "حفظ العنوان",
+    "cancel_edit": "إلغاء",
+    "reset_title": "استعادة العنوان الأصلي",
+    "file_name": "اسم الملف",
+    "title_placeholder": "عنوان مخصص…"
   },
   "playlist_modal": {
     "badge": "قائمة تشغيل",
@@ -70,8 +68,7 @@
   "setup_modal": {
     "title": "مرحباً بك في FlowDownloader!",
     "subtitle": "لنقم بإعداد موقع التنزيل الأول الخاص بك",
-    "select_folder": "اختر مجلد التنزيل الافتراضي",
-    "finish": "ابدأ"
+    "select_folder": "اختر مجلد التنزيل الافتراضي"
   },
   "settings": {
     "title": "الإعدادات",
@@ -83,12 +80,13 @@
     "search_language": "ابحث عن لغة...",
     "tabs": {
       "general": "عام",
-      "visual": "المظهر"
+      "visual": "المظهر",
+      "shortcuts": "الاختصارات"
     },
     "general": {
       "path": "مسار التنزيل الافتراضي",
       "limit": "حد عناصر قائمة التشغيل",
-      "limit_info": "يمكنك زيادة الحد لمسح قوائم التشغيل الكاملة. لتجنب بطء جهازك وحظر خوادم يوتيوب (خطأ 429)، سيقوم Flow بتنزيل 3 فيديوهات في المرة الواحدة.",
+      "limit_info": "يمكنك زيادة الحد لمسح قوائم التشغيل الكاملة. لتجنب بطء جهازك وحظر خوادم يوتيوب (خطأ 429)، سيقوم Flow بتنزيل {{n}} فيديوهات في المرة الواحدة.",
       "quality": "الجودة الافتراضية",
       "language": "لغة الواجهة",
       "engine": "محرّك التنزيل (yt-dlp)",
@@ -100,7 +98,13 @@
       "cookies_file_choose": "استخدام ملف cookies.txt…",
       "cookies_file_info": "هل يُظهر Flow Downloader خطأ «أكّد أنك لست روبوتًا»؟ استخدم ملف cookies.txt: صدّر ملفات تعريف الارتباط الخاصة بـ YouTube (وأنت مسجّل الدخول) باستخدام إضافة متصفح مثل 'Get cookies.txt LOCALLY'، ثم اختر الملف هنا.",
       "autopaste": "لصق الروابط تلقائيًا",
-      "autopaste_info": "عند فتح التطبيق أو تنشيطه، يملأ الشريط تلقائيًا برابط موجود في الحافظة."
+      "autopaste_info": "عند فتح التطبيق أو تنشيطه، يملأ الشريط تلقائيًا برابط موجود في الحافظة.",
+      "concurrent": "التنزيلات المتزامنة",
+      "concurrent_info": "التنزيل المتعدد أسرع مع اتصال جيد، لكن الإكثار منه قد يجعل المواقع تبطئك (خطأ 429).",
+      "engine_uptodate": "محدَّث",
+      "engine_updated": "تم التحديث",
+      "engine_error": "تعذّر التحديث. حاول مجددًا",
+      "license": "رخصة MIT"
     },
     "visual": {
       "style": "محرك رسوميات الخلفية",
@@ -114,12 +118,6 @@
       "quantity": "كمية الخطوط",
       "distance": "التباعد",
       "radius": "التفاعل (الماوس)",
-      "strength": "القوة (الماوس)",
-      "speed": "السرعة",
-      "scale": "الحجم",
-      "distortion": "التشويه",
-      "noise": "ضجيج (Noise)",
-      "base_color": "لون الخلفية",
       "static_or_image": "لون ثابت أو صورة مخصصة",
       "static_color": "لون ثابت",
       "image": "خلفية مخصصة",
@@ -129,40 +127,131 @@
       "gradient": "تظليل علوي",
       "darken": "تعتيم",
       "blur": "تغبيش",
-      "presets": "خلفيات جاهزة",
       "animated": "متحركة (GIF)",
       "still": "ثابتة (صورة)",
       "randomize": "عشوائي عند البدء",
-      "wallpaper_credit": "الخلفيات من wallpaperaccess.com"
+      "wallpaper_credit": "الخلفيات من wallpaperaccess.com",
+      "film_grain": "حبيبات الفيلم",
+      "film_grain_info": "حبيبات سينمائية مع انحراف لوني خفيف فوق التطبيق بالكامل. القيمة 0 تُطفئها."
     },
     "done": "تم",
-    "no_languages": "لم يتم العثور على لغات"
+    "no_languages": "لم يتم العثور على لغات",
+    "shortcuts": {
+      "main_group": "النافذة الرئيسية",
+      "modal_group": "نافذة التنزيل",
+      "info": "انقر على اختصار، ثم اضغط مجموعة المفاتيح الجديدة. اضغط Esc للإلغاء.",
+      "press_key": "اضغط على مفتاح…",
+      "reset": "استعادة الافتراضي",
+      "reset_all": "استعادة كل الإعدادات الافتراضية",
+      "conflict": "هذه المجموعة مستخدمة بالفعل لـ «{{action}}».",
+      "actions": {
+        "search": "البحث عن الرابط",
+        "paste": "لصق الرابط",
+        "selectBar": "تحديد شريط البحث",
+        "openSettings": "فتح الإعدادات",
+        "download": "بدء التنزيل",
+        "closeModal": "إغلاق النافذة"
+      }
+    }
   },
   "toast": {
-    "error_empty": "يرجى إدخال رابط",
     "error_invalid": "رابط غير صالح أو غير مدعوم",
     "success_added": "تمت إضافة الفيديو إلى قائمة الانتظار!",
     "success_thumb": "تم تحميل الصورة المصغرة بنجاح!",
     "error_thumb": "تعذر تحميل الصورة المصغرة",
-    "download_started": "بدأ التحميل!",
-    "download_finished": "كل شيء جاهز! اكتمل التحميل.",
-    "error_generic": "حدث خطأ ما. حاول مرة أخرى.",
     "clipboard_success": "تم لصق الرابط بنجاح!",
     "clipboard_empty": "الحافظة فارغة.",
-    "clipboard_error": "خطأ في الوصول إلى الحافظة.",
-    "link_error": "يرجى لصق رابط صحيح.",
-    "data_error": "خطأ في البيانات المستلمة.",
-    "video_not_found": "الفيديو غير موجود أو غير متاح.",
-    "open_error": "خطأ في فتح الموقع.",
-    "config_saved": "تم تطبيق الإعدادات!",
-    "ytdlp_checking": "جارٍ البحث عن تحديثات yt-dlp…",
-    "ytdlp_updated": "تم تحديث yt-dlp إلى أحدث إصدار!",
-    "ytdlp_uptodate": "yt-dlp محدّث بالفعل.",
-    "ytdlp_update_error": "تعذّر تحديث yt-dlp.",
+    "clipboard_error": "تعذّرت قراءة الحافظة.",
+    "open_error": "تعذّر فتح الملف أو المجلد.",
+    "ytdlp_checking": "جارٍ البحث عن تحديثات محرك التنزيل…",
+    "ytdlp_updated": "تم تحديث محرك التنزيل.",
+    "ytdlp_uptodate": "محرك التنزيل محدَّث بالفعل.",
+    "ytdlp_update_error": "تعذّر تحديث محرك التنزيل.",
     "youtube_bot_check": "حظر YouTube الطلب (فحص الروبوت). فعّل ملفات تعريف الارتباط من الإعدادات ← عام.",
     "cookie_error": "تعذّرت قراءة ملفات تعريف الارتباط للمتصفح. جرّب فايرفوكس أو ملف cookies.txt.",
     "no_formats": "لا يوجد تنسيق قابل للتنزيل لهذا الفيديو (قد يكون بثًا مباشرًا أو عرضًا أوّليًا أو ما زال قيد المعالجة).",
-    "clipboard_autopaste": "تم لصق الرابط من الحافظة تلقائيًا."
+    "clipboard_autopaste": "تم لصق الرابط من الحافظة تلقائيًا.",
+    "err_age": "مقيّد بالعمر: أضف ملفات تعريف الارتباط في الإعدادات لتنزيله.",
+    "err_private": "خاص أو للأعضاء فقط: يتطلب ملفات تعريف ارتباط لحساب لديه صلاحية.",
+    "err_geo": "غير متاح في بلدك.",
+    "err_live": "هذا البث المباشر أو العرض الأول لم يبدأ بعد.",
+    "err_unavailable": "هذا الفيديو غير متاح أو تمت إزالته.",
+    "err_disk": "تعذّر حفظ الملف. تحقق من المجلد ومن المساحة المتاحة.",
+    "err_ffmpeg": "تعذّر إكمال الملف. حاول مجددًا أو اختر صيغة أخرى.",
+    "err_network": "مشكلة في الاتصال. تحقق من الإنترنت وحاول مرة أخرى.",
+    "err_unsupported": "هذا الرابط غير مدعوم.",
+    "err_download": "فشل التنزيل. حاول مرة أخرى أو حدّث المحرك من الإعدادات.",
+    "app_update_error": "تعذّر التحقق من التحديث أو تثبيته.",
+    "app_update_wait": "انتظر انتهاء التنزيلات قبل التحديث.",
+    "diagnostics_error": "تعذّر إنشاء التشخيص.",
+    "console_copied": "تم نسخ تشخيص وحدة التحكم. الصقه عند طلب المساعدة.",
+    "screenshot_saved": "تم حفظ لقطة الشاشة في <path>الصور/Flow Downloader</path> ونسخها إلى الحافظة.",
+    "screenshot_error": "تعذّر التقاط لقطة الشاشة.",
+    "link_copied": "تم نسخ الرابط.",
+    "title_copied": "تم نسخ العنوان.",
+    "image_copied": "تم نسخ الصورة إلى الحافظة.",
+    "image_copy_error": "تعذّر نسخ الصورة.",
+    "titles": {
+      "success": "تم",
+      "error": "خطأ",
+      "info": "تنبيه",
+      "download": "تنزيل"
+    },
+    "close": "إغلاق"
   },
-  "support_flow": "دعم Flow Downloader 🪙"
+  "support_flow": "دعم Flow Downloader 🪙",
+  "folder_picker": {
+    "title": "اختر مجلد التنزيل",
+    "ok": "تحديد المجلد",
+    "file_name": "هذا المجلد",
+    "filter_media": "فيديو وصوت وصور",
+    "filter_all": "كل الملفات"
+  },
+  "close_prompt": {
+    "title": "إغلاق Flow Downloader؟",
+    "count": "ملفات قيد التنزيل: {{n}}",
+    "message": "إذا أغلقت التطبيق الآن، فسيتم إلغاء هذه التنزيلات وحذف ملفاتها غير المكتملة.",
+    "waiting": "في قائمة الانتظار: {{n}}",
+    "keep": "متابعة التنزيل",
+    "close": "الإغلاق على أي حال",
+    "closing": "جارٍ الإغلاق…"
+  },
+  "update": {
+    "available": "يتوفر Flow Downloader {{version}}",
+    "install": "تحديث",
+    "installing": "جارٍ التثبيت…",
+    "dismiss": "تجاهل"
+  },
+  "context_menu": {
+    "copy": "نسخ",
+    "cut": "قص",
+    "paste": "لصق",
+    "reload": "إعادة التحميل",
+    "copy_console": "نسخ تشخيص وحدة التحكم",
+    "screenshot": "لقطة شاشة",
+    "paste_search": "لصق الرابط والبحث",
+    "open_last_folder": "فتح آخر مجلد تنزيل",
+    "settings": "الإعدادات",
+    "always_on_top": "إبقاء النافذة في المقدمة",
+    "open_file": "فتح الملف",
+    "show_in_folder": "إظهار في المجلد",
+    "copy_link": "نسخ الرابط الأصلي",
+    "retry": "إعادة المحاولة",
+    "download_again": "التنزيل مجددًا بجودة أخرى",
+    "cancel": "إلغاء",
+    "remove": "إزالة من القائمة",
+    "clear": "مسح",
+    "recent": "الأخيرة",
+    "save_thumbnail": "حفظ الصورة المصغرة",
+    "copy_image": "نسخ الصورة",
+    "copy_title": "نسخ العنوان",
+    "clear_finished": "مسح المكتملة",
+    "cancel_all": "إلغاء الكل"
+  },
+  "tooltips": {
+    "minimize": "تصغير",
+    "maximize": "تكبير",
+    "close": "إغلاق",
+    "remove": "إزالة"
+  }
 }

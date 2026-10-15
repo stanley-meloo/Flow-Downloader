@@ -1,7 +1,6 @@
 {
   "hero": {
-    "title": "FlowDownloader",
-    "subtitle": "Pobieraj wszystko z dowolnego miejsca i w dowolnym czasie."
+    "subtitle": "Pobieraj wszystko, w każdej chwili, w 2 kliknięcia"
   },
   "search": {
     "placeholder": "Wklej URL tutaj...",
@@ -12,7 +11,6 @@
   },
   "queue": {
     "title": "Kolejka pobierania",
-    "empty": "Twoja kolejka jest pusta",
     "open_folder": "Idź do pliku",
     "cancel": "Anuluj pobieranie",
     "retry": "Spróbuj ponownie",
@@ -22,18 +20,16 @@
     "error": "Błąd pobierania",
     "speed": "Prędkość",
     "eta": "Pozostały czas",
-    "calculating": "Obliczanie...",
-    "error_missing": "Nie znaleziono pliku (przeniesiony lub usunięty)",
     "finished_in": "Ukończono w {{time}}",
-    "processing": "Przetwarzanie i konwersja…"
+    "processing": "Przetwarzanie i konwersja…",
+    "items_one": "{{count}} element",
+    "items_few": "{{count}} elementy",
+    "items_many": "{{count}} elementów",
+    "items_other": "{{count}} elementu"
   },
   "media_modal": {
-    "title": "Opcje pobierania",
     "format": "Format",
     "quality": "Jakość",
-    "directory": "Zapisz w",
-    "cancel": "Anuluj",
-    "download": "Pobierz teraz",
     "output_format": "Wybierz, co chcesz pobrać",
     "format_video_audio": "Wideo + Audio",
     "format_video_only": "Tylko Wideo",
@@ -41,19 +37,19 @@
     "destination": "Miejsce docelowe",
     "change": "Zmień",
     "audio": "Audio",
-    "fps": "FPS",
-    "native_fps": "Natywne",
     "download_png": "Pobierz okładkę",
     "open_folder": "Otwórz lokalizację pliku",
     "start_download": "Pobierz",
-    "codec": "Kodek",
-    "codec_h264": "H.264",
-    "codec_prores": "ProRes",
-    "codec_dnxhr": "DNxHR",
     "editor_warning": "Rozdzielczości powyżej 1080p są w {{codec}}, którego edytory wideo (Premiere, DaVinci…) nie otwierają. Wybierz 1080p lub mniej, aby mieć H.264, albo przekonwertuj ten plik na H.264 konwerterem online.",
     "audio_best": "Najlepsza (~160 kbps)",
     "audio_medium": "Średnia (128 kbps)",
-    "audio_low": "Niska (96 kbps)"
+    "audio_low": "Niska (96 kbps)",
+    "edit_title": "Edytuj tytuł",
+    "save_title": "Zapisz tytuł",
+    "cancel_edit": "Anuluj",
+    "reset_title": "Przywróć oryginalny tytuł",
+    "file_name": "Nazwa pliku",
+    "title_placeholder": "Własny tytuł…"
   },
   "playlist_modal": {
     "badge": "PLAYLISTA",
@@ -70,8 +66,7 @@
   "setup_modal": {
     "title": "Witaj w FlowDownloader!",
     "subtitle": "Skonfigurujmy Twoją początkową lokalizację pobierania",
-    "select_folder": "Wybierz domyślny folder pobierania",
-    "finish": "Zacznij"
+    "select_folder": "Wybierz domyślny folder pobierania"
   },
   "settings": {
     "title": "Ustawienia",
@@ -83,12 +78,13 @@
     "search_language": "Szukaj języka...",
     "tabs": {
       "general": "Ogólne",
-      "visual": "Wygląd"
+      "visual": "Wygląd",
+      "shortcuts": "Skróty"
     },
     "general": {
       "path": "Domyślna ścieżka pobierania",
       "limit": "Limit elementów playlisty",
-      "limit_info": "Możesz zwiększyć limit, aby skanować całe playlisty. Aby uniknąć spowolnienia komputera i blokad YouTube (Błąd 429), Flow pobierze 3 filmy naraz.",
+      "limit_info": "Możesz zwiększyć limit, aby skanować całe playlisty. Aby uniknąć spowolnienia komputera i blokad YouTube (Błąd 429), Flow pobierze {{n}} filmy naraz.",
       "quality": "Domyślna jakość",
       "language": "Język interfejsu",
       "engine": "Silnik pobierania (yt-dlp)",
@@ -100,7 +96,13 @@
       "cookies_file_choose": "Użyj pliku cookies.txt…",
       "cookies_file_info": "Czy Flow Downloader pokazuje błąd „potwierdź, że nie jesteś robotem”? Użyj pliku cookies.txt: po zalogowaniu wyeksportuj swoje pliki cookie YouTube rozszerzeniem przeglądarki, np. 'Get cookies.txt LOCALLY', a następnie wybierz plik tutaj.",
       "autopaste": "Automatyczne wklejanie linków",
-      "autopaste_info": "Po otwarciu lub uaktywnieniu aplikacji automatycznie wypełnia pasek linkiem ze schowka."
+      "autopaste_info": "Po otwarciu lub uaktywnieniu aplikacji automatycznie wypełnia pasek linkiem ze schowka.",
+      "concurrent": "Pobieranie równoczesne",
+      "concurrent_info": "Więcej naraz to szybciej przy dobrym łączu, ale zbyt wiele może sprawić, że strony Cię spowolnią (błąd 429).",
+      "engine_uptodate": "Aktualny",
+      "engine_updated": "Zaktualizowano",
+      "engine_error": "Nie udało się zaktualizować. Spróbuj ponownie",
+      "license": "Licencja MIT"
     },
     "visual": {
       "style": "Silnik graficzny tła",
@@ -114,12 +116,6 @@
       "quantity": "Ilość linii",
       "distance": "Odstępy",
       "radius": "Interakcja (Mysz)",
-      "strength": "Siła (Mysz)",
-      "speed": "Prędkość",
-      "scale": "Skala",
-      "distortion": "Zniekształcenie",
-      "noise": "Ziarno (Szum)",
-      "base_color": "Kolor tła",
       "static_or_image": "Kolor Statyczny lub Własny Obraz",
       "static_color": "Kolor Statyczny",
       "image": "Własna tapeta",
@@ -129,40 +125,131 @@
       "gradient": "Górna winieta",
       "darken": "Przyciemnij",
       "blur": "Rozmycie",
-      "presets": "Gotowe tła",
       "animated": "Animowane (GIF)",
       "still": "Statyczne (Obraz)",
       "randomize": "Losowo przy starcie",
-      "wallpaper_credit": "Tapety z wallpaperaccess.com"
+      "wallpaper_credit": "Tapety z wallpaperaccess.com",
+      "film_grain": "Ziarno filmowe",
+      "film_grain_info": "Filmowe ziarno z lekką aberracją chromatyczną na całej aplikacji. 0 je wyłącza."
     },
     "done": "Gotowe",
-    "no_languages": "Nie znaleziono języków"
+    "no_languages": "Nie znaleziono języków",
+    "shortcuts": {
+      "main_group": "Okno główne",
+      "modal_group": "Okno pobierania",
+      "info": "Kliknij skrót, a następnie naciśnij nową kombinację klawiszy. Naciśnij Esc, aby anulować.",
+      "press_key": "Naciśnij klawisz…",
+      "reset": "Przywróć domyślny",
+      "reset_all": "Przywróć wszystkie domyślne",
+      "conflict": "Ta kombinacja jest już używana przez „{{action}}”.",
+      "actions": {
+        "search": "Wyszukaj link",
+        "paste": "Wklej link",
+        "selectBar": "Zaznacz pasek wyszukiwania",
+        "openSettings": "Otwórz ustawienia",
+        "download": "Rozpocznij pobieranie",
+        "closeModal": "Zamknij okno"
+      }
+    }
   },
   "toast": {
-    "error_empty": "Proszę wstawić link",
     "error_invalid": "Nieprawidłowy lub nieobsługiwany link",
     "success_added": "Wideo dodane do kolejki!",
     "success_thumb": "Miniaturka pobrana pomyślnie!",
     "error_thumb": "Nie można pobrać miniaturki",
-    "download_started": "Pobieranie rozpoczęte!",
-    "download_finished": "Gotowe! Pobieranie zakończone.",
-    "error_generic": "Coś poszło nie tak. Spróbuj ponownie.",
     "clipboard_success": "Link wklejony pomyślnie!",
     "clipboard_empty": "Schowek jest pusty.",
-    "clipboard_error": "Błąd dostępu do schowka.",
-    "link_error": "Proszę wkleić prawidłowy link.",
-    "data_error": "Błąd w otrzymanych danych.",
-    "video_not_found": "Wideo nie znalezione lub niedostępne.",
-    "open_error": "Błąd podczas otwierania lokalizacji.",
-    "config_saved": "Ustawienia zastosowane!",
-    "ytdlp_checking": "Sprawdzanie aktualizacji yt-dlp…",
-    "ytdlp_updated": "Zaktualizowano yt-dlp do najnowszej wersji!",
-    "ytdlp_uptodate": "yt-dlp jest już aktualny.",
-    "ytdlp_update_error": "Nie udało się zaktualizować yt-dlp.",
+    "clipboard_error": "Nie udało się odczytać schowka.",
+    "open_error": "Nie udało się otworzyć pliku ani folderu.",
+    "ytdlp_checking": "Sprawdzanie aktualizacji silnika pobierania…",
+    "ytdlp_updated": "Silnik pobierania zaktualizowany.",
+    "ytdlp_uptodate": "Silnik pobierania jest już aktualny.",
+    "ytdlp_update_error": "Nie udało się zaktualizować silnika pobierania.",
     "youtube_bot_check": "YouTube zablokował żądanie (weryfikacja bota). Włącz pliki cookie w Ustawienia → Ogólne.",
     "cookie_error": "Nie udało się odczytać plików cookie przeglądarki. Spróbuj Firefoksa lub pliku cookies.txt.",
     "no_formats": "Brak formatu do pobrania dla tego filmu (może to być transmisja na żywo, premiera lub film wciąż się przetwarza).",
-    "clipboard_autopaste": "Link ze schowka wklejony automatycznie."
+    "clipboard_autopaste": "Link ze schowka wklejony automatycznie.",
+    "err_age": "Ograniczenie wiekowe: dodaj pliki cookie w Ustawieniach, aby pobrać.",
+    "err_private": "Prywatne lub tylko dla członków: potrzebne cookie konta z dostępem.",
+    "err_geo": "Niedostępne w Twoim kraju.",
+    "err_live": "Ta transmisja lub premiera jeszcze się nie rozpoczęła.",
+    "err_unavailable": "Ten film jest niedostępny lub został usunięty.",
+    "err_disk": "Nie udało się zapisać pliku. Sprawdź folder i wolne miejsce na dysku.",
+    "err_ffmpeg": "Nie udało się dokończyć pliku. Spróbuj ponownie lub wybierz inny format.",
+    "err_network": "Problem z połączeniem. Sprawdź internet i spróbuj ponownie.",
+    "err_unsupported": "Ten link nie jest obsługiwany.",
+    "err_download": "Pobieranie nie powiodło się. Spróbuj ponownie lub zaktualizuj silnik w Ustawieniach.",
+    "app_update_error": "Nie udało się sprawdzić ani zainstalować aktualizacji.",
+    "app_update_wait": "Poczekaj na zakończenie pobierania przed aktualizacją.",
+    "diagnostics_error": "Nie udało się wygenerować diagnostyki.",
+    "console_copied": "Skopiowano diagnostykę konsoli. Wklej ją, prosząc o pomoc.",
+    "screenshot_saved": "Zrzut zapisano w <path>Obrazy/Flow Downloader</path> i skopiowano do schowka.",
+    "screenshot_error": "Nie udało się zrobić zrzutu ekranu.",
+    "link_copied": "Skopiowano link.",
+    "title_copied": "Skopiowano tytuł.",
+    "image_copied": "Obraz skopiowano do schowka.",
+    "image_copy_error": "Nie udało się skopiować obrazu.",
+    "titles": {
+      "success": "Gotowe",
+      "error": "Błąd",
+      "info": "Informacja",
+      "download": "Pobieranie"
+    },
+    "close": "Zamknij"
   },
-  "support_flow": "Wesprzyj Flow Downloader 🪙"
+  "support_flow": "Wesprzyj Flow Downloader 🪙",
+  "folder_picker": {
+    "title": "Wybierz folder pobierania",
+    "ok": "Wybierz folder",
+    "file_name": "Ten folder",
+    "filter_media": "Wideo, audio i obrazy",
+    "filter_all": "Wszystkie pliki"
+  },
+  "close_prompt": {
+    "title": "Zamknąć Flow Downloader?",
+    "count": "Pobierane pliki: {{n}}",
+    "message": "Jeśli zamkniesz aplikację teraz, te pobierania zostaną anulowane, a niedokończone pliki usunięte.",
+    "waiting": "W kolejce: {{n}}",
+    "keep": "Pobieraj dalej",
+    "close": "Zamknij mimo to",
+    "closing": "Zamykanie…"
+  },
+  "update": {
+    "available": "Dostępny Flow Downloader {{version}}",
+    "install": "Aktualizuj",
+    "installing": "Instalowanie…",
+    "dismiss": "Odrzuć"
+  },
+  "context_menu": {
+    "copy": "Kopiuj",
+    "cut": "Wytnij",
+    "paste": "Wklej",
+    "reload": "Odśwież",
+    "copy_console": "Kopiuj diagnostykę konsoli",
+    "screenshot": "Zrzut ekranu",
+    "paste_search": "Wklej link i szukaj",
+    "open_last_folder": "Otwórz ostatni folder pobierania",
+    "settings": "Ustawienia",
+    "always_on_top": "Zawsze na wierzchu",
+    "open_file": "Otwórz plik",
+    "show_in_folder": "Pokaż w folderze",
+    "copy_link": "Kopiuj oryginalny link",
+    "retry": "Spróbuj ponownie",
+    "download_again": "Pobierz ponownie w innej jakości",
+    "cancel": "Anuluj",
+    "remove": "Usuń z listy",
+    "clear": "Wyczyść",
+    "recent": "Ostatnie",
+    "save_thumbnail": "Zapisz miniaturę",
+    "copy_image": "Kopiuj obraz",
+    "copy_title": "Kopiuj tytuł",
+    "clear_finished": "Wyczyść ukończone",
+    "cancel_all": "Anuluj wszystkie"
+  },
+  "tooltips": {
+    "minimize": "Minimalizuj",
+    "maximize": "Maksymalizuj",
+    "close": "Zamknij",
+    "remove": "Usuń"
+  }
 }

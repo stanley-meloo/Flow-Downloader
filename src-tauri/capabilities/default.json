@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Permissões Blindadas Flow Downloader",
+  "description": "Hardened permission set for Flow Downloader. yt-dlp is never exposed to the webview: it runs only through the validated Rust commands in src-tauri/src/ytdlp.rs.",
   "windows": [
     "main"
   ],
@@ -10,7 +10,6 @@
     "dialog:default",
     "opener:default",
     "shell:allow-open",
-    "shell:allow-kill",
     "core:window:allow-minimize",
     "core:window:allow-maximize",
     "core:window:allow-unmaximize",
@@ -18,93 +17,86 @@
     "core:window:allow-close",
     "core:window:allow-destroy",
     "core:window:allow-start-dragging",
+    "core:window:allow-set-always-on-top",
     "clipboard-manager:default",
     "clipboard-manager:allow-read-text",
     "clipboard-manager:allow-write-text",
-    "fs:allow-download-write",
-    "fs:allow-write-file",
-    
-    {
-      "identifier": "http:default",
-      "allow": [
-        {
-          "url": "https://i.ytimg.com/**"
-        }
-      ]
-    },
-
-    {
-      "identifier": "shell:allow-execute",
-      "allow": [
-        {
-          "name": "ytdlp",
-          "cmd": "ytdlp",
-          "sidecar": true,
-          "args": true
-        }
-      ]
-    },
-    {
-      "identifier": "shell:allow-spawn",
-      "allow": [
-        {
-          "name": "ytdlp",
-          "cmd": "ytdlp",
-          "sidecar": true,
-          "args": true
-        }
-      ]
-    },
-
+    "updater:default",
+    "process:allow-restart",
     {
       "identifier": "fs:allow-read-text-file",
       "allow": [
-        { "path": "$APPCONFIG/**" },
-        { "path": "$APPDATA/**" }
+        {
+          "path": "$APPCONFIG/**"
+        },
+        {
+          "path": "$APPDATA/**"
+        }
       ]
     },
     {
       "identifier": "fs:allow-write-text-file",
       "allow": [
-        { "path": "$APPCONFIG/**" },
-        { "path": "$APPDATA/**" }
+        {
+          "path": "$APPCONFIG/**"
+        },
+        {
+          "path": "$APPDATA/**"
+        }
       ]
     },
-
     {
       "identifier": "fs:allow-exists",
       "allow": [
-        { "path": "$APPCONFIG/**" },
-        { "path": "$APPDATA/**" },
-        { "path": "$DOWNLOAD/**" },
-        { "path": "$VIDEO/**" },
-        { "path": "$AUDIO/**" },
-        { "path": "$DESKTOP/**" },
-        { "path": "$DOCUMENT/**" },
-        { "path": "$HOME/**" }
+        {
+          "path": "$APPCONFIG/**"
+        },
+        {
+          "path": "$APPDATA/**"
+        }
       ]
     },
     {
       "identifier": "fs:allow-read-file",
       "allow": [
-        { "path": "$APPCONFIG/**" },
-        { "path": "$APPDATA/**" },
-        { "path": "$DOWNLOAD/**" },
-        { "path": "$VIDEO/**" },
-        { "path": "$AUDIO/**" },
-        { "path": "$DESKTOP/**" },
-        { "path": "$DOCUMENT/**" },
-        { "path": "$HOME/**" }
+        {
+          "path": "$APPCONFIG/**"
+        },
+        {
+          "path": "$APPDATA/**"
+        },
+        {
+          "path": "$DOWNLOAD/**"
+        },
+        {
+          "path": "$VIDEO/**"
+        },
+        {
+          "path": "$AUDIO/**"
+        },
+        {
+          "path": "$DESKTOP/**"
+        },
+        {
+          "path": "$DOCUMENT/**"
+        },
+        {
+          "path": "$HOME/**"
+        }
       ]
     },
     {
       "identifier": "fs:allow-mkdir",
       "allow": [
-        { "path": "$APPCONFIG" },
-        { "path": "$APPCONFIG/**" },
-        { "path": "$APPDATA/**" },
-        { "path": "$DOWNLOAD/**" },
-        { "path": "$VIDEO/**" }
+        {
+          "path": "$APPCONFIG"
+        },
+        {
+          "path": "$APPCONFIG/**"
+        },
+        {
+          "path": "$APPDATA/**"
+        }
       ]
     }
   ]

@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { exists, readTextFile, writeTextFile, mkdir, BaseDirectory } from "@tauri-apps/plugin-fs";
 import { downloadDir } from "@tauri-apps/api/path";
-import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import i18n from "../locales/i18n";
-import { ANIMATED_PRESETS, STATIC_PRESETS, NIPP_PRESETS } from "../utils/backgrounds";
+import { ANIMATED_PRESETS, STATIC_PRESETS, NIPP_PRESETS, presetValue, normalizePresetValue } from "../utils/backgrounds";
+import { DEFAULT_KEYBINDS, keybindOverrides, resolveKeybinds } from "../utils/keybinds";
+import { pickFolder } from "../utils/folderPicker";
 
 const CONFIG_FILE = "settings.json";
 const SAVE_DEBOUNCE_MS = 400;
@@ -38,7 +39,11 @@ const DEFAULT_VISUALS = {
   // One flag per gallery so the user can opt in per category.
   randomGif: false,
   randomJpg: false,
-  randomNipp: false
+  randomNipp: false,
+
+  // Film grain + light chromatic aberration over the whole app: intensity
+  // 0–100 (0 = off). Older versions saved true/false (see grainIntensity()).
+  filmGrain: 5
 };
 
 // Picks a random wallpaper from the enabled galleries. This only affects the
@@ -50,11 +55,12 @@ function pickRandomWallpaper(v) {
   if (v.randomNipp) pool.push(...NIPP_PRESETS);
   if (pool.length === 0) return v;
   const pick = pool[Math.floor(Math.random() * pool.length)];
-  return { ...v, bgImage: `@preset:${pick.url}`, activeBackground: 'static' };
+  return { ...v, bgImage: presetValue(pick), activeBackground: 'static' };
 }
 
 export default function useSettings() {
   const [defaultPath, setDefaultPath] = useState("");
+  const [loaded, setLoaded] = useState(false); // saved settings applied
   const [playlistLimit, setPlaylistLimit] = useState(25);
   const [maxConcurrent, setMaxConcurrent] = useState(3);
   const [cookieBrowser, setCookieBrowser] = useState(""); // "" = disabled; else chrome/firefox/edge/...
@@ -65,6 +71,7 @@ export default function useSettings() {
   const [showSetup, setShowSetup] = useState(false);
 
   const [visuals, setVisuals] = useState(DEFAULT_VISUALS);
+  const [keybinds, setKeybinds] = useState(DEFAULT_KEYBINDS); // user-configurable shortcuts
 
   // Authoritative in-memory copy of the whole config file.
   const configRef = useRef({});
@@ -95,11 +102,18 @@ export default function useSettings() {
           if (config.autoPaste !== undefined) setAutoPaste(config.autoPaste);
           if (config.defaultQuality) setDefaultQuality(config.defaultQuality);
           if (config.language) setLanguage(config.language);
+          // Only customized shortcuts are saved; merge them over the current
+          // defaults (old default values count as "not customized").
+          if (config.keybinds) setKeybinds(resolveKeybinds(config.keybinds));
 
           if (config.visuals) {
             // Apply the random pick (if enabled) for this session only;
             // it does not overwrite the saved configuration on disk.
-            setVisuals(pickRandomWallpaper({ ...DEFAULT_VISUALS, ...config.visuals }));
+            // Older versions saved built-in wallpapers by asset URL, which changes
+            // between builds; convert them to the stable preset id.
+            const saved = { ...DEFAULT_VISUALS, ...config.visuals };
+            saved.bgImage = normalizePresetValue(saved.bgImage);
+            setVisuals(pickRandomWallpaper(saved));
           }
 
           if (!config.downloadPath) setShowSetup(true);
@@ -114,7 +128,9 @@ export default function useSettings() {
         setShowSetup(true);
       }
     }
-    loadConfig();
+    // `loaded` lets the app wait for the saved look (background, colors…)
+    // before showing anything, so nothing switches abruptly after startup.
+    loadConfig().finally(() => setLoaded(true));
 
     // Flush any pending write if the component unmounts.
     return () => {
@@ -154,6 +170,10 @@ export default function useSettings() {
     if (updates.visuals) {
       newConfig.visuals = { ...current.visuals, ...updates.visuals };
     }
+    if (updates.keybinds) {
+      // Persist only the overrides, so future default changes still reach the user.
+      newConfig.keybinds = keybindOverrides({ ...resolveKeybinds(current.keybinds), ...updates.keybinds });
+    }
     configRef.current = newConfig;
 
     if (updates.downloadPath) setDefaultPath(updates.downloadPath);
@@ -165,12 +185,14 @@ export default function useSettings() {
     if (updates.language) setLanguage(updates.language);
     if (updates.defaultQuality) setDefaultQuality(updates.defaultQuality);
     if (updates.visuals) setVisuals(prev => ({ ...prev, ...updates.visuals }));
+    if (updates.keybinds) setKeybinds(prev => ({ ...prev, ...updates.keybinds }));
 
     scheduleSave();
   }
 
+  // Opens the in-app folder browser (shows media files) to pick the default folder.
   async function changeDefaultPath() {
-    const selected = await openDialog({ directory: true, multiple: false });
+    const selected = await pickFolder(defaultPath);
     if (selected) {
       const newPath = selected.replace(/\\/g, "/");
       saveSettings({ downloadPath: newPath });
@@ -180,7 +202,7 @@ export default function useSettings() {
   }
 
   return {
-    defaultPath, playlistLimit, maxConcurrent, cookieBrowser, cookieFile, autoPaste, defaultQuality, language, showSetup, visuals,
-    setShowSetup, saveSettings, changeDefaultPath
+    loaded, defaultPath, playlistLimit, maxConcurrent, cookieBrowser, cookieFile, autoPaste, defaultQuality, language, showSetup, visuals,
+    keybinds, setShowSetup, saveSettings, changeDefaultPath
   };
 }

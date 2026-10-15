@@ -1,66 +1,54 @@
 import { useState, useRef, useEffect } from "react";
-import { Command } from "@tauri-apps/plugin-shell";
 import { downloadDir } from "@tauri-apps/api/path";
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { readText } from "@tauri-apps/plugin-clipboard-manager";
-import { SIGNATURE_COMMENT } from "../utils/fileSystem";
+import { addSearchHistory, setLastDownloadFolder } from "../utils/recent";
+import {
+  sanitizeTitle, isYouTubeExtractor, isYouTubeUrl, youtubeThumb, youtubeWatchUrl
+} from "../utils/media";
 
-// Normalizes user input into a usable URL: trims whitespace and adds a
-// scheme when missing (yt-dlp accepts scheme-less links, but we add one so
-// the value can never be mistaken for an option). Injection is prevented by
-// the explicit `--` separator placed before the URL in every yt-dlp call.
+
+// All yt-dlp work happens in Rust (src-tauri/src/ytdlp.rs). The webview only
+// sends typed requests (URL, folder, file name, format, quality, cookies);
+// Rust validates them and builds the command line itself.
+
+// Normalizes user input into a usable URL: trims whitespace and adds a scheme
+// when missing. Rust validates it again and always passes it after `--`.
 const normalizeUrl = (u) => {
   const s = (u || '').trim();
   if (!s) return '';
   return /^https?:\/\//i.test(s) ? s : `https://${s}`;
 };
 
-// Sanitizes a title into a safe filename component.
-const sanitizeTitle = (raw) => {
-  const cleaned = String(raw || 'download')
-    .replace(/[\\/:*?"<>|]/g, '') // illegal filename chars
-    .replace(/%/g, '')            // avoid yt-dlp output-template injection
-    .replace(/\s+/g, '_')         // spaces -> underscore
-    .replace(/^[.\-]+/, '')       // no leading dots/dashes
-    .slice(0, 150)
-    .trim();
-  return cleaned || 'download';
-};
-
-// Forces the bundled yt-dlp (PyInstaller build) to emit UTF-8 on stdout/stderr.
-// Without this, on Windows it uses the system code page (e.g. cp1252) for titles
-// with accents/emoji, producing bytes Tauri cannot decode ("invalid utf-8 sequence").
-const YTDLP_ENV = { PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1' };
-const SIDE_OPTS = { env: YTDLP_ENV, encoding: 'utf-8' };
-
-// Builds yt-dlp cookie arguments. A cookies.txt file takes priority because it
-// bypasses the Windows DPAPI / App-Bound-Encryption problem that blocks reading
-// Chrome/Edge cookies directly. Otherwise cookies are read from the chosen browser.
-const cookieArgs = (s) =>
-  s.cookieFile ? ['--cookies', s.cookieFile]
-  : s.cookieBrowser ? ['--cookies-from-browser', s.cookieBrowser]
-  : [];
-
-// Points yt-dlp at a JavaScript runtime (bundled Deno) to solve YouTube's
-// signature/n challenges. Empty path -> yt-dlp auto-detects a system runtime.
-const jsRuntimeArgs = (denoPath) => denoPath ? ['--js-runtimes', `deno:${denoPath}`] : [];
-
-// Resolves the bundled Deno path (via the Rust find_deno command), cached.
-let _denoPathCache;
-async function resolveDenoPath() {
-  if (_denoPathCache !== undefined) return _denoPathCache;
-  try { _denoPathCache = await invoke('find_deno'); }
-  catch { _denoPathCache = ''; }
-  return _denoPathCache;
-}
+// Cookie settings sent to Rust: a cookies.txt file takes priority (it avoids
+// the Windows problem of reading Chrome/Edge's encrypted cookies directly);
+// otherwise cookies are read from the chosen browser.
+const cookiesOf = (s) => ({
+  cookieFile: s.cookieFile || null,
+  cookieBrowser: s.cookieFile ? null : (s.cookieBrowser || null),
+});
 
 // Maps a yt-dlp failure (stderr + thrown message) to a specific toast key so the
-// user gets an actionable message instead of a generic "invalid link".
-const classifyYtdlpError = (text) => {
+// user gets an actionable message instead of a generic one. `fallback` is used
+// when nothing specific matches. Order matters: the most specific checks first.
+const ERROR_RULES = [
+  ['youtube_bot_check', /not a bot|sign in to confirm you.{0,4}re not|confirm you.{0,4}re not a bot/],
+  ['cookie_error', /dpapi|failed to decrypt|could not copy.*cookie|cookie.*database|cookies file not found|invalid cookie browser/],
+  ['err_age', /confirm your age|age.restricted|inappropriate for some users/],
+  ['err_private', /private video|members.only|join this channel|requires? (a )?(login|sign.?in|subscription)|premium/],
+  ['err_geo', /not available in your country|geo.?restrict|blocked in your country|from your location/],
+  ['err_live', /live event will begin|premieres? in|is not live|this live event|will begin in/],
+  ['err_unavailable', /video unavailable|has been removed|no longer available|does not exist|http error 404|not found \(404\)|account.*terminated/],
+  ['err_disk', /no space left|disk full|errno 28|permission denied|errno 13|access is denied|download folder not found|read-only file system/],
+  ['err_ffmpeg', /ffmpeg|ffprobe|postprocessing|conversion failed/],
+  ['err_network', /unable to download webpage|timed? ?out|getaddrinfo|name or service not known|connection (reset|refused|aborted)|network is unreachable|ssl|http error 5\d\d|http error 429|too many requests/],
+  ['err_unsupported', /unsupported url|no video formats found|invalid url|\[generic\]|anti-bot challenge/],
+];
+const classifyYtdlpError = (text, fallback = 'error_invalid') => {
   const t = (text || '').toLowerCase();
-  if (/not a bot|sign in to confirm|confirm you.{0,4}re not a bot/.test(t)) return 'youtube_bot_check';
-  if (/dpapi|failed to decrypt|could not copy.*cookie|cookie.*database/.test(t)) return 'cookie_error';
-  return 'error_invalid';
+  const hit = ERROR_RULES.find(([, re]) => re.test(t));
+  return hit ? hit[0] : fallback;
 };
 
 // Maps a yt-dlp vcodec string to a friendly family name.
@@ -91,20 +79,52 @@ const analyzeCodecs = (formats) => {
   return { h264MaxHeight, highResCodec: topCodec };
 };
 
+// Tallest video height in a formats array (null when none is reported).
+const maxHeightOf = (formats) => {
+  if (!Array.isArray(formats)) return null;
+  const max = formats.reduce((m, f) => Math.max(m, f?.height || 0), 0); // no spread: safe for huge lists
+  return max || null;
+};
+
 const QUALITY_LADDER = [4320, 2160, 1440, 1080, 720, 480, 360, 240, 144];
+
+// Queue statuses that mean "a download is running right now".
+const ACTIVE_STATUSES = ["Downloading", "Processing..."];
 
 // Builds the resolution options shown to the user.
 // yt-dlp's analyze-time format detection is unreliable on YouTube (throttling /
 // signature issues can return only the low-res progressive formats), which used
 // to hide 720p/1080p from videos that actually support them. Since the download
-// itself re-queries formats and uses `bestvideo[height<=X]+bestaudio/best`, it is
-// always safe to OFFER a quality: yt-dlp fetches the best available at or below it.
-// We therefore guarantee a ceiling of at least 1080p and extend it upward only
-// when detection reliably reports a higher resolution (1440p/4K/8K).
+// itself re-queries formats and asks for the best stream at or below the chosen
+// height, it is always safe to OFFER a quality. We therefore guarantee a ceiling
+// of at least 1080p and extend it upward only when detection reports more.
 const buildQualities = (detectedMax) => {
   const ceiling = Math.max(Number(detectedMax) || 0, 1080);
   return QUALITY_LADDER.filter((q) => q <= ceiling);
 };
+
+// Runs yt-dlp's metadata dump in Rust and parses the JSON. Throws with stderr
+// attached (err.stderr) so the caller can classify the failure.
+async function analyzeRemote(url, settings, single) {
+  const out = await invoke('ytdlp_analyze', {
+    url,
+    single,
+    playlistLimit: Number(settings.playlistLimit) || 25,
+    cookies: cookiesOf(settings),
+  });
+  const stderr = out.stderr || '';
+  if (stderr.trim()) console.warn('[yt-dlp] stderr:\n' + stderr.trim());
+  let data = null;
+  try { data = out.stdout && out.stdout.trim() ? JSON.parse(out.stdout) : null; } catch { data = null; }
+  // With --ignore-errors yt-dlp prints `null` when it cannot extract the video
+  // (unavailable, region/age-locked, bot check, outdated yt-dlp).
+  if (!data || typeof data !== 'object') {
+    const err = new Error('yt-dlp returned no data');
+    err.stderr = stderr;
+    throw err;
+  }
+  return data;
+}
 
 export default function useDownloader(settings, showToast) {
   const [url, setUrl] = useState("");
@@ -113,9 +133,25 @@ export default function useDownloader(settings, showToast) {
   const [mediaData, setMediaData] = useState(null);
   const [downloadPath, setDownloadPath] = useState("");
 
-  const activeProcesses = useRef({});
-  const manuallyHandled = useRef(new Set());
-  const lastUpdate = useRef({});
+  // itemId -> runId of the download running for it (one run per attempt, so a
+  // retried item never inherits an old cancellation).
+  const activeRuns = useRef({});
+  // runId -> itemId, to route progress events.
+  const runToItem = useRef({});
+  // runId -> promise that settles when that yt-dlp process has exited.
+  const runPromises = useRef({});
+  const lastStartRef = useRef({ signature: '', at: 0 }); // duplicate-submit guard
+  // Bumped whenever a run ends, so the queue processor re-checks free slots
+  // even if that run's end didn't change the queue (e.g. a cancelled run).
+  const [runTick, setRunTick] = useState(0);
+
+  // --- CLOSE CONFIRMATION STATE (see section 3B) ---
+  const [closePrompt, setClosePrompt] = useState(false); // confirmation dialog visible
+  const [closing, setClosing] = useState(false);         // "Close anyway" in progress
+  const closingRef = useRef(false);
+  // Latest queue for the window/app close handlers, which are registered once.
+  const queueRef = useRef(queue);
+  useEffect(() => { queueRef.current = queue; }, [queue]);
 
   // --- AUTO-DETECT A LINK FROM THE CLIPBOARD ---
   // When the window gains focus, if the input is empty and the clipboard holds a
@@ -147,6 +183,31 @@ export default function useDownloader(settings, showToast) {
     return () => window.removeEventListener("focus", tryAutoPaste);
   }, []);
 
+  // --- PROGRESS EVENTS FROM RUST ---
+  // One listener for every download; events carry the runId. Rust already
+  // throttles them (~150 ms per download).
+  useEffect(() => {
+    let unlisten = null;
+    let cancelled = false;
+    listen('ytdlp://progress', ({ payload }) => {
+      const itemId = runToItem.current[payload.runId];
+      if (!itemId) return;
+      setQueue((prev) => prev.map((item) => {
+        if (item.id !== itemId || !ACTIVE_STATUSES.includes(item.status)) return item;
+        if (payload.phase === 'processing') {
+          return { ...item, status: "Processing...", progress: 100 };
+        }
+        return {
+          ...item,
+          progress: payload.percent != null ? Math.max(item.progress, payload.percent) : item.progress,
+          speed: payload.speed || item.speed,
+          eta: payload.eta || item.eta,
+        };
+      }));
+    }).then((u) => { if (cancelled) u(); else unlisten = u; });
+    return () => { cancelled = true; if (unlisten) unlisten(); };
+  }, []);
+
   const formatDuration = (ms) => {
     const seconds = Math.floor(ms / 1000);
     if (seconds < 60) return `${seconds}s`;
@@ -155,74 +216,34 @@ export default function useDownloader(settings, showToast) {
     return `${minutes}m ${remainingSeconds}s`;
   };
 
-  // Removes all per-item bookkeeping for a finished/removed item.
-  const cleanupItemRefs = (itemId) => {
-    delete activeProcesses.current[itemId];
-    delete lastUpdate.current[itemId];
-    manuallyHandled.current.delete(itemId);
-  };
-
   // --- 1. FULL LINK ANALYSIS ---
-  async function analyzeLink() {
-    const cleanUrl = normalizeUrl(url);
+  // overrideUrl: analyze this link instead of the search bar's text (right-click
+  // menu: history, "download again", "paste and search"). Button clicks pass an
+  // event object, which is ignored.
+  async function analyzeLink(overrideUrl) {
+    const override = typeof overrideUrl === 'string' ? overrideUrl : null;
+    if (override) setUrl(override);
+    const cleanUrl = normalizeUrl(override ?? url);
     if (!cleanUrl) return;
     setAnalyzing(true);
-    let stderrText = '';
     try {
-      const playlistLimit = settings.playlistLimit ? String(settings.playlistLimit) : '25';
-      const denoPath = await resolveDenoPath();
-
-      const args = [
-        '--dump-single-json',
-        '--flat-playlist',
-        '--yes-playlist',
-        '--ignore-errors',
-        '--ignore-no-formats-error',
-        '--no-warnings',
-        '--no-colors',
-        '--encoding', 'utf-8',
-        ...jsRuntimeArgs(denoPath),
-        ...cookieArgs(settings),
-        '--playlist-items', `1-${playlistLimit}`,
-        '--', cleanUrl
-      ];
-
-      const cmd = Command.sidecar('ytdlp', args, SIDE_OPTS);
-      const output = await cmd.execute();
-      stderrText = output.stderr || '';
-
-      // Surface yt-dlp's real diagnostics. With --ignore-errors the actual
-      // failure reason (bot check, sign-in required, nsig, unavailable, ...)
-      // goes to stderr while stdout becomes `null`.
-      console.log('[yt-dlp] exit code:', output.code);
-      if (stderrText.trim()) {
-        console.warn('[yt-dlp] stderr:\n' + stderrText.trim());
-      }
-
-      if (!output.stdout || !output.stdout.trim()) throw new Error("Empty yt-dlp output");
-      const data = JSON.parse(output.stdout);
-
-      // With --ignore-errors yt-dlp prints `null` to stdout when it cannot
-      // extract the video (unavailable, region/age-locked, bot check, or an
-      // outdated yt-dlp). Guard so we show a clean error instead of crashing.
-      if (!data || typeof data !== 'object') {
-        throw new Error("yt-dlp returned null. stderr: " + (output.stderr || '(empty)').trim());
-      }
-
+      const data = await analyzeRemote(cleanUrl, settings, false);
+      const playlistLimit = Number(settings.playlistLimit) || 25;
       const isPlaylist = data._type === 'playlist' && Array.isArray(data.entries);
+      const isYouTube = isYouTubeExtractor(data.extractor_key) || isYouTubeUrl(cleanUrl);
 
       if (isPlaylist) {
         let validEntries = data.entries.filter(entry =>
           entry &&
           entry.id &&
           entry.title &&
+          (entry.url || isYouTube) &&
           !entry.title.includes('[Private video]') &&
           !entry.title.includes('[Deleted video]')
         );
 
-        const limit = parseInt(playlistLimit, 10);
-        if (validEntries.length > limit) {
-          validEntries = validEntries.slice(0, limit);
+        if (validEntries.length > playlistLimit) {
+          validEntries = validEntries.slice(0, playlistLimit);
         }
 
         validEntries = validEntries.map((entry, idx) => ({
@@ -234,38 +255,14 @@ export default function useDownloader(settings, showToast) {
         let h264MaxHeight = 0;
         let highResCodec = '';
 
-        if (validEntries.length > 0) {
+        // Probe the first video for its real resolutions/codecs (flat playlist
+        // entries carry no format list).
+        const firstUrl = validEntries[0] && (validEntries[0].url || (isYouTube ? youtubeWatchUrl(validEntries[0].id) : null));
+        if (firstUrl) {
           try {
-            const firstVideoUrl = validEntries[0].url || `https://www.youtube.com/watch?v=${validEntries[0].id}`;
-            const firstVideoCmd = Command.sidecar('ytdlp', [
-              '--dump-single-json',
-              '--no-playlist',
-              '--ignore-errors',
-              '--ignore-no-formats-error',
-              '--no-warnings',
-              '--no-colors',
-              '--encoding', 'utf-8',
-              ...jsRuntimeArgs(denoPath),
-              ...cookieArgs(settings),
-              '--', firstVideoUrl
-            ], SIDE_OPTS);
-
-            const firstOutput = await firstVideoCmd.execute();
-            const firstData = JSON.parse(firstOutput.stdout);
-
-            let maxRes = 1080;
-            if (firstData && Array.isArray(firstData.formats)) {
-              const videoFormats = firstData.formats.filter(f => f.height);
-              if (videoFormats.length > 0) {
-                maxRes = videoFormats.reduce((m, f) => Math.max(m, f.height), 0);
-              }
-            }
-
-            dynamicQualities = buildQualities(maxRes);
-            const codecInfo = analyzeCodecs(firstData && firstData.formats);
-            h264MaxHeight = codecInfo.h264MaxHeight;
-            highResCodec = codecInfo.highResCodec;
-
+            const firstData = await analyzeRemote(firstUrl, settings, true);
+            dynamicQualities = buildQualities(maxHeightOf(firstData.formats) || 1080);
+            ({ h264MaxHeight, highResCodec } = analyzeCodecs(firstData.formats));
           } catch (firstErr) {
             console.warn("Could not analyze the first video for quality baseline. Using defaults.", firstErr);
           }
@@ -285,6 +282,7 @@ export default function useDownloader(settings, showToast) {
           h264MaxHeight,
           highResCodec
         });
+        addSearchHistory(cleanUrl, `[Playlist] ${data.title}`);
 
       } else {
         // If the video has no real downloadable streams (live not started,
@@ -298,15 +296,6 @@ export default function useDownloader(settings, showToast) {
           return;
         }
 
-        let maxRes = 1080;
-        if (Array.isArray(data.formats)) {
-          const videoFormats = data.formats.filter(f => f.height);
-          if (videoFormats.length > 0) {
-            maxRes = videoFormats.reduce((m, f) => Math.max(m, f.height), 0);
-          }
-        }
-
-        const dynamicQualities = buildQualities(maxRes);
         const { h264MaxHeight, highResCodec } = analyzeCodecs(data.formats);
 
         setMediaData({
@@ -314,14 +303,15 @@ export default function useDownloader(settings, showToast) {
           title: data.title,
           thumbnail: data.thumbnail,
           isPlaylist: false,
-          originalUrl: cleanUrl,
+          originalUrl: data.webpage_url || cleanUrl,
           uploader: data.uploader || data.channel,
           duration: data.duration,
           extractor_key: data.extractor_key,
-          availableQualities: dynamicQualities,
+          availableQualities: buildQualities(maxHeightOf(data.formats) || 1080),
           h264MaxHeight,
           highResCodec
         });
+        addSearchHistory(cleanUrl, data.title);
       }
 
       if (!downloadPath) {
@@ -329,7 +319,7 @@ export default function useDownloader(settings, showToast) {
       }
     } catch (err) {
       console.error(err);
-      showToast(classifyYtdlpError(`${stderrText} ${err?.message || ''}`), "error");
+      showToast(classifyYtdlpError(`${err?.stderr || ''} ${err?.message || err || ''}`), "error");
     } finally {
       setAnalyzing(false);
     }
@@ -340,58 +330,65 @@ export default function useDownloader(settings, showToast) {
     const dataToDownload = customData || mediaData;
     if (!dataToDownload) return;
 
+    // Guard against accidental double submits (double-click, held Enter, ...):
+    // an identical request within a short window is ignored, so the same video
+    // can't land in the queue twice.
+    const signature = JSON.stringify([
+      dataToDownload.originalUrl, dataToDownload.title, formatType, config,
+      (dataToDownload.entries || []).map((e) => e?.id + ':' + e?.title)
+    ]);
+    const now = Date.now();
+    if (lastStartRef.current.signature === signature && now - lastStartRef.current.at < 2000) return;
+    lastStartRef.current = { signature, at: now };
+
+    const isYouTube = isYouTubeExtractor(dataToDownload.extractor_key) || isYouTubeUrl(dataToDownload.originalUrl);
     const newItems = [];
 
-    const safeRes = config?.res ? config.res.replace('p', '') : 'best';
-    const safeAudio = config?.audio ? config.audio.replace('kb', '') : '160';
-    const safeExt = config?.ext ? config.ext.replace('.', '') : 'mp4';
-
     const downloadSettings = {
-      targetRes: safeRes,
-      targetAudio: safeAudio,
-      ext: safeExt,
+      targetRes: config?.res ? String(config.res).replace('p', '') : 'best',
+      targetAudio: config?.audio ? String(config.audio).replace('kb', '') : '160',
+      ext: config?.ext ? String(config.ext).replace('.', '') : 'mp4',
       formatType: formatType || 'video'
     };
+
+    const baseItem = () => ({
+      id: crypto.randomUUID(),
+      status: "Waiting",
+      progress: 0,
+      speed: "0 KB/s",
+      eta: "--:--",
+      totalTime: null,
+      directory: downloadPath,
+      ...downloadSettings
+    });
 
     if (dataToDownload.isPlaylist && dataToDownload.entries) {
       dataToDownload.entries.forEach((entry, idx) => {
         if (!entry || !entry.title) return;
-
-        const thumbUrl = entry.thumbnails?.[0]?.url || (entry.id ? `https://i.ytimg.com/vi/${entry.id}/hqdefault.jpg` : null);
-
+        const entryUrl = entry.url || (isYouTube ? youtubeWatchUrl(entry.id) : null);
+        if (!entryUrl) return;
         newItems.push({
-          id: crypto.randomUUID(),
+          ...baseItem(),
           title: entry.title,
-          thumbnail: thumbUrl,
-          status: "Waiting",
-          progress: 0,
-          speed: "0 KB/s",
-          eta: "--:--",
-          totalTime: null,
+          thumbnail: entry.thumbnails?.[0]?.url || (isYouTube ? youtubeThumb(entry.id) : null),
+          videoId: isYouTube ? entry.id : null,
           playlistIndex: idx + 1, // ensures unique filenames within a playlist
-          url: entry.url || `https://www.youtube.com/watch?v=${entry.id}`,
-          directory: downloadPath,
-          ...downloadSettings
+          url: entryUrl,
         });
       });
     } else {
       newItems.push({
-        id: crypto.randomUUID(),
+        ...baseItem(),
         title: dataToDownload.title,
         thumbnail: dataToDownload.thumbnail,
-        status: "Waiting",
-        progress: 0,
-        speed: "0 KB/s",
-        eta: "--:--",
-        totalTime: null,
+        videoId: isYouTube ? dataToDownload.id : null,
         playlistIndex: null,
         url: dataToDownload.originalUrl,
-        directory: downloadPath,
-        ...downloadSettings
       });
     }
 
     setQueue(prev => [...prev, ...newItems]);
+    setLastDownloadFolder(downloadPath); // right-click menu: "open last download folder"
     setMediaData(null);
     setUrl("");
 
@@ -400,253 +397,180 @@ export default function useDownloader(settings, showToast) {
 
   // --- 3A. QUEUE PROCESSOR ---
   useEffect(() => {
-    const processQueue = () => {
-      const MAX_CONCURRENT_DOWNLOADS = settings.maxConcurrent || 3;
-      const activeCount = Object.keys(activeProcesses.current).length;
+    if (closingRef.current) return; // app is closing: don't start anything new
+    const maxConcurrent = settings.maxConcurrent || 3;
+    const activeCount = Object.keys(activeRuns.current).length;
+    if (activeCount >= maxConcurrent) return;
 
-      if (activeCount >= MAX_CONCURRENT_DOWNLOADS) return;
+    const toStart = queue
+      .filter((item) => item.status === "Waiting" && !activeRuns.current[item.id])
+      .slice(0, maxConcurrent - activeCount);
 
-      const waitingItems = queue.filter(item =>
-        item.status === "Waiting" && !activeProcesses.current[item.id]
-      );
+    toStart.forEach((item) => runDownload(item));
+  }, [queue, settings.maxConcurrent, runTick]);
 
-      if (waitingItems.length === 0) return;
+  async function runDownload(item) {
+    const itemId = item.id;
+    const runId = crypto.randomUUID();
+    const startTime = Date.now();
 
-      const slotsAvailable = MAX_CONCURRENT_DOWNLOADS - activeCount;
-      const itemsToStart = waitingItems.slice(0, slotsAvailable);
+    // Reserve the slot synchronously, before anything async, to avoid double-starts.
+    activeRuns.current[itemId] = runId;
+    runToItem.current[runId] = itemId;
 
-      itemsToStart.forEach(async (nextItem) => {
-        const itemId = nextItem.id;
-        const startTime = Date.now();
+    let stem = sanitizeTitle(item.title);
+    if (item.playlistIndex) stem = `${String(item.playlistIndex).padStart(2, '0')}_${stem}`;
+    const height = parseInt(item.targetRes, 10);
 
-        // Reserve the slot synchronously, before any await, to avoid double-starts.
-        activeProcesses.current[itemId] = "starting";
-        lastUpdate.current[itemId] = 0;
-        manuallyHandled.current.delete(itemId);
+    setQueue(prev => prev.map(i =>
+      i.id === itemId && i.status === "Waiting" ? { ...i, status: "Downloading" } : i
+    ));
 
-        try {
-          let safeTitle = sanitizeTitle(nextItem.title);
-          if (nextItem.playlistIndex) {
-            safeTitle = `${String(nextItem.playlistIndex).padStart(2, '0')}_${safeTitle}`;
-          }
+    const promise = invoke('ytdlp_download', {
+      runId,
+      opts: {
+        url: item.url,
+        directory: item.directory,
+        stem,
+        formatType: item.formatType,
+        ext: item.ext || 'mp4',
+        height: Number.isNaN(height) ? null : height,
+        audioKbps: parseInt(item.targetAudio, 10) || 160,
+        cookies: cookiesOf(settings),
+      },
+    });
+    runPromises.current[runId] = promise;
 
-          const finalExt = nextItem.ext || 'mp4';
+    let result = null;
+    let failure = null;
+    try {
+      result = await promise;
+    } catch (e) {
+      failure = String(e?.message || e || '');
+      console.error(`[yt-dlp download ${itemId}] could not run:`, e);
+    } finally {
+      delete runPromises.current[runId];
+      delete runToItem.current[runId];
+      if (activeRuns.current[itemId] === runId) delete activeRuns.current[itemId];
+      setRunTick((t) => t + 1);
+    }
 
-          let resFilter = '';
-          if (nextItem.targetRes && nextItem.targetRes !== 'best' && nextItem.targetRes !== 'Original') {
-            resFilter = `[height<=${nextItem.targetRes}]`;
-          }
+    // Cancelled (by the user or by closing the app): the UI already shows it,
+    // and Rust has already deleted the partial files.
+    if (result?.cancelled) return;
 
-          let formatString;
-          let additionalArgs = [];
-          let actualExt = finalExt;
+    const ok = result && result.code === 0;
+    let errorKey = null;
 
-          if (nextItem.formatType === 'audio') {
-            formatString = 'bestaudio/best';
-            const safeAudioExt = finalExt === 'mp4' ? 'm4a' : finalExt;
-            actualExt = safeAudioExt;
-            additionalArgs = [
-              '--extract-audio',
-              '--audio-format', safeAudioExt,
-              '--audio-quality', `${nextItem.targetAudio}K`
-            ];
-          } else {
-            // Native download only — NO re-encoding. <=1080p has H.264 (avc1);
-            // above that YouTube only serves VP9/AV1. We just remux into the
-            // chosen container. The modal warns the user when the resulting
-            // codec won't open in video editors.
-            const resNum = parseInt(nextItem.targetRes, 10);
-            const above1080 = !isNaN(resNum) && resNum > 1080;
-            // Prefer the native H.264 (avc1) mp4 stream when it exists (<=1080p).
-            const avcPref = (finalExt === 'mp4' && !above1080) ? '[vcodec^=avc1]' : '';
+    // "HTTP Error 403: Forbidden" while downloading is usually a temporary
+    // refusal from the site (expired stream link): try once more by itself
+    // before showing an error. The new attempt gets fresh links.
+    if (!ok && !item.autoRetried && /http error 403|403: forbidden/i.test(`${result?.stderr || ''} ${failure || ''}`)) {
+      setQueue(prev => prev.map(i =>
+        i.id === itemId && ACTIVE_STATUSES.includes(i.status)
+          ? { ...i, status: "Waiting", progress: 0, autoRetried: true }
+          : i
+      ));
+      return;
+    }
 
-            if (finalExt === 'mp4') {
-              formatString = `bestvideo${resFilter}${avcPref}[ext=mp4]+bestaudio[ext=m4a]/bestvideo${resFilter}+bestaudio/best${resFilter}/best`;
-            } else if (finalExt === 'webm') {
-              formatString = `bestvideo${resFilter}[ext=webm]+bestaudio[ext=webm]/bestvideo${resFilter}+bestaudio/best${resFilter}/best`;
-            } else {
-              formatString = `bestvideo${resFilter}+bestaudio/best${resFilter}/best`;
-            }
+    if (!ok) {
+      const text = `${result?.stderr || ''} ${failure || ''}`;
+      if (text.trim()) console.warn(`[yt-dlp download ${itemId}] failed:\n${text.trim()}`);
+      errorKey = classifyYtdlpError(text, 'err_download');
+      if (errorKey !== 'err_download') showToast(errorKey, 'error');
+    }
 
-            additionalArgs = ['--merge-output-format', finalExt];
-          }
+    setQueue(prev => prev.map(i => {
+      if (i.id !== itemId || !ACTIVE_STATUSES.includes(i.status)) return i;
+      return ok
+        ? { ...i, status: "Done", progress: 100, totalTime: formatDuration(Date.now() - startTime), outputFile: result.outputFile }
+        : { ...i, status: "Error", errorKey };
+    }));
+  }
 
-          // FFmpeg location resolved by the Rust side (works in dev and prod,
-          // Windows and macOS). Empty string -> let yt-dlp auto-detect / use system.
-          let ffmpegLocation = "";
-          try {
-            ffmpegLocation = await invoke('find_ffmpeg');
-          } catch (err) {
-            console.warn("[FFmpeg] find_ffmpeg command failed; relying on system FFmpeg.", err);
-          }
+  // --- 3B. CLOSING THE APP ---
+  // Every way of closing goes through requestClose():
+  //   - the window's close button / Alt+F4 (window "close requested" event),
+  //   - app-level quit such as Cmd+Q on macOS (Rust emits "exit-requested").
+  // If downloads are running or queued, a confirmation dialog is shown instead
+  // (rendered by App.jsx from `closePrompt`). Otherwise the app closes at once.
+  const destroyWindow = async () => {
+    const { getCurrentWindow } = await import('@tauri-apps/api/window');
+    await getCurrentWindow().destroy();
+  };
 
-          const denoPath = await resolveDenoPath();
+  // Cancels every download and waits (up to a few seconds) until each yt-dlp
+  // process has exited and its partial files are deleted.
+  const cancelAllAndWait = async (timeoutMs = 8000) => {
+    try { await invoke('ytdlp_cancel_all'); } catch (e) { /* ignore */ }
+    const pending = Object.values(runPromises.current).map((p) => p.catch(() => {}));
+    await Promise.race([
+      Promise.all(pending),
+      new Promise((r) => setTimeout(r, timeoutMs)),
+    ]);
+  };
 
-          const finalArgs = [
-            '--format', formatString,
-            '--output', `${nextItem.directory}/${safeTitle}.%(ext)s`,
-            '--no-warnings',
-            '--no-colors',
-            '--encoding', 'utf-8',
-            // With cookies YouTube serves fragmented (SABR/DASH) streams; pulling
-            // several fragments in parallel restores fast download speeds.
-            '--concurrent-fragments', '5',
-            // Digital signature: embeds "Downloaded with Flow Downloader - <repo>"
-            // into the file's metadata comment field (visible in file properties / VLC).
-            '--embed-metadata',
-            '--postprocessor-args', `Metadata:-metadata comment="${SIGNATURE_COMMENT}"`,
-            ...jsRuntimeArgs(denoPath),
-            ...cookieArgs(settings),
-          ];
+  const requestClose = async () => {
+    if (closingRef.current) return;
+    const pending = queueRef.current.filter(
+      (i) => ACTIVE_STATUSES.includes(i.status) || i.status === "Waiting"
+    );
+    if (pending.length > 0) {
+      setClosePrompt(true);
+      return;
+    }
+    closingRef.current = true;
+    await cancelAllAndWait(2000);
+    await destroyWindow();
+  };
 
-          if (ffmpegLocation) {
-            finalArgs.push('--ffmpeg-location', ffmpegLocation);
-          }
-
-          finalArgs.push(...additionalArgs, '--', nextItem.url);
-
-          const predictedFile = `${safeTitle}.${actualExt}`;
-
-          setQueue(prev => prev.map(i =>
-            i.id === itemId ? { ...i, status: "Downloading", outputFile: predictedFile } : i
-          ));
-
-          const cmd = Command.sidecar('ytdlp', finalArgs, SIDE_OPTS);
-          let stderrBuf = '';
-
-          cmd.on('close', (data) => {
-            if (manuallyHandled.current.has(itemId)) {
-              cleanupItemRefs(itemId);
-              return;
-            }
-
-            cleanupItemRefs(itemId);
-
-            if (data.code !== 0 && stderrBuf.trim()) {
-              console.warn(`[yt-dlp download ${itemId}] exit ${data.code}. stderr:\n` + stderrBuf.trim());
-              const key = classifyYtdlpError(stderrBuf);
-              if (key !== 'error_invalid') showToast(key, 'error');
-            }
-
-            setQueue(prev => {
-              const item = prev.find(i => i.id === itemId);
-              if (!item) return prev;
-
-              if (data.code === 0) {
-                const timeTaken = formatDuration(Date.now() - startTime);
-                return prev.map(i => i.id === itemId
-                  ? { ...i, status: "Done", progress: 100, totalTime: timeTaken }
-                  : i);
-              }
-
-              return prev.map(i => i.id === itemId ? { ...i, status: "Error" } : i);
-            });
-          });
-
-          cmd.on('error', (err) => {
-            if (manuallyHandled.current.has(itemId)) return;
-            console.warn(`Non-fatal warning on process ${itemId}:`, err);
-          });
-
-          // Capture stderr so a failed download can report its real reason.
-          cmd.stderr.on('data', (line) => {
-            stderrBuf += line.toString();
-            if (stderrBuf.length > 8000) stderrBuf = stderrBuf.slice(-8000);
-          });
-
-          cmd.stdout.on('data', (line) => {
-            if (manuallyHandled.current.has(itemId)) return;
-            const text = line.toString();
-
-            if (text.includes('[VideoConvertor]') || text.includes('[Merger]') || text.includes('[ExtractAudio]')) {
-              updateItemStatus(itemId, "Processing...", 100);
-              return;
-            }
-
-            if (text.includes('[download]')) {
-              const now = Date.now();
-              if (now - (lastUpdate.current[itemId] || 0) < 150) return;
-              lastUpdate.current[itemId] = now;
-
-              const progressMatch = text.match(/(\d+\.?\d*)%/);
-              const speedMatch = text.match(/at\s+([^\s]+)/);
-              const etaMatch = text.match(/ETA\s+([^\s]+)/);
-
-              const parsedProgress = progressMatch ? parseFloat(progressMatch[1]) : null;
-
-              setQueue(prev => prev.map(item => {
-                if (item.id === itemId) {
-                  const newProgress = parsedProgress !== null ? Math.max(item.progress, parsedProgress) : item.progress;
-                  return {
-                    ...item,
-                    progress: newProgress,
-                    speed: speedMatch ? speedMatch[1] : item.speed,
-                    eta: etaMatch ? etaMatch[1] : item.eta
-                  };
-                }
-                return item;
-              }));
-            }
-          });
-
-          const child = await cmd.spawn();
-          activeProcesses.current[itemId] = child;
-
-        } catch (error) {
-          console.error(`[CRITICAL] Failed to spawn process ${itemId}:`, error);
-          cleanupItemRefs(itemId);
-          updateItemStatus(itemId, "Error");
-        }
-      });
-    };
-
-    processQueue();
-  }, [queue, settings.maxConcurrent]);
-
-  // --- 3B. KILL CHILD PROCESSES ON WINDOW CLOSE ---
-  useEffect(() => {
-    let unlisten;
-    let cancelled = false;
-
-    import('@tauri-apps/api/window').then(({ getCurrentWindow }) => {
-      const win = getCurrentWindow();
-      win.onCloseRequested(async (event) => {
-        event.preventDefault();
-        await killAllProcesses();
-        await win.destroy();
-      }).then((u) => {
-        if (cancelled) u();
-        else unlisten = u;
-      });
-    }).catch((e) => console.warn("[Cleanup] Could not register close handler:", e));
-
-    return () => {
-      cancelled = true;
-      if (unlisten) unlisten();
-    };
-  }, []);
-
-  // --- 3C. KILL CHILD PROCESSES ON HOOK UNMOUNT (hot reload safety) ---
-  useEffect(() => {
-    return () => { killAllProcesses(); };
-  }, []);
-
-  // Kills a yt-dlp child AND its descendants (e.g. the ffmpeg it spawned for
-  // re-encoding). child.kill() alone leaves ffmpeg orphaned at high CPU on
-  // Windows, so we also ask the Rust side to kill the whole process tree.
-  const killChildTree = async (child) => {
-    if (!child || child === "starting") return;
-    const pid = child.pid;
-    try { await child.kill(); } catch (e) { /* already gone */ }
-    if (pid != null) {
-      try { await invoke('kill_process_tree', { pid }); } catch (e) { /* ignore */ }
+  // "Close anyway": cancel everything, delete the incomplete files, then close.
+  const confirmClose = async () => {
+    if (closingRef.current) return;
+    closingRef.current = true;
+    setClosing(true);
+    setQueue(prev => prev.map(i =>
+      ACTIVE_STATUSES.includes(i.status) || i.status === "Waiting" ? { ...i, status: "Canceled" } : i
+    ));
+    try {
+      await cancelAllAndWait();
+    } finally {
+      await destroyWindow();
     }
   };
 
-  const killAllProcesses = async () => {
-    const procs = activeProcesses.current;
-    await Promise.all(Object.keys(procs).map((id) => killChildTree(procs[id])));
-  };
+  const cancelClose = () => setClosePrompt(false);
+
+  // The handlers are registered once, so they call the latest requestClose via a ref.
+  const requestCloseRef = useRef(requestClose);
+  requestCloseRef.current = requestClose;
+
+  useEffect(() => {
+    const unlisteners = [];
+    let cancelled = false;
+    const keep = (u) => { if (cancelled) u(); else unlisteners.push(u); };
+
+    import('@tauri-apps/api/window').then(({ getCurrentWindow }) => {
+      getCurrentWindow().onCloseRequested((event) => {
+        event.preventDefault();
+        requestCloseRef.current();
+      }).then(keep);
+    }).catch((e) => console.warn("[Close] Could not register close handler:", e));
+
+    listen('exit-requested', () => requestCloseRef.current()).then(keep)
+      .catch((e) => console.warn("[Close] Could not listen for app exit:", e));
+
+    return () => {
+      cancelled = true;
+      unlisteners.forEach((u) => u());
+    };
+  }, []);
+
+  // --- 3C. STOP DOWNLOADS ON HOOK UNMOUNT (hot reload safety) ---
+  useEffect(() => {
+    return () => { invoke('ytdlp_cancel_all').catch(() => {}); };
+  }, []);
 
   const updateItemStatus = (id, status, progress = null) => {
     setQueue(prev => prev.map(item => {
@@ -657,38 +581,54 @@ export default function useDownloader(settings, showToast) {
     }));
   };
 
+  // Cancels an item. A running download is killed by Rust (process tree), which
+  // then deletes its partial files; a waiting item simply never starts.
   const cancelDownload = async (id) => {
-    const child = activeProcesses.current[id];
-    // Mark as manually handled and KEEP the flag set, so the eventual
-    // 'close' event ignores this item instead of marking it as an error.
-    manuallyHandled.current.add(id);
-    await killChildTree(child);
-    delete activeProcesses.current[id];
-    delete lastUpdate.current[id];
     updateItemStatus(id, "Canceled");
+    const runId = activeRuns.current[id];
+    if (runId) {
+      try { await invoke('ytdlp_cancel', { runId }); } catch (e) { /* already finished */ }
+    }
   };
 
   const retryDownload = (id) => {
     setQueue(prev => prev.map(item =>
-      item.id === id ? { ...item, status: "Waiting", progress: 0 } : item
+      item.id === id ? { ...item, status: "Waiting", progress: 0, errorKey: null, autoRetried: false } : item
     ));
   };
 
   const removeItem = (id) => {
-    if (activeProcesses.current[id]) cancelDownload(id);
-    cleanupItemRefs(id);
+    if (activeRuns.current[id]) cancelDownload(id);
     setQueue(prev => prev.filter(item => item.id !== id));
   };
+
+  // Right-click menu on the queue.
+  const clearFinished = () => {
+    setQueue(prev => prev.filter(item => item.status !== "Done"));
+  };
+  const cancelAll = () => {
+    queueRef.current
+      .filter((item) => item.status === "Waiting" || ACTIVE_STATUSES.includes(item.status))
+      .forEach((item) => cancelDownload(item.id));
+  };
+
+  // Items shown in the close-confirmation dialog.
+  const activeDownloads = queue.filter((i) => ACTIVE_STATUSES.includes(i.status));
+  const waitingCount = queue.filter((i) => i.status === "Waiting").length;
 
   return {
     url, setUrl,
     analyzing, analyzeLink,
     queue,
+    activeDownloads, waitingCount,
+    closePrompt, closing, confirmClose, cancelClose,
     mediaData, setMediaData,
     startDownload,
     downloadPath, setDownloadPath,
     cancelDownload,
     retryDownload,
-    removeItem
+    removeItem,
+    clearFinished,
+    cancelAll
   };
 }

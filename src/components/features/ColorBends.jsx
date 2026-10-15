@@ -4,6 +4,7 @@
 // parameters (speed, scale, warp, noise...) are hardcoded below to safe values;
 // only the `colors` prop is configurable from Settings.
 import { useEffect, useRef, memo } from 'react';
+import { createRenderLoop } from '../../utils/renderLoop';
 import * as THREE from 'three';
 
 const MAX_COLORS = 8;
@@ -87,11 +88,15 @@ void main() {
 function ColorBends({
   className,
   style,
-  colors = ["#ff5c7a", "#8a5cff", "#00ffd1"]
+  colors = ["#ff5c7a", "#8a5cff", "#00ffd1"],
+  paused = false, // stop rendering (e.g. while a dialog covers the screen)
+  'data-glass-layer': glassLayer // lets the liquid-glass search bar sample this canvas
 }) {
   const containerRef = useRef(null);
   const rendererRef = useRef(null);
-  const rafRef = useRef(null);
+  const loopRef = useRef(null);
+  const pausedRef = useRef(paused);
+  pausedRef.current = paused;
   const materialRef = useRef(null);
   const resizeObserverRef = useRef(null);
   
@@ -151,7 +156,8 @@ function ColorBends({
     const renderer = new THREE.WebGLRenderer({
       antialias: false,
       powerPreference: 'high-performance',
-      alpha: true
+      alpha: true,
+      preserveDrawingBuffer: true // readable by the glass search bar
     });
     rendererRef.current = renderer;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -162,8 +168,6 @@ function ColorBends({
     renderer.domElement.style.display = 'block';
     
     container.appendChild(renderer.domElement);
-
-    const clock = new THREE.Clock();
 
     const handleResize = () => {
       const w = container.clientWidth || 1;
@@ -177,9 +181,8 @@ function ColorBends({
     ro.observe(container);
     resizeObserverRef.current = ro;
 
-    const loop = () => {
-      const dt = clock.getDelta();
-      const elapsed = clock.elapsedTime;
+    // Paused while hidden / covered, 30 fps while unfocused (see renderLoop.js).
+    const loop = createRenderLoop((elapsed, dt) => {
       material.uniforms.uTime.value = elapsed;
 
       const deg = (rotationRef.current % 360) + autoRotateRef.current * elapsed;
@@ -190,9 +193,8 @@ function ColorBends({
       material.uniforms.uPointer.value.copy(pointerCurrentRef.current);
 
       renderer.render(scene, camera);
-      rafRef.current = requestAnimationFrame(loop);
-    };
-    rafRef.current = requestAnimationFrame(loop);
+    }, { isPaused: () => pausedRef.current });
+    loopRef.current = loop;
 
     const handlePointerMove = (e) => {
       const rect = container.getBoundingClientRect();
@@ -204,7 +206,8 @@ function ColorBends({
     window.addEventListener('pointermove', handlePointerMove);
 
     return () => {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      loop.dispose();
+      loopRef.current = null;
       if (resizeObserverRef.current) resizeObserverRef.current.disconnect();
       window.removeEventListener('pointermove', handlePointerMove);
       
@@ -243,10 +246,14 @@ function ColorBends({
       else material.uniforms.uColors.value[i].set(0, 0, 0);
     }
     material.uniforms.uColorCount.value = arr.length;
+    loopRef.current?.redraw(); // show the new colors even while paused
 
   }, [colors]);
 
-  return <div ref={containerRef} className={`w-full h-full relative overflow-hidden ${className}`} style={style} />;
+  // Resume when un-paused.
+  useEffect(() => { if (!paused) loopRef.current?.wake(); }, [paused]);
+
+  return <div ref={containerRef} data-glass-layer={glassLayer} className={`w-full h-full relative overflow-hidden ${className}`} style={style} />;
 }
 
 export default memo(ColorBends);

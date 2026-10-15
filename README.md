@@ -83,7 +83,7 @@ Built for performance and security, leveraging the best of the Rust and JavaScri
 ### Building from Source
 1.  **Clone**: `git clone https://github.com/stanley-meloo/Flow-Downloader.git`
 2.  **Dependencies**: `npm install`
-3.  **Sidecars**: Place `ffmpeg` and `ytdlp` in `src-tauri/binaries/` using the correct target triple (e.g., `ytdlp-x86_64-pc-windows-msvc.exe`).
+3.  **Sidecars**: Place `ytdlp`, `ffmpeg` and `deno` directly in `src-tauri/`, named with the target triple (e.g., `ytdlp-x86_64-pc-windows-msvc.exe`, `ffmpeg-aarch64-apple-darwin`).
 4.  **Launch**: `npm run tauri dev`
 5.  **Build**: `npm run tauri build`
 

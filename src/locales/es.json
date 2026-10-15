@@ -1,7 +1,6 @@
 {
   "hero": {
-    "title": "FlowDownloader",
-    "subtitle": "Descarga todo desde cualquier lugar y en cualquier momento"
+    "subtitle": "Descarga lo que quieras, cuando quieras, en 2 clics"
   },
   "search": {
     "placeholder": "Pega el URL aquí...",
@@ -12,7 +11,6 @@
   },
   "queue": {
     "title": "Cola de Descargas",
-    "empty": "Tu cola está vacía",
     "open_folder": "Ir al archivo",
     "cancel": "Cancelar descarga",
     "retry": "Intentar de nuevo",
@@ -22,18 +20,14 @@
     "error": "Error de Descarga",
     "speed": "Velocidad",
     "eta": "Tiempo restante",
-    "calculating": "Calculando...",
-    "error_missing": "Archivo no encontrado (movido o eliminado)",
     "finished_in": "Completado en {{time}}",
-    "processing": "Procesando y convirtiendo…"
+    "processing": "Procesando y convirtiendo…",
+    "items_one": "{{count}} elemento",
+    "items_other": "{{count}} elementos"
   },
   "media_modal": {
-    "title": "Opciones de Descarga",
     "format": "Formato",
     "quality": "Calidad",
-    "directory": "Guardar en",
-    "cancel": "Cancelar",
-    "download": "Descargar Ahora",
     "output_format": "Elige lo que deseas descargar",
     "format_video_audio": "Vídeo + Audio",
     "format_video_only": "Solo Vídeo",
@@ -41,19 +35,19 @@
     "destination": "Destino",
     "change": "Cambiar",
     "audio": "Audio",
-    "fps": "FPS",
-    "native_fps": "Nativo",
     "download_png": "Descargar Imagen",
     "open_folder": "Abrir ubicación del archivo",
     "start_download": "Descargar",
-    "codec": "Códec",
-    "codec_h264": "H.264",
-    "codec_prores": "ProRes",
-    "codec_dnxhr": "DNxHR",
     "editor_warning": "Las resoluciones superiores a 1080p vienen en {{codec}}, que los editores de video (Premiere, DaVinci…) no pueden abrir. Elige 1080p o menos para tener H.264, o convierte este archivo a H.264 con un conversor en línea.",
     "audio_best": "Mejor (~160 kbps)",
     "audio_medium": "Media (128 kbps)",
-    "audio_low": "Baja (96 kbps)"
+    "audio_low": "Baja (96 kbps)",
+    "edit_title": "Editar título",
+    "save_title": "Guardar título",
+    "cancel_edit": "Cancelar",
+    "reset_title": "Restaurar título original",
+    "file_name": "Nombre del archivo",
+    "title_placeholder": "Título personalizado…"
   },
   "playlist_modal": {
     "badge": "LISTA DE REPRODUCCIÓN",
@@ -70,8 +64,7 @@
   "setup_modal": {
     "title": "¡Bienvenido a FlowDownloader!",
     "subtitle": "Vamos a configurar tu ubicación de descarga inicial",
-    "select_folder": "Seleccionar Carpeta de Descarga Predeterminada",
-    "finish": "Comenzar"
+    "select_folder": "Seleccionar Carpeta de Descarga Predeterminada"
   },
   "settings": {
     "title": "Configuración",
@@ -83,12 +76,13 @@
     "search_language": "Buscar idioma...",
     "tabs": {
       "general": "General",
-      "visual": "Apariencia"
+      "visual": "Apariencia",
+      "shortcuts": "Atajos"
     },
     "general": {
       "path": "Ruta de Descarga Predeterminada",
       "limit": "Límite de Elementos en Lista",
-      "limit_info": "Puedes aumentar el límite para escanear listas completas. Para evitar lentitud en tu equipo y bloqueos de servidores de YouTube (Error 429), Flow procesará la descarga de forma inteligente, descargando 3 vídeos a la vez.",
+      "limit_info": "Puedes aumentar el límite para escanear listas completas. Para evitar lentitud en tu equipo y bloqueos de servidores de YouTube (Error 429), Flow procesará la descarga de forma inteligente, descargando {{n}} vídeos a la vez.",
       "quality": "Calidad Predeterminada",
       "language": "Idioma de la Interfaz",
       "engine": "Motor de descarga (yt-dlp)",
@@ -100,7 +94,13 @@
       "cookies_file_choose": "Usar un archivo cookies.txt…",
       "cookies_file_info": "¿Flow Downloader muestra el error 'confirma que no eres un robot'? Usa un archivo cookies.txt: exporta tus cookies de YouTube (con la sesión iniciada) con una extensión del navegador como 'Get cookies.txt LOCALLY' y selecciona el archivo aquí.",
       "autopaste": "Pegar enlaces automáticamente",
-      "autopaste_info": "Al abrir o enfocar la app, rellena la barra automáticamente con un enlace que esté en el portapapeles."
+      "autopaste_info": "Al abrir o enfocar la app, rellena la barra automáticamente con un enlace que esté en el portapapeles.",
+      "concurrent": "Descargas simultáneas",
+      "concurrent_info": "Más a la vez es más rápido con buena conexión, pero demasiadas pueden hacer que los sitios te limiten (error 429).",
+      "engine_uptodate": "Al día",
+      "engine_updated": "Actualizado",
+      "engine_error": "No se pudo actualizar. Inténtalo de nuevo",
+      "license": "Licencia MIT"
     },
     "visual": {
       "style": "Motor Gráfico de Fondo",
@@ -114,12 +114,6 @@
       "quantity": "Cantidad de Líneas",
       "distance": "Espaciado",
       "radius": "Interacción (Ratón)",
-      "strength": "Fuerza (Ratón)",
-      "speed": "Velocidad",
-      "scale": "Escala",
-      "distortion": "Distorsión",
-      "noise": "Granulado (Ruido)",
-      "base_color": "Color de Fondo",
       "static_or_image": "Color Estático o Imagen Personalizada",
       "static_color": "Color Estático",
       "image": "Fondo Personalizado",
@@ -129,40 +123,131 @@
       "gradient": "Viñeta Superior",
       "darken": "Oscurecer",
       "blur": "Desenfocar",
-      "presets": "Fondos listos",
       "animated": "Animados (GIF)",
       "still": "Estáticos (Imagen)",
       "randomize": "Aleatorio al iniciar",
-      "wallpaper_credit": "Fondos de wallpaperaccess.com"
+      "wallpaper_credit": "Fondos de wallpaperaccess.com",
+      "film_grain": "Grano de película",
+      "film_grain_info": "Grano cinematográfico con una ligera aberración cromática sobre toda la app. 0 lo desactiva."
     },
     "done": "Hecho",
-    "no_languages": "No se encontraron idiomas"
+    "no_languages": "No se encontraron idiomas",
+    "shortcuts": {
+      "main_group": "Ventana principal",
+      "modal_group": "Ventana de descarga",
+      "info": "Haz clic en un atajo y pulsa la nueva combinación de teclas. Pulsa Esc para cancelar.",
+      "press_key": "Pulsa una tecla…",
+      "reset": "Restaurar predeterminado",
+      "reset_all": "Restaurar todos los predeterminados",
+      "conflict": "Esta combinación ya la usa «{{action}}».",
+      "actions": {
+        "search": "Buscar enlace",
+        "paste": "Pegar enlace",
+        "selectBar": "Seleccionar barra de búsqueda",
+        "openSettings": "Abrir ajustes",
+        "download": "Iniciar descarga",
+        "closeModal": "Cerrar ventana"
+      }
+    }
   },
   "toast": {
-    "error_empty": "Por favor, inserta un enlace.",
     "error_invalid": "Enlace inválido o no soportado.",
     "success_added": "¡Vídeo añadido a la cola!",
     "success_thumb": "¡Miniatura descargada con éxito!",
     "error_thumb": "No se pudo descargar la miniatura.",
-    "download_started": "¡Descarga iniciada!",
-    "download_finished": "¡Todo listo! Descarga completada.",
-    "error_generic": "Algo salió mal. Inténtalo de nuevo.",
     "clipboard_success": "¡Enlace pegado con éxito!",
     "clipboard_empty": "El portapapeles está vacío.",
-    "clipboard_error": "Error al acceder al portapapeles.",
-    "link_error": "Por favor, pega un enlace válido.",
-    "data_error": "Error en los datos recibidos.",
-    "video_not_found": "Vídeo no encontrado o no disponible.",
-    "open_error": "Error al abrir la ubicación.",
-    "config_saved": "¡Configuraciones aplicadas!",
-    "ytdlp_checking": "Buscando actualizaciones de yt-dlp…",
-    "ytdlp_updated": "¡yt-dlp actualizado a la última versión!",
-    "ytdlp_uptodate": "yt-dlp ya está actualizado.",
-    "ytdlp_update_error": "No se pudo actualizar yt-dlp.",
+    "clipboard_error": "No se pudo leer el portapapeles.",
+    "open_error": "No se pudo abrir el archivo o la carpeta.",
+    "ytdlp_checking": "Buscando actualizaciones del motor de descarga…",
+    "ytdlp_updated": "Motor de descarga actualizado.",
+    "ytdlp_uptodate": "El motor de descarga ya está actualizado.",
+    "ytdlp_update_error": "No se pudo actualizar el motor de descarga.",
     "youtube_bot_check": "YouTube bloqueó la solicitud (verificación de robot). Activa las Cookies en Ajustes → General.",
     "cookie_error": "No se pudieron leer las cookies del navegador. Prueba con Firefox o un archivo cookies.txt.",
     "no_formats": "No hay formato descargable para este video (puede ser una transmisión en vivo, un estreno o aún se está procesando).",
-    "clipboard_autopaste": "Enlace del portapapeles pegado automáticamente."
+    "clipboard_autopaste": "Enlace del portapapeles pegado automáticamente.",
+    "err_age": "Restricción de edad: añade tus cookies en Ajustes para descargarlo.",
+    "err_private": "Privado o solo para miembros: necesita cookies de una cuenta con acceso.",
+    "err_geo": "No disponible en tu país.",
+    "err_live": "Este directo o estreno aún no ha empezado.",
+    "err_unavailable": "Este vídeo no está disponible o fue eliminado.",
+    "err_disk": "No se pudo guardar el archivo. Revisa la carpeta y el espacio en disco.",
+    "err_ffmpeg": "No se pudo terminar el archivo. Inténtalo de nuevo o elige otro formato.",
+    "err_network": "Problema de conexión. Revisa tu internet e inténtalo de nuevo.",
+    "err_unsupported": "Este enlace no es compatible.",
+    "err_download": "La descarga falló. Inténtalo de nuevo o actualiza el motor en Ajustes.",
+    "app_update_error": "No se pudo comprobar o instalar la actualización.",
+    "app_update_wait": "Espera a que terminen las descargas antes de actualizar.",
+    "diagnostics_error": "No se pudo generar el diagnóstico.",
+    "console_copied": "Diagnóstico de la consola copiado. Pégalo al pedir ayuda.",
+    "screenshot_saved": "Captura guardada en <path>Imágenes/Flow Downloader</path> y copiada al portapapeles.",
+    "screenshot_error": "No se pudo hacer la captura.",
+    "link_copied": "Enlace copiado.",
+    "title_copied": "Título copiado.",
+    "image_copied": "Imagen copiada al portapapeles.",
+    "image_copy_error": "No se pudo copiar la imagen.",
+    "titles": {
+      "success": "Listo",
+      "error": "Error",
+      "info": "Aviso",
+      "download": "Descarga"
+    },
+    "close": "Cerrar"
   },
-  "support_flow": "Apoya a Flow Downloader 🪙"
+  "support_flow": "Apoya a Flow Downloader 🪙",
+  "folder_picker": {
+    "title": "Elige la carpeta de descarga",
+    "ok": "Seleccionar carpeta",
+    "file_name": "Esta carpeta",
+    "filter_media": "Vídeos, audio e imágenes",
+    "filter_all": "Todos los archivos"
+  },
+  "close_prompt": {
+    "title": "¿Cerrar Flow Downloader?",
+    "count": "Archivos descargándose: {{n}}",
+    "message": "Si cierras la app ahora, estas descargas se cancelarán y se borrarán los archivos incompletos.",
+    "waiting": "En cola: {{n}}",
+    "keep": "Seguir descargando",
+    "close": "Cerrar de todos modos",
+    "closing": "Cerrando…"
+  },
+  "update": {
+    "available": "Flow Downloader {{version}} disponible",
+    "install": "Actualizar",
+    "installing": "Instalando…",
+    "dismiss": "Descartar"
+  },
+  "context_menu": {
+    "copy": "Copiar",
+    "cut": "Cortar",
+    "paste": "Pegar",
+    "reload": "Recargar",
+    "copy_console": "Copiar diagnóstico de la consola",
+    "screenshot": "Captura de pantalla",
+    "paste_search": "Pegar enlace y buscar",
+    "open_last_folder": "Abrir la última carpeta de descarga",
+    "settings": "Ajustes",
+    "always_on_top": "Mantener ventana encima",
+    "open_file": "Abrir archivo",
+    "show_in_folder": "Mostrar en la carpeta",
+    "copy_link": "Copiar enlace original",
+    "retry": "Reintentar",
+    "download_again": "Descargar de nuevo en otra calidad",
+    "cancel": "Cancelar",
+    "remove": "Quitar de la lista",
+    "clear": "Borrar",
+    "recent": "Recientes",
+    "save_thumbnail": "Guardar miniatura",
+    "copy_image": "Copiar imagen",
+    "copy_title": "Copiar título",
+    "clear_finished": "Borrar completadas",
+    "cancel_all": "Cancelar todas"
+  },
+  "tooltips": {
+    "minimize": "Minimizar",
+    "maximize": "Maximizar",
+    "close": "Cerrar",
+    "remove": "Quitar"
+  }
 }

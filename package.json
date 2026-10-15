@@ -1,22 +1,25 @@
 {
   "name": "flow-downloader",
   "private": true,
-  "version": "1.1.0",
+  "version": "1.2.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "optimize-wallpapers": "node scripts/optimize-wallpapers.mjs"
   },
   "dependencies": {
-    "@tauri-apps/api": "^2.10.1",
+    "@fontsource/quicksand": "^5.3.0",
+    "@tauri-apps/api": "^2.12.4",
     "@tauri-apps/plugin-clipboard-manager": "^2.3.2",
     "@tauri-apps/plugin-dialog": "^2.6.0",
     "@tauri-apps/plugin-fs": "^2.4.5",
-    "@tauri-apps/plugin-http": "^2.5.7",
     "@tauri-apps/plugin-opener": "^2.5.3",
+    "@tauri-apps/plugin-process": "^2.4.0",
     "@tauri-apps/plugin-shell": "^2.3.5",
+    "@tauri-apps/plugin-updater": "^2.13.3",
     "framer-motion": "^12.34.0",
     "i18next": "^25.8.11",
     "i18next-browser-languagedetector": "^8.2.1",
@@ -28,10 +31,11 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.18",
-    "@tauri-apps/cli": "^2",
+    "@tauri-apps/cli": "^2.12.3",
     "@vitejs/plugin-react": "^4.6.0",
     "autoprefixer": "^10.4.24",
     "postcss": "^8.5.6",
+    "sharp": "^0.34.5",
     "tailwindcss": "^4.1.18",
     "vite": "^7.0.4"
   }

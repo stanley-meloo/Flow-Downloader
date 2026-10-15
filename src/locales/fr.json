@@ -1,7 +1,6 @@
 {
   "hero": {
-    "title": "FlowDownloader",
-    "subtitle": "Téléchargez tout, de n'importe où et à tout moment"
+    "subtitle": "Téléchargez tout, à tout moment, en 2 clics"
   },
   "search": {
     "placeholder": "Collez l'URL ici...",
@@ -12,7 +11,6 @@
   },
   "queue": {
     "title": "File de Téléchargement",
-    "empty": "Votre file d'attente est vide",
     "open_folder": "Aller au fichier",
     "cancel": "Annuler le téléchargement",
     "retry": "Réessayer",
@@ -22,18 +20,14 @@
     "error": "Erreur de Téléchargement",
     "speed": "Vitesse",
     "eta": "Temps restant",
-    "calculating": "Calcul...",
-    "error_missing": "Fichier non trouvé (déplacé ou supprimé)",
     "finished_in": "Terminé en {{time}}",
-    "processing": "Traitement et conversion…"
+    "processing": "Traitement et conversion…",
+    "items_one": "{{count}} élément",
+    "items_other": "{{count}} éléments"
   },
   "media_modal": {
-    "title": "Options de Téléchargement",
     "format": "Format",
     "quality": "Qualité",
-    "directory": "Enregistrer sous",
-    "cancel": "Annuler",
-    "download": "Télécharger maintenant",
     "output_format": "Choisissez ce que vous voulez télécharger",
     "format_video_audio": "Vidéo + Audio",
     "format_video_only": "Vidéo uniquement",
@@ -41,19 +35,19 @@
     "destination": "Destination",
     "change": "Modifier",
     "audio": "Audio",
-    "fps": "FPS",
-    "native_fps": "Natif",
     "download_png": "Télécharger l'image",
     "open_folder": "Ouvrir l'emplacement du fichier",
     "start_download": "Télécharger",
-    "codec": "Codec",
-    "codec_h264": "H.264",
-    "codec_prores": "ProRes",
-    "codec_dnxhr": "DNxHR",
     "editor_warning": "Les résolutions supérieures à 1080p sont en {{codec}}, que les éditeurs vidéo (Premiere, DaVinci…) ne peuvent pas ouvrir. Choisissez 1080p ou moins pour avoir du H.264, ou convertissez ce fichier en H.264 avec un convertisseur en ligne.",
     "audio_best": "Meilleure (~160 kbps)",
     "audio_medium": "Moyenne (128 kbps)",
-    "audio_low": "Faible (96 kbps)"
+    "audio_low": "Faible (96 kbps)",
+    "edit_title": "Modifier le titre",
+    "save_title": "Enregistrer le titre",
+    "cancel_edit": "Annuler",
+    "reset_title": "Rétablir le titre d'origine",
+    "file_name": "Nom du fichier",
+    "title_placeholder": "Titre personnalisé…"
   },
   "playlist_modal": {
     "badge": "PLAYLIST",
@@ -70,8 +64,7 @@
   "setup_modal": {
     "title": "Bienvenue sur FlowDownloader !",
     "subtitle": "Configurons votre emplacement de téléchargement initial",
-    "select_folder": "Sélectionner le dossier de téléchargement par défaut",
-    "finish": "Commencer"
+    "select_folder": "Sélectionner le dossier de téléchargement par défaut"
   },
   "settings": {
     "title": "Paramètres",
@@ -83,12 +76,13 @@
     "search_language": "Rechercher une langue...",
     "tabs": {
       "general": "Général",
-      "visual": "Apparence"
+      "visual": "Apparence",
+      "shortcuts": "Raccourcis"
     },
     "general": {
       "path": "Chemin de téléchargement par défaut",
       "limit": "Limite d'éléments de playlist",
-      "limit_info": "Vous pouvez augmenter la limite pour analyser des playlists entières. Pour éviter de ralentir votre machine et les blocages des serveurs YouTube (Erreur 429), Flow traitera le téléchargement intelligemment, en téléchargeant 3 vidéos à la fois.",
+      "limit_info": "Vous pouvez augmenter la limite pour analyser des playlists entières. Pour éviter de ralentir votre machine et les blocages des serveurs YouTube (Erreur 429), Flow traitera le téléchargement intelligemment, en téléchargeant {{n}} vidéos à la fois.",
       "quality": "Qualité par défaut",
       "language": "Langue de l'interface",
       "engine": "Moteur de téléchargement (yt-dlp)",
@@ -100,7 +94,13 @@
       "cookies_file_choose": "Utiliser un fichier cookies.txt…",
       "cookies_file_info": "Flow Downloader affiche l'erreur « confirmez que vous n'êtes pas un robot » ? Utilisez un fichier cookies.txt : exportez vos cookies YouTube (connecté) avec une extension de navigateur comme « Get cookies.txt LOCALLY », puis sélectionnez le fichier ici.",
       "autopaste": "Coller les liens automatiquement",
-      "autopaste_info": "À l'ouverture ou au focus de l'app, remplit automatiquement la barre avec un lien présent dans le presse-papiers."
+      "autopaste_info": "À l'ouverture ou au focus de l'app, remplit automatiquement la barre avec un lien présent dans le presse-papiers.",
+      "concurrent": "Téléchargements simultanés",
+      "concurrent_info": "Plusieurs à la fois, c'est plus rapide avec une bonne connexion, mais trop peut amener les sites à vous ralentir (erreur 429).",
+      "engine_uptodate": "À jour",
+      "engine_updated": "Mis à jour",
+      "engine_error": "Mise à jour impossible. Réessayez",
+      "license": "Licence MIT"
     },
     "visual": {
       "style": "Moteur graphique d'arrière-plan",
@@ -114,12 +114,6 @@
       "quantity": "Quantité de lignes",
       "distance": "Espacement",
       "radius": "Interaction (Souris)",
-      "strength": "Force (Souris)",
-      "speed": "Vitesse",
-      "scale": "Échelle",
-      "distortion": "Distorsion",
-      "noise": "Grain (Bruit)",
-      "base_color": "Couleur de fond",
       "static_or_image": "Couleur Statique ou Image Personnalisée",
       "static_color": "Couleur Statique",
       "image": "Fond d'écran personnalisé",
@@ -129,40 +123,131 @@
       "gradient": "Vignette supérieure",
       "darken": "Assombrir",
       "blur": "Flouter",
-      "presets": "Fonds prêts",
       "animated": "Animés (GIF)",
       "still": "Statiques (Image)",
       "randomize": "Aléatoire au démarrage",
-      "wallpaper_credit": "Fonds d'écran de wallpaperaccess.com"
+      "wallpaper_credit": "Fonds d'écran de wallpaperaccess.com",
+      "film_grain": "Grain de film",
+      "film_grain_info": "Grain cinématographique avec une légère aberration chromatique sur toute l'app. 0 le désactive."
     },
     "done": "Terminé",
-    "no_languages": "Aucune langue trouvée"
+    "no_languages": "Aucune langue trouvée",
+    "shortcuts": {
+      "main_group": "Fenêtre principale",
+      "modal_group": "Fenêtre de téléchargement",
+      "info": "Cliquez sur un raccourci, puis appuyez sur la nouvelle combinaison de touches. Appuyez sur Échap pour annuler.",
+      "press_key": "Appuyez sur une touche…",
+      "reset": "Rétablir par défaut",
+      "reset_all": "Tout rétablir par défaut",
+      "conflict": "Cette combinaison est déjà utilisée par « {{action}} ».",
+      "actions": {
+        "search": "Rechercher le lien",
+        "paste": "Coller le lien",
+        "selectBar": "Sélectionner la barre de recherche",
+        "openSettings": "Ouvrir les paramètres",
+        "download": "Lancer le téléchargement",
+        "closeModal": "Fermer la fenêtre"
+      }
+    }
   },
   "toast": {
-    "error_empty": "Veuillez insérer un lien.",
     "error_invalid": "Lien invalide ou non pris en charge.",
     "success_added": "Vidéo ajoutée à la file !",
     "success_thumb": "Miniature téléchargée avec succès !",
     "error_thumb": "Impossible de télécharger la miniature.",
-    "download_started": "Le téléchargement a commencé !",
-    "download_finished": "Tout est prêt ! Téléchargement terminé.",
-    "error_generic": "Un problème est survenu. Réessayez.",
     "clipboard_success": "Lien collé avec succès !",
     "clipboard_empty": "Le presse-papiers est vide.",
-    "clipboard_error": "Erreur d'accès au presse-papiers.",
-    "link_error": "Veuillez coller un lien valide.",
-    "data_error": "Erreur dans les données reçues.",
-    "video_not_found": "Vidéo introuvable ou indisponible.",
-    "open_error": "Erreur lors de l'ouverture de l'emplacement.",
-    "config_saved": "Paramètres appliqués !",
-    "ytdlp_checking": "Recherche de mises à jour de yt-dlp…",
-    "ytdlp_updated": "yt-dlp mis à jour vers la dernière version !",
-    "ytdlp_uptodate": "yt-dlp est déjà à jour.",
-    "ytdlp_update_error": "Impossible de mettre à jour yt-dlp.",
+    "clipboard_error": "Impossible de lire le presse-papiers.",
+    "open_error": "Impossible d'ouvrir le fichier ou le dossier.",
+    "ytdlp_checking": "Recherche de mises à jour du moteur de téléchargement…",
+    "ytdlp_updated": "Moteur de téléchargement mis à jour.",
+    "ytdlp_uptodate": "Le moteur de téléchargement est déjà à jour.",
+    "ytdlp_update_error": "Impossible de mettre à jour le moteur de téléchargement.",
     "youtube_bot_check": "YouTube a bloqué la requête (vérification anti-robot). Activez les cookies dans Paramètres → Général.",
     "cookie_error": "Impossible de lire les cookies du navigateur. Essayez Firefox ou un fichier cookies.txt.",
     "no_formats": "Aucun format téléchargeable pour cette vidéo (live, première ou encore en traitement).",
-    "clipboard_autopaste": "Lien du presse-papiers collé automatiquement."
+    "clipboard_autopaste": "Lien du presse-papiers collé automatiquement.",
+    "err_age": "Restriction d'âge : ajoutez vos cookies dans les Paramètres pour la télécharger.",
+    "err_private": "Vidéo privée ou réservée aux membres : il faut les cookies d'un compte autorisé.",
+    "err_geo": "Non disponible dans votre pays.",
+    "err_live": "Ce direct ou cette première n'a pas encore commencé.",
+    "err_unavailable": "Cette vidéo est indisponible ou a été supprimée.",
+    "err_disk": "Impossible d'enregistrer le fichier. Vérifiez le dossier et l'espace disque.",
+    "err_ffmpeg": "Impossible de finaliser le fichier. Réessayez ou choisissez un autre format.",
+    "err_network": "Problème de connexion. Vérifiez votre internet et réessayez.",
+    "err_unsupported": "Ce lien n'est pas pris en charge.",
+    "err_download": "Échec du téléchargement. Réessayez ou mettez à jour le moteur dans les Paramètres.",
+    "app_update_error": "Impossible de vérifier ou d'installer la mise à jour.",
+    "app_update_wait": "Attendez la fin des téléchargements avant de mettre à jour.",
+    "diagnostics_error": "Impossible de générer le diagnostic.",
+    "console_copied": "Diagnostic de la console copié. Collez-le pour demander de l'aide.",
+    "screenshot_saved": "Capture enregistrée dans <path>Images/Flow Downloader</path> et copiée dans le presse-papiers.",
+    "screenshot_error": "Impossible de faire la capture.",
+    "link_copied": "Lien copié.",
+    "title_copied": "Titre copié.",
+    "image_copied": "Image copiée dans le presse-papiers.",
+    "image_copy_error": "Impossible de copier l'image.",
+    "titles": {
+      "success": "Terminé",
+      "error": "Erreur",
+      "info": "Info",
+      "download": "Téléchargement"
+    },
+    "close": "Fermer"
   },
-  "support_flow": "Soutenir Flow Downloader 🪙"
+  "support_flow": "Soutenir Flow Downloader 🪙",
+  "folder_picker": {
+    "title": "Choisissez le dossier de téléchargement",
+    "ok": "Sélectionner le dossier",
+    "file_name": "Ce dossier",
+    "filter_media": "Vidéos, audio et images",
+    "filter_all": "Tous les fichiers"
+  },
+  "close_prompt": {
+    "title": "Fermer Flow Downloader ?",
+    "count": "Fichiers en cours de téléchargement : {{n}}",
+    "message": "Si vous fermez l'application maintenant, ces téléchargements seront annulés et leurs fichiers incomplets supprimés.",
+    "waiting": "En attente : {{n}}",
+    "keep": "Continuer le téléchargement",
+    "close": "Fermer quand même",
+    "closing": "Fermeture…"
+  },
+  "update": {
+    "available": "Flow Downloader {{version}} est disponible",
+    "install": "Mettre à jour",
+    "installing": "Installation…",
+    "dismiss": "Ignorer"
+  },
+  "context_menu": {
+    "copy": "Copier",
+    "cut": "Couper",
+    "paste": "Coller",
+    "reload": "Recharger",
+    "copy_console": "Copier le diagnostic de la console",
+    "screenshot": "Capture d'écran",
+    "paste_search": "Coller le lien et rechercher",
+    "open_last_folder": "Ouvrir le dernier dossier de téléchargement",
+    "settings": "Paramètres",
+    "always_on_top": "Garder la fenêtre au premier plan",
+    "open_file": "Ouvrir le fichier",
+    "show_in_folder": "Afficher dans le dossier",
+    "copy_link": "Copier le lien d'origine",
+    "retry": "Réessayer",
+    "download_again": "Retélécharger dans une autre qualité",
+    "cancel": "Annuler",
+    "remove": "Retirer de la liste",
+    "clear": "Effacer",
+    "recent": "Récents",
+    "save_thumbnail": "Enregistrer la miniature",
+    "copy_image": "Copier l'image",
+    "copy_title": "Copier le titre",
+    "clear_finished": "Effacer les terminés",
+    "cancel_all": "Tout annuler"
+  },
+  "tooltips": {
+    "minimize": "Réduire",
+    "maximize": "Agrandir",
+    "close": "Fermer",
+    "remove": "Retirer"
+  }
 }

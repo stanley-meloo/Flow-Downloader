@@ -1,34 +1,24 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FolderUp, AlertCircle, Languages, 
-  ChevronDown, Check, Search, CheckCircle2 
-} from "lucide-react";
+import { AlertCircle } from "lucide-react";
+import { LanguagesIcon as Languages, FolderUpIcon as FolderUp, ChevronDownIcon as ChevronDown, CheckIcon as Check, SearchIcon as Search, CircleCheckIcon as CheckCircle2 } from "../ui/AnimatedIcons"; // animated (lucide-animated)
 import { useTranslation } from "react-i18next";
+import { Swap, Collapse, Pop } from "../ui/Motion";
+import { LANGUAGES, resolveLanguage } from "../../locales/languages";
 import logoImg from "../../assets/logo.png";
+import LiquidGlass from "../ui/liquidGlass/LiquidGlass";
+import { DIALOG_GLASS } from "../ui/liquidGlass/presets";
 
 export default function SetupModal({ settings, onClose }) {
   const { t, i18n } = useTranslation();
   const [langOpen, setLangOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
 
-  const languageOptions = [
-    { value: "auto", label: "Auto" },
-    { value: "en", label: "English" }, { value: "pt", label: "Português" },
-    { value: "es", label: "Español" }, { value: "fr", label: "Français" },
-    { value: "de", label: "Deutsch" }, { value: "it", label: "Italiano" },
-    { value: "ko", label: "한국어 (Korean)" }, { value: "zh", label: "中文 (Chinese)" },
-    { value: "ja", label: "日本語 (Japanese)" }, { value: "ru", label: "Русский (Russian)" },
-    { value: "hi", label: "हिन्दी (Hindi)" }, { value: "bn", label: "বাংলা (Bengali)" },
-    { value: "ar", label: "العربية (Arabic)" }, { value: "tr", label: "Türkçe (Turkish)" },
-    { value: "vi", label: "Tiếng Việt (Vietnamese)" }, { value: "pl", label: "Polski (Polish)" }
-  ];
+  const languageOptions = [{ value: "auto", label: t('settings.lang_auto') }, ...LANGUAGES];
 
   useEffect(() => {
     if (!settings.language || settings.language === "auto") {
-      const browserLang = navigator.language.split('-')[0];
-      const supported = languageOptions.map(o => o.value).filter(v => v !== "auto");
-      const finalLang = supported.includes(browserLang) ? browserLang : "en";
-      i18n.changeLanguage(finalLang);
+      i18n.changeLanguage(resolveLanguage("auto"));
     }
   }, []);
 
@@ -37,13 +27,7 @@ export default function SetupModal({ settings, onClose }) {
 
   const handleLanguageChange = (newLang) => {
     settings.saveSettings({ language: newLang });
-    if (newLang === "auto") {
-      const browserLang = navigator.language.split('-')[0];
-      const supported = languageOptions.map(o => o.value).filter(v => v !== "auto");
-      i18n.changeLanguage(supported.includes(browserLang) ? browserLang : "en");
-    } else {
-      i18n.changeLanguage(newLang);
-    }
+    i18n.changeLanguage(resolveLanguage(newLang));
     setLangOpen(false);
     setSearchTerm("");
   };
@@ -73,7 +57,9 @@ export default function SetupModal({ settings, onClose }) {
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-6">
       <motion.div 
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-        className="absolute inset-0 bg-black/60 backdrop-blur-md"
+        // No dark tint here: the dimming is done inside the app background
+        // (App.jsx), so this dialog's liquid glass sees it too.
+        className="absolute inset-0 backdrop-blur-md"
       />
 
       <motion.div 
@@ -81,31 +67,41 @@ export default function SetupModal({ settings, onClose }) {
         initial="hidden"
         animate="visible"
         exit="exit"
-        className="relative w-full max-w-md bg-zinc-950/50 border border-white/10 rounded-2xl p-8 text-center shadow-2xl backdrop-blur-2xl"
+        // max-w-lg + wrapping text below: some languages (French, Spanish,
+        // Italian, Vietnamese...) have much longer sentences than English.
+        className="relative isolate w-full max-w-lg rounded-[36px] p-6 text-center shadow-2xl backdrop-blur-md" /* no CSS bg/border: the glass draws them */
       >
+        {/* Liquid glass background — same material as the other dialogs */}
+        <LiquidGlass
+          variant="dark"
+          settings={DIALOG_GLASS}
+          radius={36}
+          className="absolute inset-0 -z-10 pointer-events-none rounded-[36px]"
+          fallbackClassName="bg-zinc-950/80 backdrop-blur-2xl border border-white/10"
+        />
         <motion.div variants={itemVariants} className="w-20 h-20 flex items-center justify-center mx-auto mb-6">
-          <img src={logoImg} alt="Logo" className="w-20 h-20" />
+          <img src={logoImg} alt="Flow Downloader" className="w-20 h-20" />
         </motion.div>
         
-        <motion.h2 variants={itemVariants} className="text-2xl font-bold text-white mb-2">{t('setup_modal.title')}</motion.h2>
-        <motion.p variants={itemVariants} className="text-zinc-400 text-sm mb-8 leading-relaxed px-4">{t('setup_modal.subtitle')}</motion.p>
+        <motion.h2 variants={itemVariants} className="text-2xl font-bold text-white mb-2 break-words [text-wrap:balance]">{t('setup_modal.title')}</motion.h2>
+        <motion.p variants={itemVariants} className="text-zinc-400 text-sm mb-8 leading-relaxed px-2 break-words [text-wrap:balance]">{t('setup_modal.subtitle')}</motion.p>
 
         <div className="space-y-6 text-left">
           <motion.div variants={itemVariants} className="relative">
-            <label className="text-[12px] font-black text-zinc-500 uppercase tracking-widest px-1 mb-2 block">{t('settings.general.language')}</label>
+            <label className="text-[12px] font-black text-zinc-500 uppercase tracking-widest leading-snug break-words px-1 mb-2 block">{t('settings.general.language')}</label>
             <button onClick={() => setLangOpen(!langOpen)} className="w-full flex items-center justify-between p-3.5 bg-zinc-900/50 border border-white/5 rounded-xl text-white text-sm hover:bg-zinc-900 hover:border-white/10 transition-all cursor-pointer">
-              <div className="flex items-center gap-3">
-                <Languages size={20} className="text-white" />
-                <span className="font-semibold">{currentLangLabel}</span>
+              <div className="flex items-center gap-3 min-w-0">
+                <Languages size={20} className="text-white shrink-0" />
+                <Swap id={currentLangLabel} className="font-semibold truncate min-w-0">{currentLangLabel}</Swap>
               </div>
-              <ChevronDown size={20} className={`text-zinc-500 transition-transform ${langOpen ? 'rotate-180' : ''}`} />
+              <ChevronDown size={20} className={`text-zinc-500 shrink-0 transition-transform ${langOpen ? 'rotate-180' : ''}`} />
             </button>
 
             <AnimatePresence>
               {langOpen && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setLangOpen(false)} />
-                  <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="absolute bottom-full left-0 right-0 mb-2 bg-zinc-900 border border-white/10 rounded-xl shadow-2xl z-20 overflow-hidden flex flex-col">
+                  <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="absolute bottom-full left-0 right-0 mb-2 bg-zinc-900 border border-white/10 rounded-2xl shadow-2xl z-20 overflow-hidden flex flex-col">
                     <div className="p-2 border-b border-white/5 bg-zinc-950/50">
                       <div className="flex items-center gap-2 bg-zinc-900 border border-white/10 rounded-lg px-3 py-2">
                         <Search size={14} className="text-neutral-300" />
@@ -114,9 +110,11 @@ export default function SetupModal({ settings, onClose }) {
                     </div>
                     <div className="max-h-48 overflow-y-auto custom-scrollbar p-1">
                       {filteredLanguages.map((lang) => (
-                        <button key={lang.value} onClick={() => handleLanguageChange(lang.value)} className="w-full flex items-center justify-between p-2.5 hover:bg-white/5 rounded-lg text-sm text-zinc-400 hover:text-white transition-colors cursor-pointer">
+                        <button key={lang.value} onClick={() => handleLanguageChange(lang.value)} className="w-full flex items-center justify-between p-2.5 hover:bg-white/5 rounded-xl text-sm text-zinc-400 hover:text-white transition-colors cursor-pointer">
                           {lang.label}
-                          {settings.language === lang.value && <Check size={14} className="text-violet-400" />}
+                          <Pop show={settings.language === lang.value} className="flex">
+                            <Check size={14} className="text-violet-400" />
+                          </Pop>
                         </button>
                       ))}
                     </div>
@@ -127,27 +125,31 @@ export default function SetupModal({ settings, onClose }) {
           </motion.div>
 
           <motion.div variants={itemVariants} className="space-y-3">
-            <label className="text-[12px] font-black text-zinc-500 uppercase tracking-widest px-1 block">{t('settings.general.path')}</label>
-            <button onClick={() => settings.changeDefaultPath()} className={`w-full py-4 rounded-xl transition-all flex items-center justify-center gap-3 cursor-pointer group shadow-lg border ${settings.defaultPath ? "bg-zinc-900/50 border-violet-500/30 text-violet-400" : "bg-white hover:bg-zinc-200 text-black border-transparent"}`}>
-              {settings.defaultPath ? <CheckCircle2 size={20} /> : <FolderUp size={20} />}
-              <span className="font-bold text-sm truncate px-4">{settings.defaultPath || t('setup_modal.select_folder')}</span>
+            <label className="text-[12px] font-black text-zinc-500 uppercase tracking-widest leading-snug break-words px-1 block">{t('settings.general.path')}</label>
+            <button onClick={() => settings.changeDefaultPath()} className={`w-full py-4 rounded-xl transition-all duration-300 flex items-center justify-center cursor-pointer group shadow-lg border ${settings.defaultPath ? "bg-zinc-900/50 border-violet-500/30 text-violet-400" : "bg-white hover:bg-zinc-200 text-black border-transparent"}`}>
+              {/* Icon + label crossfade when a folder is picked */}
+              {/* The chosen path is truncated (one line); the "select folder" text
+                  wraps instead, so long translations never leave the button. */}
+              <Swap id={settings.defaultPath || 'none'} as="div" className="flex items-center justify-center gap-3 w-full min-w-0 px-4">
+                {settings.defaultPath ? <CheckCircle2 size={20} className="shrink-0" /> : <FolderUp size={20} className="shrink-0" />}
+                <span className={`font-bold text-sm min-w-0 ${settings.defaultPath ? 'truncate font-path' : 'break-words leading-snug'}`}>{settings.defaultPath || t('setup_modal.select_folder')}</span>
+              </Swap>
             </button>
           </motion.div>
         </div>
 
-        <AnimatePresence>
-          {settings.defaultPath && (
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="mt-8">
-              <button onClick={onClose} className="w-full py-3 bg-violet-600 hover:bg-violet-500 text-white font-black uppercase tracking-widest text-[11px] rounded-xl transition-all shadow-[0_0_20px_rgba(139,92,246,0.3)] cursor-pointer active:scale-95">
-                {t('settings.done')}
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {/* "Done" button slides open once a folder is chosen (no layout jump) */}
+        <Collapse show={!!settings.defaultPath}>
+          <div className="pt-8">
+            <button onClick={onClose} className="w-full py-3 bg-violet-600 hover:bg-violet-500 text-white font-black uppercase tracking-widest text-[11px] rounded-xl transition-all shadow-[0_0_20px_rgba(139,92,246,0.3)] cursor-pointer active:scale-95">
+              {t('settings.done')}
+            </button>
+          </div>
+        </Collapse>
 
-        <motion.div variants={itemVariants} className="mt-8 flex items-center justify-center gap-2 text-[10px] text-zinc-600 uppercase tracking-widest">
-          <AlertCircle size={10} />
-          <span>{t('settings.general.path')} {settings.defaultPath ? t('queue.finished').toLowerCase() : t('settings.not_defined').toLowerCase()}</span>
+        <motion.div variants={itemVariants} className="mt-8 flex items-center justify-center gap-2 text-[10px] text-zinc-600 uppercase tracking-widest leading-relaxed px-2">
+          <AlertCircle size={10} className="shrink-0" />
+          <Swap id={!!settings.defaultPath} className="min-w-0 break-words">{t('settings.general.path')} {settings.defaultPath ? t('queue.finished').toLowerCase() : t('settings.not_defined').toLowerCase()}</Swap>
         </motion.div>
       </motion.div>
     </div>

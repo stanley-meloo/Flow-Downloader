@@ -1,4 +1,4 @@
-name: Release macOS Build
+name: Release
 
 on:
   push:
@@ -6,8 +6,8 @@ on:
       - 'v*'
 
 jobs:
-  # Create the draft release once, so both architecture builds can upload to the
-  # same release (no race, no duplicate drafts). Reuses an existing draft for the
+  # Create the draft release once, so every build can upload to the same
+  # release (no race, no duplicate drafts). Reuses an existing draft for the
   # same tag if the workflow is re-run.
   create-release:
     runs-on: ubuntu-latest
@@ -15,7 +15,7 @@ jobs:
       release_id: ${{ steps.create-release.outputs.result }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Read app version
         id: version
@@ -23,7 +23,7 @@ jobs:
 
       - name: Create (or reuse) the draft release
         id: create-release
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         env:
           APP_VERSION: ${{ steps.version.outputs.version }}
         with:
@@ -43,23 +43,45 @@ jobs:
             }
             return release.id;
 
-  # Build each macOS architecture separately. Each target uses its own
-  # arch-specific sidecars (ffmpeg/deno/ytdlp), so no universal "lipo" is needed.
-  # Produces two .dmg files (Apple Silicon + Intel), both uploaded to the draft.
-  build-mac:
+  # One build per platform: Windows (x64) and macOS (Apple Silicon + Intel).
+  # Each target uses its own platform-specific sidecars (ytdlp/ffmpeg/deno).
+  #
+  # App auto-update: when the TAURI_SIGNING_PRIVATE_KEY secret exists, the builds
+  # are signed and tauri-action adds every platform to the release's
+  # latest.json, which the app's updater reads. Builds run one at a time so the
+  # jobs don't overwrite each other's latest.json entries.
+  build:
     needs: create-release
-    runs-on: macos-latest
     strategy:
       fail-fast: false
+      max-parallel: 1
       matrix:
-        target: [aarch64-apple-darwin, x86_64-apple-darwin]
+        include:
+          - platform: windows-latest
+            target: x86_64-pc-windows-msvc
+          - platform: macos-latest
+            target: aarch64-apple-darwin
+          - platform: macos-latest
+            target: x86_64-apple-darwin
+    runs-on: ${{ matrix.platform }}
+    env:
+      HAS_UPDATER_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY != '' }}
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
+
+      # The sidecars are committed from Windows, which doesn't record the Unix
+      # "executable" permission in git. Tauri copies them into the .app as-is,
+      # so without this step yt-dlp/ffmpeg/deno can't be started on macOS.
+      - name: Make macOS sidecars executable
+        if: runner.os == 'macOS'
+        run: |
+          chmod +x src-tauri/ytdlp-*-apple-darwin src-tauri/ffmpeg-*-apple-darwin src-tauri/deno-*-apple-darwin
+          ls -l src-tauri/*-apple-darwin
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 24.12.0
 
@@ -75,6 +97,9 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           releaseId: ${{ needs.create-release.outputs.release_id }}
-          args: --target ${{ matrix.target }}
+          # Updater artifacts (.sig + latest.json) only when the signing key exists.
+          args: --target ${{ matrix.target }} ${{ env.HAS_UPDATER_KEY == 'true' && '--config src-tauri/tauri.updater.conf.json' || '' }}

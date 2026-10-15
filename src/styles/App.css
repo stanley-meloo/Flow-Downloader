@@ -1,25 +1,86 @@
 @import "tailwindcss";
 
-@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600;700&display=swap');
+/* Quicksand is bundled with the app (@fontsource/quicksand, imported in main.jsx)
+   instead of loaded from Google Fonts: the app's CSP blocks external stylesheets
+   and fonts, and it must also work offline. */
+
+/* Text selection: neutral gray everywhere (instead of the system blue) */
+::selection {
+  background-color: rgba(161, 161, 170, 0.45); /* zinc-400 at 45% */
+  color: #ffffff;
+}
+
+/* The app is a single fixed-size screen: the page itself must never scroll.
+   Effects that slightly overflow the window (liquid-glass canvases, the entrance
+   zoom, fixed buttons near the edges) would otherwise make the webview show its
+   own vertical + horizontal scrollbars. Inner panels keep their own scrolling. */
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: #09090b; /* fills the whole window, edge to edge (no transparent corners) */
+}
+
+/* App entrance (the root window element in App.jsx): fade in + settle from a
+   slight zoom. CSS animation = runs on the compositor, smooth even while the
+   main thread is busy starting up. Ends at "transform: none". */
+.app-enter {
+  animation: app-enter 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes app-enter {
+  from { opacity: 0; transform: scale(0.985); }
+  to   { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  @keyframes app-enter {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+}
+
+/* Corner radius scale — nested shapes stay concentric:
+     outer radius = inner radius + padding between them
+   - Controls (44px rows, buttons, inputs, tab tracks, menus): 12px (rounded-xl)
+   - Inside a control: 12 − inset (tab pill at 4px → 8; badge at 6px → 6; swatch at 8px → 4)
+   - Dialogs: 24px padding + 12px controls = 36px
+   - Panels in Settings: 16px padding + 12 = 28px · Queue card: 12 + 8 (thumb) = 20px
+   - Playlist items: 10 + 6 (thumb) = 16px · Toast: 16 + 8 (icon box) = 24px
+   - Pills stay fully round (a pill inside a pill is always concentric). */
+
+/* Folder paths are shown in Arial everywhere (more legible for paths than the
+   rounded UI font). Use class "font-path" on any element that displays a path. */
+.font-path {
+  font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
+}
 
 body {
   font-family: 'Quicksand', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
-/* Scrollbar width/height */
+/* Scrollbar gutter: 14px wide, fully transparent (no background of its own,
+   so it blends with whatever card it's in) */
 .custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-/* Track — transparent so the bar looks like it's floating */
-.custom-scrollbar::-webkit-scrollbar-track {
+  width: 14px;
+  height: 14px;
   background: transparent;
 }
 
-/* Thumb — the draggable part */
+/* Track and corner — transparent so the bar looks like it's floating */
+.custom-scrollbar::-webkit-scrollbar-track,
+.custom-scrollbar::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Thumb — the draggable part. The transparent border (clipped out of the
+   background) keeps the visible bar 6px wide with 4px of space on each side,
+   so it doesn't touch the card's edge. */
 .custom-scrollbar::-webkit-scrollbar-thumb {
   background-color: #27272a; /* Zinc-800 (dark) */
+  border: 4px solid transparent;
+  background-clip: padding-box;
   border-radius: 99px;       /* fully rounded */
 }
 
@@ -28,8 +89,253 @@ body {
   background-color: #3f3f46; /* Zinc-700 (slightly lighter) */
 }
 
-/* Firefox fallback (Tauri uses WebKit/Chromium, but this keeps it consistent) */
-.custom-scrollbar {
-  scrollbar-width: thin;
-  scrollbar-color: #27272a transparent;
+/* No arrow buttons at the ends — just the bar */
+.custom-scrollbar::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+/* Fallback for engines WITHOUT ::-webkit-scrollbar (Firefox) only.
+   Recent Chromium/WebView2 gives the standard `scrollbar-width`/`scrollbar-color`
+   priority over ::-webkit-scrollbar and then draws its native thin scrollbar,
+   arrows included — so they must not apply there. */
+@supports not selector(::-webkit-scrollbar) {
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: #27272a transparent;
+  }
+}
+/* Hides the native scrollbar (scrolling still works). Used with <ScrollThumb>. */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* ---------------------------------------------------------------------------
+   Film grain + light chromatic aberration (components/ui/FilmGrain.jsx)
+   Compositor-only: the noise layer just jumps between offsets (transform),
+   so the browser never repaints the app for it.
+   --------------------------------------------------------------------------- */
+.film-grain {
+  position: absolute;      /* inside the app's root element */
+  inset: 0;
+  border-radius: inherit;
+  z-index: 10010;          /* above everything, including dialogs and toasts */
+  pointer-events: none;
+  overflow: hidden;
+}
+.film-grain__noise {
+  position: absolute;
+  inset: -100%;            /* oversized so jumps never reveal an edge */
+  background-repeat: repeat;
+  background-size: 256px 256px;     /* opacity is set by the intensity slider */
+  mix-blend-mode: overlay;
+  will-change: transform;
+  animation: film-grain-jump 0.9s steps(1) infinite;
+}
+/* Faint red / cyan fringe toward the edges, like a lens's chromatic aberration */
+.film-grain__fringe {
+  position: absolute;
+  inset: 0;
+  mix-blend-mode: screen;
+  background:
+    radial-gradient(120% 120% at 46% 50%, transparent 62%, rgba(255, 40, 90, 0.07) 82%, rgba(255, 40, 90, 0.12) 100%),
+    radial-gradient(120% 120% at 54% 50%, transparent 62%, rgba(40, 200, 255, 0.07) 82%, rgba(40, 200, 255, 0.12) 100%);
+}
+@keyframes film-grain-jump {
+  0%   { transform: translate(0, 0); }
+  10%  { transform: translate(-17%, 9%); }
+  20%  { transform: translate(11%, -23%); }
+  30%  { transform: translate(-29%, -7%); }
+  40%  { transform: translate(23%, 19%); }
+  50%  { transform: translate(-7%, 31%); }
+  60%  { transform: translate(31%, -13%); }
+  70%  { transform: translate(-21%, -29%); }
+  80%  { transform: translate(7%, 27%); }
+  90%  { transform: translate(-31%, 13%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .film-grain__noise { animation: none; }
+}
+
+/* ---------------------------------------------------------------------------
+   Title-bar brand shine (components/ui/BrandShine.jsx): a soft light band
+   sweeps across the logo, then the text, once every 10 s. CSS only.
+   --------------------------------------------------------------------------- */
+.brand-shine-text {
+  color: transparent;
+  background-image: linear-gradient(110deg,
+    #d4d4d8 0%, #d4d4d8 42%, #ffffff 48%, #e0e7ff 50%, #ffffff 52%, #d4d4d8 58%, #d4d4d8 100%);
+  background-size: 300% 100%;
+  background-position: 100% 0;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: brand-shine-text 10s ease-in-out 2s infinite;
+}
+.brand-shine-logo {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  background-image: linear-gradient(110deg,
+    transparent 0%, transparent 40%, rgba(255, 255, 255, 0.85) 50%, transparent 60%, transparent 100%);
+  background-size: 300% 100%;
+  background-position: 100% 0;
+  mix-blend-mode: screen;
+  animation: brand-shine-logo 10s ease-in-out 2s infinite;
+}
+/* The sweep takes ~1.1 s (logo first, then the text), then rests until the next 10 s cycle. */
+@keyframes brand-shine-logo {
+  0%        { background-position: 100% 0; }
+  4%, 100%  { background-position: 0% 0; }
+}
+@keyframes brand-shine-text {
+  0%, 2%    { background-position: 100% 0; }
+  11%, 100% { background-position: 0% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .brand-shine-text, .brand-shine-logo { animation: none; }
+}
+
+/* ---------------------------------------------------------------------------
+   Search bar "searching" snake (components/ui/SearchSnake.jsx). The motion,
+   colors and acceleration are driven in JS; only the halo is styled here.
+   --------------------------------------------------------------------------- */
+.search-snake__halo {
+  filter: blur(5px);
+  opacity: 0.8;
+}
+/* Loading spinner inside the search button (lucide Loader2, original shape):
+   its color pulses through the snake's palette, a bit deeper so it reads on
+   the white button. The icon draws with currentColor. */
+.search-spinner {
+  animation:
+    spin 1s linear infinite,
+    search-spinner-colors 3s linear infinite;
+}
+@keyframes search-spinner-colors {
+  0%, 100% { color: #0891b2; }
+  17%      { color: #2563eb; }
+  33%      { color: #9333ea; }
+  50%      { color: #db2777; }
+  67%      { color: #d97706; }
+  83%      { color: #16a34a; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .search-spinner { animation-duration: 2.5s, 6s; }
+}
+
+/* Shockwave when the snake is released: a thin RGB ring that expands from
+   the search button (w-12 inside the bar's p-2 → centered 32px from the right). */
+.search-snake-burst {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  width: 48px;
+  height: 48px;
+  margin-top: -24px;
+  border-radius: 9999px;
+  padding: 2px;
+  background: conic-gradient(from 90deg, #06b6d4, #3b82f6, #a855f7, #ec4899, #f59e0b, #22c55e, #06b6d4);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  opacity: 0;
+  animation: search-snake-burst 0.65s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+/* blur on a wrapper: on the same element the mask would cut it */
+.search-snake-burst-halo {
+  position: absolute;
+  inset: 0;
+  filter: blur(5px);
+}
+.search-snake-burst-halo > .search-snake-burst { padding: 4px; }
+@keyframes search-snake-burst {
+  0%   { transform: scale(0.6) rotate(0deg);   opacity: 1; }
+  100% { transform: scale(1.7) rotate(90deg);  opacity: 0; }
+}
+
+/* Screenshot flash (right-click menu → Screenshot): a quick white flash over
+   the whole window that fades out, like a camera shutter. */
+.camera-flash {
+  position: fixed;
+  inset: 0;
+  z-index: 10050;
+  pointer-events: none;
+  background: radial-gradient(120% 120% at 50% 50%, #ffffff 0%, rgba(255, 255, 255, 0.92) 60%, rgba(224, 231, 255, 0.85) 100%);
+  animation: camera-flash 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+@keyframes camera-flash {
+  0%   { opacity: 0; }
+  12%  { opacity: 0.9; }
+  100% { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .camera-flash { animation-duration: 0.3s; }
+  @keyframes camera-flash { 0% { opacity: 0.35; } 100% { opacity: 0; } }
+}
+
+/* ---------------------------------------------------------------------------
+   Download queue (components/features/QueueList.jsx)
+   --------------------------------------------------------------------------- */
+/* Soft blue glow at the tip of the progress bar (no hard dot): a blurred,
+   slightly oval halo that breathes gently. */
+.queue-bar-spark {
+  position: absolute;
+  right: -6px;
+  top: 50%;
+  width: 16px;
+  height: 10px;
+  margin-top: -5px;
+  border-radius: 9999px;
+  background: radial-gradient(ellipse at center, rgba(147, 197, 253, 0.55) 0%, rgba(59, 130, 246, 0.28) 45%, rgba(59, 130, 246, 0) 75%);
+  filter: blur(2px);
+  pointer-events: none;
+  animation: queue-spark 2s ease-in-out infinite;
+}
+@keyframes queue-spark {
+  0%, 100% { opacity: 0.6; }
+  50%      { opacity: 1; }
+}
+/* One-time light sweep across a card when its download finishes. */
+.queue-finish-shine {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  border-radius: inherit;
+  overflow: hidden;
+  pointer-events: none;
+}
+.queue-finish-shine::before {
+  content: "";
+  position: absolute;
+  top: -20%;
+  bottom: -20%;
+  width: 35%;
+  left: -40%;
+  transform: skewX(-20deg);
+  background: linear-gradient(90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.10) 35%,
+    rgba(236, 253, 245, 0.35) 50%,
+    rgba(255, 255, 255, 0.10) 65%,
+    rgba(255, 255, 255, 0) 100%);
+  mix-blend-mode: screen;
+  animation: queue-finish-sweep 1.1s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+@keyframes queue-finish-sweep {
+  from { left: -40%; }
+  to   { left: 120%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .queue-bar-spark { animation: none; }
+  .queue-finish-shine::before { animation-duration: 0.01s; }
 }

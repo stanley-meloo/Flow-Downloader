@@ -1,6 +1,7 @@
-import { useState, useRef, useMemo, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Settings, Heart } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { motion, AnimatePresence, MotionConfig } from "framer-motion";
+import { Loader2, X } from "lucide-react";
+import { SettingsIcon as Settings, HeartIcon as Heart, SparklesIcon as Sparkles } from "./components/ui/AnimatedIcons"; // animated (lucide-animated)
 import { readFile } from '@tauri-apps/plugin-fs';
 import { useTranslation } from 'react-i18next';
 
@@ -17,16 +18,42 @@ import MediaModal from "./components/modals/MediaModal";
 import SetupModal from "./components/modals/SetupModal";
 import SettingsModal from "./components/modals/SettingsModal";
 import PlaylistModal from "./components/modals/PlaylistModal";
+import CloseConfirmModal from "./components/modals/CloseConfirmModal";
 
 // Hooks & Utils
 import useSettings from "./hooks/useSettings";
 import useDownloader from "./hooks/useDownloader";
 import useYtdlpUpdater from "./hooks/useYtdlpUpdater";
+import useAppUpdater from "./hooks/useAppUpdater";
 import useTooltip from "./hooks/useTooltip";
+import useContextMenuSections from "./hooks/useContextMenuSections";
 import { handlePaste } from "./utils/fileSystem";
+import { isPresetValue, findPreset } from "./utils/backgrounds";
+import LiquidGlass from "./components/ui/liquidGlass/LiquidGlass";
+import FilmGrain from "./components/ui/FilmGrain";
+import ContextMenu from "./components/ui/ContextMenu";
+import Tooltip from "./components/ui/Tooltip";
+import HeroTitle from "./components/features/HeroTitle";
+
+// App entrance timeline (seconds after launch): the window fades in first, then
+// each element appears in turn. The search bar uses INTRO.search (SearchInput).
+// They start after a short pause so the startup work is done and they play smoothly.
+// The title is written letter by letter (~1 s, HeroTitle.jsx), then its tagline
+// appears; the search bar and the round buttons follow.
+const INTRO = { titleBar: 0.35, title: 0.45, search: 1.45, heart: 1.65, settings: 1.75 };
+const INTRO_EASE = [0.22, 1, 0.36, 1]; // soft "ease-out-quint"
+
+// Liquid-glass materials for the round buttons (bottom-right).
+// The heart glass is tinted rose: the refracted background is lifted a little
+// (brightness) and multiplied by a red tint, stronger on hover.
+// coreOpacity: how much of the flat middle is glass (the rest shows the live background).
+const ROUND_GLASS = { blur: 0.65, darkTint: 0.3, edgeHighlight: 0.14, coreOpacity: 0.35 };
+const HEART_GLASS = { blur: 0.65, darkTint: 0.12, edgeHighlight: 0.16, brightness: 0.06, tintColor: [1.0, 0.36, 0.46], tintStrength: 0.65, coreOpacity: 0.55 };
+const HEART_GLASS_HOVER = { ...HEART_GLASS, darkTint: 0.02, brightness: 0.2, tintStrength: 0.9 };
+import { DEFAULT_KEYBINDS, matchesBind, eventToCombo, isTypingCombo, withBind } from "./utils/keybinds";
+import { resolveLanguage, RTL_CODES } from "./locales/languages";
 
 const smoothTransition = { type: "spring", stiffness: 200, damping: 25 };
-const tooltipPhysics = { type: "spring", stiffness: 300, damping: 20, mass: 0.8 };
 
 function App() {
   const { t, i18n } = useTranslation();
@@ -36,34 +63,45 @@ function App() {
   const settings = useSettings();
   const downloader = useDownloader(settings, showToast);
   const ytdlpUpdater = useYtdlpUpdater(showToast);
-  const { tooltip, handleTooltipEnter, handleTooltipMove, handleTooltipLeave } = useTooltip();
+  // App self-update; never installs while something is downloading.
+  const downloadingRef = useRef(false);
+  downloadingRef.current = downloader.activeDownloads.length > 0 || downloader.waitingCount > 0;
+  const appUpdater = useAppUpdater(showToast, () => downloadingRef.current);
+  const tooltipApi = useTooltip();
+  const { handleTooltipEnter, handleTooltipMove, handleTooltipLeave } = tooltipApi;
 
   const [showSettings, setShowSettings] = useState(false);
   const [selectedFormat, setSelectedFormat] = useState("video");
   const [bgImageBlobUrl, setBgImageBlobUrl] = useState(null);
+  const [heartHover, setHeartHover] = useState(false);
+  const [searchFocused, setSearchFocused] = useState(false); // dims the background
 
   const tooltipHandlers = { enter: handleTooltipEnter, move: handleTooltipMove, leave: handleTooltipLeave };
 
-  // --- MEMOIZED VISUAL PROPS (avoid re-creating arrays every render) ---
-  const activeGradient = useMemo(() => {
-    return settings.visuals?.showColors ? settings.visuals.customColors : undefined;
-  }, [settings.visuals?.showColors, settings.visuals?.customColors]);
+  // The animated backgrounds stop rendering only while the close confirmation
+  // covers the window. They stay live (animated and reacting to the mouse)
+  // behind the welcome screen, Settings and the video / playlist dialogs,
+  // whose liquid glass shows them through.
+  const backgroundPaused = !!downloader.closePrompt;
+  // The main-screen glasses (search bar, round buttons) stop rendering while
+  // any dialog covers them — including Settings, whose own glass needs the GPU.
+  const glassPaused = backgroundPaused || showSettings || !!downloader.mediaData || !!settings.showSetup;
+  // Right-click menu items for the element under the pointer (queue item, search bar…).
+  const buildMenuSections = useContextMenuSections({
+    downloader,
+    settings,
+    openSettings: () => setShowSettings(true),
+    showToast,
+    modalOpen: !!(downloader.mediaData || settings.showSetup || showSettings || downloader.closePrompt),
+  });
 
-  const activeColors = useMemo(() => {
-    return settings.visuals?.cb_colors || ["#ff5c7a", "#8a5cff", "#00ffd1"];
-  }, [settings.visuals?.cb_colors]);
-
+  // Apply the interface language ("auto" = OS language if supported, else English)
+  // and mirror the layout for right-to-left languages (Arabic).
   useEffect(() => {
-    if (settings.language) {
-      if (settings.language === "auto") {
-        const browserLang = navigator.language.split('-')[0];
-        const supported = ["en", "es", "pt", "fr", "de", "zh", "ja", "ru", "hi", "ar"];
-        const finalLang = supported.includes(browserLang) ? browserLang : "en";
-        i18n.changeLanguage(finalLang);
-      } else {
-        i18n.changeLanguage(settings.language);
-      }
-    }
+    const lang = resolveLanguage(settings.language);
+    i18n.changeLanguage(lang);
+    document.documentElement.lang = lang;
+    document.documentElement.dir = RTL_CODES.includes(lang) ? "rtl" : "ltr";
   }, [settings.language, i18n]);
 
   // --- BACKGROUND IMAGE LOADING ---
@@ -78,9 +116,9 @@ function App() {
       const img = settings.visuals?.bgImage;
       if (!img) { setBgImageBlobUrl(null); return; }
 
-      // Built-in preset wallpaper: the value is "@preset:<url>" — use the URL directly.
-      if (img.startsWith("@preset:")) {
-        setBgImageBlobUrl(img.slice("@preset:".length));
+      // Built-in preset wallpaper ("@preset:<id>"): use its bundled URL.
+      if (isPresetValue(img)) {
+        setBgImageBlobUrl(findPreset(img)?.url || null);
         return;
       }
 
@@ -105,40 +143,61 @@ function App() {
     };
   }, [settings.visuals?.bgImage]);
 
-  // --- GLOBAL KEYBOARD SHORTCUTS (Enter = search, Ctrl/Cmd+V = paste, Ctrl/Cmd+A = select bar) ---
-  // These work even when the input/button is not focused. The handler is stored
-  // in a ref that is reassigned on every render, so it always reads the latest
-  // state/URL without re-binding the window listener.
+  // --- GLOBAL KEYBOARD SHORTCUTS (main window) ---
+  // Bindings come from Settings → Shortcuts (defaults: Enter = search,
+  // Ctrl/Cmd+V = paste, Ctrl/Cmd+A = select bar, O = settings).
+  // They work even when the search bar isn't focused. The handler lives in a ref
+  // reassigned on every render, so it always reads the latest state/bindings
+  // without re-binding the window listener. Modals handle their own shortcuts.
   const keyHandlerRef = useRef(() => {});
   keyHandlerRef.current = (e) => {
+    const kb = settings.keybinds || DEFAULT_KEYBINDS;
     const tag = e.target?.tagName;
+    const inSearchBar = e.target?.id === 'flow-search-input';
     const inEditable = tag === 'INPUT' || tag === 'TEXTAREA' || e.target?.isContentEditable;
-    const modalOpen = downloader.mediaData || settings.showSetup || showSettings;
+    const inOtherField = inEditable && !inSearchBar;
+    const modalOpen = downloader.mediaData || settings.showSetup || showSettings || downloader.closePrompt;
+    if (modalOpen) return;
 
-    // Enter: trigger the link analysis when focus is not on a field/button.
-    if (e.key === 'Enter') {
-      if (inEditable || tag === 'BUTTON' || modalOpen || downloader.analyzing) return;
+    // Single-key shortcuts (like "O") don't fire while typing in a text field:
+    // there the key just types its character (e.g. the "o" in "youtube.com").
+    const combo = eventToCombo(e);
+    if (inEditable && isTypingCombo(combo)) return;
+
+    // Search: analyze the link (also from inside the search bar itself).
+    if (matchesBind(e, kb.search)) {
+      if (inOtherField || tag === 'BUTTON' || downloader.analyzing || e.repeat) return;
+      e.preventDefault();
       downloader.analyzeLink();
       return;
     }
 
-    // Ctrl/Cmd + V: paste the clipboard link into the search bar. Inside editable
-    // fields the native paste already handles it, so we only act outside them.
-    if ((e.ctrlKey || e.metaKey) && (e.key === 'v' || e.key === 'V')) {
-      if (inEditable || modalOpen) return;
+    // Paste the clipboard link into the search bar. If the binding is the native
+    // Ctrl+V and focus is in a field, let the browser paste normally.
+    if (matchesBind(e, kb.paste)) {
+      if (inOtherField || (inEditable && kb.paste === 'Ctrl+V')) return;
+      e.preventDefault();
       handlePaste(downloader.setUrl, showToast);
       return;
     }
 
-    // Ctrl/Cmd + A: select only the search bar contents (instead of the whole page).
-    if ((e.ctrlKey || e.metaKey) && (e.key === 'a' || e.key === 'A')) {
-      if (inEditable || modalOpen) return; // inside fields, the native "select all" is fine
+    // Select only the search bar contents (instead of the whole page).
+    if (matchesBind(e, kb.selectBar)) {
+      if (inOtherField || (inEditable && kb.selectBar === 'Ctrl+A')) return; // native select-all
       const input = document.getElementById('flow-search-input');
       if (input) {
         e.preventDefault();
         input.focus();
         input.select();
       }
+      return;
+    }
+
+    // Open the settings window.
+    if (matchesBind(e, kb.openSettings)) {
+      if (inOtherField || e.repeat) return;
+      e.preventDefault();
+      setShowSettings(true);
     }
   };
   useEffect(() => {
@@ -147,24 +206,81 @@ function App() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, []);
 
+  // Wait for the saved settings before showing the app. Otherwise it would
+  // start with the default look and, a moment later, switch to the saved one
+  // (other background / colors / wallpaper) — a sudden brightness jump right
+  // after the smooth entrance. Reading the settings file takes a few ms.
+  if (!settings.loaded) {
+    return <div className="w-full h-full bg-[#09090b]" />;
+  }
+
   return (
-    <div className="w-screen h-screen bg-zinc-950 rounded-xl border border-white overflow-hidden flex flex-col relative">
+    // reducedMotion="user": if the OS "reduce motion" setting is on, framer-motion
+    // drops transform/layout animations (keeping simple fades) across the whole app.
+    <MotionConfig reducedMotion="user">
+    {/* App entrance: the whole window fades in and settles from a slight zoom
+        ("app-enter" in App.css), then the elements appear one after another
+        (see INTRO). The window animation is pure CSS on purpose: it runs on the
+        GPU compositor, so it stays smooth even while the app is still busy
+        starting up (WebGL shaders, wallpapers...) — a JS animation would freeze
+        during that work and then jump to its final size. */}
+    <div className="app-enter isolate w-full h-full bg-zinc-950 overflow-hidden flex flex-col relative">
 
       {/* TITLE BAR (custom window chrome: drag region + min/max/close) */}
-      <div className="pointer-events-auto z-50"><TitleBar /></div>
+      <motion.div
+        initial={{ opacity: 0, y: -8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: INTRO_EASE, delay: INTRO.titleBar }}
+        className="pointer-events-auto z-50"
+      >
+        <TitleBar />
+      </motion.div>
       <Toast ref={toastRef} language={settings.language} />
+      {/* Custom right-click menu (replaces the webview default) */}
+      <ContextMenu showToast={showToast} buildSections={buildMenuSections} />
 
-      {/* FLOATING CURSOR-FOLLOWING TOOLTIP */}
+      {/* Film grain + light chromatic aberration over everything (Settings → Appearance) */}
+      <FilmGrain intensity={settings.visuals?.filmGrain} />
+
+      {/* APP UPDATE BANNER (new Flow Downloader version available) */}
       <AnimatePresence>
-        {tooltip.visible && (
-          <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1, x: tooltip.align === "left" ? tooltip.x - 15 : tooltip.x + 15, y: tooltip.vAlign === "top" ? tooltip.y - 15 : tooltip.y + 15 }} exit={{ opacity: 0, scale: 0.8 }} transition={tooltipPhysics} style={{ position: 'fixed', top: 0, left: 0, pointerEvents: 'none', zIndex: 9999, translateX: tooltip.align === "left" ? "-100%" : "0%", translateY: tooltip.vAlign === "top" ? "-100%" : "0%" }} className="bg-zinc-950/90 backdrop-blur-md border border-white/10 px-3 py-1.5 rounded-lg shadow-2xl">
-            <span className="text-[10px] font-bold text-zinc-300 uppercase tracking-widest whitespace-nowrap">{tooltip.text}</span>
+        {appUpdater.showBanner && (
+          <motion.div
+            initial={{ opacity: 0, y: -12, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -12, scale: 0.97 }}
+            transition={{ type: "spring", stiffness: 380, damping: 30 }}
+            className="fixed top-12 left-1/2 -translate-x-1/2 z-[60] flex items-center gap-3 pl-3 pr-1.5 py-1.5 rounded-[14px] bg-zinc-950/80 backdrop-blur-xl border border-indigo-400/30 shadow-2xl shadow-indigo-500/10"
+          >
+            <Sparkles size={16} className="text-indigo-400 shrink-0" />
+            <span className="text-[12.5px] font-bold text-zinc-200 whitespace-nowrap">
+              {t('update.available', { version: appUpdater.available?.version, defaultValue: 'Flow Downloader {{version}} is available' })}
+            </span>
+            <button
+              onClick={appUpdater.install}
+              disabled={appUpdater.status !== 'idle'}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-500 hover:bg-indigo-400 disabled:opacity-80 disabled:cursor-wait text-white text-[11px] font-black uppercase tracking-wider transition-colors cursor-pointer"
+            >
+              {appUpdater.status === 'downloading' || appUpdater.status === 'installing'
+                ? <><Loader2 size={12} className="animate-spin" />{appUpdater.status === 'downloading' ? `${appUpdater.progress}%` : t('update.installing', { defaultValue: 'Installing…' })}</>
+                : t('update.install', { defaultValue: 'Update' })}
+            </button>
+            {appUpdater.status === 'idle' && (
+              <button onClick={appUpdater.dismiss} className="p-1.5 text-zinc-500 hover:text-white rounded-full hover:bg-white/5 transition-colors cursor-pointer" aria-label={t('update.dismiss', { defaultValue: 'Dismiss' })}>
+                <X size={14} />
+              </button>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
 
+      {/* Hover tooltips (liquid glass, anchored to the element) */}
+      <Tooltip api={tooltipApi} />
+
       {/* --- BACKGROUND SYSTEM (one of three engines, crossfaded) --- */}
-      <div className="fixed inset-0 z-0 bg-[#09090b]">
+      {/* data-glass-*: lets the liquid-glass search bar re-draw (refract) exactly
+          what is behind it — see components/ui/liquidGlass/backdrop.js */}
+      <div className="fixed inset-0 z-0 bg-[#09090b]" data-glass-backdrop data-glass-layer="fill" data-glass-static={backgroundPaused ? "true" : "false"}>
         <AnimatePresence mode="popLayout">
           {settings.visuals && (
             <motion.div
@@ -179,6 +295,8 @@ function App() {
               {/* Engine 1: Color Bends (animated color field) */}
               {settings.visuals.activeBackground === 'colorBends' && (
                 <ColorBends
+                  data-glass-layer="canvas"
+                  paused={backgroundPaused}
                   colors={settings.visuals.cb_showColors ? [
                     settings.visuals.cb_color1 || '#4f46e5',
                     settings.visuals.cb_color2 || '#ec4899',
@@ -196,6 +314,8 @@ function App() {
               {/* Engine 2: Floating Lines (interactive WebGL lines) */}
               {settings.visuals.activeBackground === 'floatingLines' && (
                 <FloatingLines
+                  data-glass-layer="canvas"
+                  paused={backgroundPaused}
                   linesGradient={settings.visuals.showColors ? [
                     settings.visuals.lineColor1 || '#4f46e5',
                     settings.visuals.lineColor2 || '#ec4899',
@@ -211,6 +331,7 @@ function App() {
               {/* Engine 3: Static color / custom wallpaper image */}
               {settings.visuals.activeBackground === 'static' && (
                 <div
+                  data-glass-layer="fill"
                   className="w-full h-full relative overflow-hidden transition-colors duration-500"
                   style={{ backgroundColor: settings.visuals.staticColor }}
                 >
@@ -220,19 +341,21 @@ function App() {
                       <motion.img
                         key={bgImageBlobUrl}
                         src={bgImageBlobUrl}
+                        data-glass-layer="image"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.6, ease: "easeInOut" }}
                         className="absolute inset-0 w-full h-full object-cover transition-[filter] duration-300"
                         style={{ filter: `blur(${settings.visuals.imageBlur}px)` }}
-                        alt="Background"
+                        alt=""
                       />
                     )}
                   </AnimatePresence>
 
                   {/* Darkening overlay (controls wallpaper brightness) */}
                   <div
+                    data-glass-layer="fill"
                     className="absolute inset-0 pointer-events-none transition-opacity duration-300"
                     style={{ backgroundColor: 'black', opacity: settings.visuals.imageDarken }}
                   />
@@ -246,6 +369,8 @@ function App() {
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.5, ease: "easeInOut" }}
                         className="absolute inset-0 pointer-events-none"
+                        data-glass-layer="gradient"
+                        data-glass-color={settings.visuals.staticGradientColor}
                         style={{
                           background: `linear-gradient(to bottom, ${settings.visuals.staticGradientColor} 0%, transparent 60%)`
                         }}
@@ -257,10 +382,24 @@ function App() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Dim layer: darkens the background while the search bar is focused
+            (focus) or the Settings dialog is open. It's part of the backdrop, so
+            every liquid glass refracts the darkened background too — this keeps
+            the Settings glass consistent with what's around it. */}
+        <motion.div
+          data-glass-layer="fill"
+          className="absolute inset-0 bg-black pointer-events-none"
+          initial={false}
+          animate={{ opacity: settings.showSetup ? 0.55 : (showSettings || downloader.mediaData) ? 0.45 : searchFocused ? 0.35 : 0 }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
+        />
       </div>
 
       {/* SUPPORT / DONATION BUTTON */}
       <motion.button
+        initial={{ opacity: 0, scale: 0.6 }}
+        animate={{ opacity: 1, scale: 1, transition: { type: "spring", stiffness: 260, damping: 20, delay: INTRO.heart } }}
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.95 }}
         transition={smoothTransition}
@@ -269,35 +408,50 @@ function App() {
         onMouseEnter={(e) => handleTooltipEnter(e, t('support_flow'), "left", "top")}
         onMouseMove={handleTooltipMove}
         onMouseLeave={handleTooltipLeave}
-        className="fixed bottom-20 right-6 p-2 bg-rose-500/10 border border-rose-500/30 rounded-full text-rose-400 hover:bg-rose-500 hover:text-white z-20 shadow-xl cursor-pointer pointer-events-auto transition-colors"
+        onHoverStart={() => setHeartHover(true)}
+        onHoverEnd={() => setHeartHover(false)}
+        className="fixed bottom-20 right-6 rounded-full z-20 shadow-xl cursor-pointer pointer-events-auto group"
       >
-        <Heart size={19} />
+        {/* Rose-tinted liquid glass (brighter and redder on hover) */}
+        <LiquidGlass
+          variant="dark"
+          paused={glassPaused}
+          settings={heartHover ? HEART_GLASS_HOVER : HEART_GLASS}
+          className={`p-2 rounded-full backdrop-blur-md transition-colors duration-300 ${heartHover ? 'text-white' : 'text-rose-400'}`} /* no CSS ring: the glass draws its own rim */
+          fallbackClassName="bg-rose-500/10 backdrop-blur-xl ring-1 ring-rose-500/30"
+        >
+          <Heart size={19} />
+        </LiquidGlass>
       </motion.button>
 
       {/* SETTINGS BUTTON */}
       <motion.button
-        whileHover={{ rotate: 90, scale: 1.1 }}
+        initial={{ opacity: 0, scale: 0.6 }}
+        animate={{ opacity: 1, scale: 1, transition: { type: "spring", stiffness: 260, damping: 20, delay: INTRO.settings } }}
+        whileHover={{ scale: 1.1 }} // the gear itself turns (animated icon)
         transition={smoothTransition}
         onClick={() => setShowSettings(true)}
-        onMouseEnter={(e) => handleTooltipEnter(e, t('settings.title'), "left", "top")}
+        onMouseEnter={(e) => handleTooltipEnter(e, withBind(t('settings.title'), (settings.keybinds || DEFAULT_KEYBINDS).openSettings), "left", "top")}
         onMouseMove={handleTooltipMove}
         onMouseLeave={handleTooltipLeave}
-        className="fixed bottom-6 right-6 p-2 bg-zinc-900/50 border border-zinc-800 rounded-full text-zinc-400 hover:text-white z-20 shadow-xl cursor-pointer pointer-events-auto"
+        className="fixed bottom-6 right-6 rounded-full text-zinc-400 hover:text-white transition-colors z-20 shadow-xl cursor-pointer pointer-events-auto group"
       >
-        <Settings size={20} />
+        <LiquidGlass
+          variant="dark"
+          paused={glassPaused}
+          settings={ROUND_GLASS}
+          className="p-2 rounded-full backdrop-blur-md" /* no CSS ring: the glass draws its own rim */
+          fallbackClassName="bg-zinc-900/50 backdrop-blur-xl ring-1 ring-white/10"
+        >
+          <Settings size={20} />
+        </LiquidGlass>
       </motion.button>
 
       {/* --- MAIN CONTENT --- */}
       <main className="flex-1 flex flex-col items-center pt-24 px-6 w-full  max-w-4xl mx-auto z-10 h-full pointer-events-none">
         {/* LOGO */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-12 shrink-0">
-          <h1 className="text-5xl font-light tracking-tight mb-2 text-white">
-            Flow <span className="font-bold">Downloader</span>
-          </h1>
-          <p className="text-zinc-500 text-sm tracking-widest uppercase">
-            {t('hero.subtitle')}
-          </p>
-        </motion.div>
+        {/* Written letter by letter, then the tagline appears (HeroTitle.jsx) */}
+        <HeroTitle subtitle={t('hero.subtitle')} delay={INTRO.title} />
 
         {/* INTERACTIVE AREA: search bar + download queue */}
         <div className="w-full max-w-2xl pointer-events-auto flex flex-col items-center gap-0 flex-1 min-h-0">
@@ -308,6 +462,9 @@ function App() {
             onAnalyze={downloader.analyzeLink}
             onPaste={() => handlePaste(downloader.setUrl, showToast)}
             tooltipHandlers={tooltipHandlers}
+            keybinds={settings.keybinds}
+            onFocusChange={setSearchFocused}
+            glassPaused={glassPaused}
           />
 
           <QueueList
@@ -317,6 +474,8 @@ function App() {
             onCancelItem={downloader.cancelDownload}
             onRetryItem={downloader.retryDownload}
             onRemoveItem={downloader.removeItem}
+            glassPaused={glassPaused}
+            dimmed={searchFocused}
           />
         </div>
       </main>
@@ -336,6 +495,7 @@ function App() {
               showToast={showToast}
               tooltipHandlers={tooltipHandlers}
               defaultQuality={settings.defaultQuality}
+              keybinds={settings.keybinds}
             />
           ) : (
             <MediaModal
@@ -349,6 +509,7 @@ function App() {
               showToast={showToast}
               tooltipHandlers={tooltipHandlers}
               defaultQuality={settings.defaultQuality}
+              keybinds={settings.keybinds}
             />
           )
         )}
@@ -365,10 +526,24 @@ function App() {
 
       <AnimatePresence>
         {showSettings && (
-          <SettingsModal onClose={() => setShowSettings(false)} settings={settings} ytdlpUpdater={ytdlpUpdater} />
+          <SettingsModal onClose={() => setShowSettings(false)} settings={settings} ytdlpUpdater={ytdlpUpdater} appUpdater={appUpdater} showToast={showToast} />
+        )}
+      </AnimatePresence>
+
+      {/* Close confirmation (shown when closing the app while downloads run) */}
+      <AnimatePresence>
+        {downloader.closePrompt && (
+          <CloseConfirmModal
+            items={downloader.activeDownloads}
+            waitingCount={downloader.waitingCount}
+            closing={downloader.closing}
+            onConfirm={downloader.confirmClose}
+            onCancel={downloader.cancelClose}
+          />
         )}
       </AnimatePresence>
     </div>
+    </MotionConfig>
   );
 }
 

@@ -1,7 +1,6 @@
 {
   "hero": {
-    "title": "FlowDownloader",
-    "subtitle": "Lade alles von überall und zu jeder Zeit herunter"
+    "subtitle": "Lade alles herunter, jederzeit, mit 2 Klicks"
   },
   "search": {
     "placeholder": "URL hier einfügen...",
@@ -12,7 +11,6 @@
   },
   "queue": {
     "title": "Download-Warteschlange",
-    "empty": "Deine Warteschlange ist leer",
     "open_folder": "Gehe zu Datei",
     "cancel": "Download abbrechen",
     "retry": "Erneut versuchen",
@@ -22,18 +20,14 @@
     "error": "Download-Fehler",
     "speed": "Geschwindigkeit",
     "eta": "Verbleibende Zeit",
-    "calculating": "Berechnung...",
-    "error_missing": "Datei nicht gefunden (verschoben oder gelöscht)",
     "finished_in": "Abgeschlossen in {{time}}",
-    "processing": "Verarbeiten und Konvertieren…"
+    "processing": "Verarbeiten und Konvertieren…",
+    "items_one": "{{count}} Element",
+    "items_other": "{{count}} Elemente"
   },
   "media_modal": {
-    "title": "Download-Optionen",
     "format": "Format",
     "quality": "Qualität",
-    "directory": "Speichern unter",
-    "cancel": "Abbrechen",
-    "download": "Jetzt herunterladen",
     "output_format": "Wähle aus, was du herunterladen möchtest",
     "format_video_audio": "Video + Audio",
     "format_video_only": "Nur Video",
@@ -41,19 +35,19 @@
     "destination": "Zielort",
     "change": "Ändern",
     "audio": "Audio",
-    "fps": "FPS",
-    "native_fps": "Nativ",
     "download_png": "Bild herunterladen",
     "open_folder": "Dateispeicherort öffnen",
     "start_download": "Herunterladen",
-    "codec": "Codec",
-    "codec_h264": "H.264",
-    "codec_prores": "ProRes",
-    "codec_dnxhr": "DNxHR",
     "editor_warning": "Auflösungen über 1080p kommen in {{codec}}, das Videoeditoren (Premiere, DaVinci…) nicht öffnen können. Wähle 1080p oder weniger für H.264 oder konvertiere diese Datei mit einem Online-Konverter in H.264.",
     "audio_best": "Beste (~160 kbps)",
     "audio_medium": "Mittel (128 kbps)",
-    "audio_low": "Niedrig (96 kbps)"
+    "audio_low": "Niedrig (96 kbps)",
+    "edit_title": "Titel bearbeiten",
+    "save_title": "Titel speichern",
+    "cancel_edit": "Abbrechen",
+    "reset_title": "Originaltitel wiederherstellen",
+    "file_name": "Dateiname",
+    "title_placeholder": "Eigener Titel…"
   },
   "playlist_modal": {
     "badge": "PLAYLIST",
@@ -70,8 +64,7 @@
   "setup_modal": {
     "title": "Willkommen bei FlowDownloader!",
     "subtitle": "Lass uns deinen ersten Download-Pfad einrichten",
-    "select_folder": "Standard-Download-Ordner auswählen",
-    "finish": "Loslegen"
+    "select_folder": "Standard-Download-Ordner auswählen"
   },
   "settings": {
     "title": "Einstellungen",
@@ -83,12 +76,13 @@
     "search_language": "Sprache suchen...",
     "tabs": {
       "general": "Allgemein",
-      "visual": "Aussehen"
+      "visual": "Aussehen",
+      "shortcuts": "Tastenkürzel"
     },
     "general": {
       "path": "Standard-Download-Pfad",
       "limit": "Playlist-Element-Limit",
-      "limit_info": "Du kannst das Limit erhöhen, um ganze Playlists zu scannen. Um eine Verlangsamung deines Rechners und YouTube-Server-Sperren (Fehler 429) zu vermeiden, verarbeitet Flow den Download intelligent und lädt 3 Videos gleichzeitig herunter.",
+      "limit_info": "Du kannst das Limit erhöhen, um ganze Playlists zu scannen. Um eine Verlangsamung deines Rechners und YouTube-Server-Sperren (Fehler 429) zu vermeiden, verarbeitet Flow den Download intelligent und lädt {{n}} Videos gleichzeitig herunter.",
       "quality": "Standardqualität",
       "language": "Interface-Sprache",
       "engine": "Download-Engine (yt-dlp)",
@@ -100,7 +94,13 @@
       "cookies_file_choose": "cookies.txt-Datei verwenden…",
       "cookies_file_info": "Zeigt Flow Downloader den Fehler „Bestätige, dass du kein Bot bist“? Verwende eine cookies.txt-Datei: Exportiere deine YouTube-Cookies (angemeldet) mit einer Browser-Erweiterung wie „Get cookies.txt LOCALLY“ und wähle die Datei hier aus.",
       "autopaste": "Links automatisch einfügen",
-      "autopaste_info": "Beim Öffnen oder Fokussieren der App wird die Leiste automatisch mit einem Link aus der Zwischenablage gefüllt."
+      "autopaste_info": "Beim Öffnen oder Fokussieren der App wird die Leiste automatisch mit einem Link aus der Zwischenablage gefüllt.",
+      "concurrent": "Gleichzeitige Downloads",
+      "concurrent_info": "Mehrere gleichzeitig sind bei guter Verbindung schneller, aber zu viele können dazu führen, dass Seiten dich ausbremsen (Fehler 429).",
+      "engine_uptodate": "Aktuell",
+      "engine_updated": "Aktualisiert",
+      "engine_error": "Update fehlgeschlagen. Erneut versuchen",
+      "license": "MIT-Lizenz"
     },
     "visual": {
       "style": "Hintergrund-Grafik-Engine",
@@ -114,12 +114,6 @@
       "quantity": "Linienanzahl",
       "distance": "Abstand",
       "radius": "Interaktion (Maus)",
-      "strength": "Stärke (Maus)",
-      "speed": "Geschwindigkeit",
-      "scale": "Skalierung",
-      "distortion": "Verzerrung",
-      "noise": "Körnung (Rauschen)",
-      "base_color": "Hintergrundfarbe",
       "static_or_image": "Statische Farbe oder Eigenes Bild",
       "static_color": "Statische Farbe",
       "image": "Eigenes Wallpaper",
@@ -129,40 +123,131 @@
       "gradient": "Obere Vignette",
       "darken": "Abdunkeln",
       "blur": "Weichzeichnen",
-      "presets": "Fertige Hintergründe",
       "animated": "Animiert (GIF)",
       "still": "Statisch (Bild)",
       "randomize": "Beim Start zufällig",
-      "wallpaper_credit": "Wallpaper von wallpaperaccess.com"
+      "wallpaper_credit": "Wallpaper von wallpaperaccess.com",
+      "film_grain": "Filmkorn",
+      "film_grain_info": "Filmisches Korn mit leichter chromatischer Aberration über der ganzen App. 0 schaltet es aus."
     },
     "done": "Fertig",
-    "no_languages": "Keine Sprachen gefunden"
+    "no_languages": "Keine Sprachen gefunden",
+    "shortcuts": {
+      "main_group": "Hauptfenster",
+      "modal_group": "Download-Fenster",
+      "info": "Klicke auf ein Tastenkürzel und drücke dann die neue Tastenkombination. Drücke Esc zum Abbrechen.",
+      "press_key": "Taste drücken…",
+      "reset": "Standard wiederherstellen",
+      "reset_all": "Alle Standards wiederherstellen",
+      "conflict": "Diese Kombination wird bereits von „{{action}}“ verwendet.",
+      "actions": {
+        "search": "Link suchen",
+        "paste": "Link einfügen",
+        "selectBar": "Suchleiste auswählen",
+        "openSettings": "Einstellungen öffnen",
+        "download": "Download starten",
+        "closeModal": "Fenster schließen"
+      }
+    }
   },
   "toast": {
-    "error_empty": "Bitte füge einen Link ein.",
     "error_invalid": "Ungültiger oder nicht unterstützter Link.",
     "success_added": "Video zur Warteschlange hinzugefügt!",
     "success_thumb": "Vorschaubild erfolgreich heruntergeladen!",
     "error_thumb": "Vorschaubild konnte nicht heruntergeladen werden.",
-    "download_started": "Download gestartet!",
-    "download_finished": "Alles fertig! Download abgeschlossen.",
-    "error_generic": "Etwas ist schiefgelaufen. Versuch es noch einmal.",
     "clipboard_success": "Link erfolgreich eingefügt!",
     "clipboard_empty": "Die Zwischenablage ist leer.",
-    "clipboard_error": "Fehler beim Zugriff auf die Zwischenablage.",
-    "link_error": "Bitte füge einen gültigen Link ein.",
-    "data_error": "Fehler in den empfangenen Daten.",
-    "video_not_found": "Video nicht gefunden oder nicht verfügbar.",
-    "open_error": "Fehler beim Öffnen des Speicherorts.",
-    "config_saved": "Einstellungen angewendet!",
-    "ytdlp_checking": "Suche nach yt-dlp-Updates…",
-    "ytdlp_updated": "yt-dlp auf die neueste Version aktualisiert!",
-    "ytdlp_uptodate": "yt-dlp ist bereits aktuell.",
-    "ytdlp_update_error": "yt-dlp konnte nicht aktualisiert werden.",
+    "clipboard_error": "Zwischenablage konnte nicht gelesen werden.",
+    "open_error": "Datei oder Ordner konnte nicht geöffnet werden.",
+    "ytdlp_checking": "Suche nach Updates für die Download-Engine…",
+    "ytdlp_updated": "Download-Engine aktualisiert.",
+    "ytdlp_uptodate": "Die Download-Engine ist bereits aktuell.",
+    "ytdlp_update_error": "Download-Engine konnte nicht aktualisiert werden.",
     "youtube_bot_check": "YouTube hat die Anfrage blockiert (Bot-Prüfung). Aktiviere Cookies unter Einstellungen → Allgemein.",
     "cookie_error": "Browser-Cookies konnten nicht gelesen werden. Versuche Firefox oder eine cookies.txt-Datei.",
     "no_formats": "Kein herunterladbares Format für dieses Video (evtl. Livestream, Premiere oder noch in Verarbeitung).",
-    "clipboard_autopaste": "Link aus der Zwischenablage automatisch eingefügt."
+    "clipboard_autopaste": "Link aus der Zwischenablage automatisch eingefügt.",
+    "err_age": "Altersbeschränkt: Füge deine Cookies in den Einstellungen hinzu, um es herunterzuladen.",
+    "err_private": "Privat oder nur für Mitglieder: Cookies eines Kontos mit Zugriff nötig.",
+    "err_geo": "In deinem Land nicht verfügbar.",
+    "err_live": "Dieser Livestream bzw. diese Premiere hat noch nicht begonnen.",
+    "err_unavailable": "Dieses Video ist nicht verfügbar oder wurde entfernt.",
+    "err_disk": "Datei konnte nicht gespeichert werden. Prüfe den Ordner und den Speicherplatz.",
+    "err_ffmpeg": "Datei konnte nicht fertiggestellt werden. Versuche es erneut oder wähle ein anderes Format.",
+    "err_network": "Verbindungsproblem. Prüfe dein Internet und versuche es erneut.",
+    "err_unsupported": "Dieser Link wird nicht unterstützt.",
+    "err_download": "Download fehlgeschlagen. Erneut versuchen oder die Engine in den Einstellungen aktualisieren.",
+    "app_update_error": "Update konnte nicht geprüft oder installiert werden.",
+    "app_update_wait": "Warte, bis die Downloads fertig sind, bevor du aktualisierst.",
+    "diagnostics_error": "Diagnose konnte nicht erstellt werden.",
+    "console_copied": "Konsolen-Diagnose kopiert. Füge sie ein, wenn du um Hilfe bittest.",
+    "screenshot_saved": "Screenshot unter <path>Bilder/Flow Downloader</path> gespeichert und in die Zwischenablage kopiert.",
+    "screenshot_error": "Screenshot konnte nicht erstellt werden.",
+    "link_copied": "Link kopiert.",
+    "title_copied": "Titel kopiert.",
+    "image_copied": "Bild in die Zwischenablage kopiert.",
+    "image_copy_error": "Bild konnte nicht kopiert werden.",
+    "titles": {
+      "success": "Fertig",
+      "error": "Fehler",
+      "info": "Hinweis",
+      "download": "Download"
+    },
+    "close": "Schließen"
   },
-  "support_flow": "Flow Downloader unterstützen 🪙"
+  "support_flow": "Flow Downloader unterstützen 🪙",
+  "folder_picker": {
+    "title": "Download-Ordner auswählen",
+    "ok": "Ordner auswählen",
+    "file_name": "Dieser Ordner",
+    "filter_media": "Videos, Audio und Bilder",
+    "filter_all": "Alle Dateien"
+  },
+  "close_prompt": {
+    "title": "Flow Downloader schließen?",
+    "count": "Dateien im Download: {{n}}",
+    "message": "Wenn du die App jetzt schließt, werden diese Downloads abgebrochen und die unvollständigen Dateien gelöscht.",
+    "waiting": "In der Warteschlange: {{n}}",
+    "keep": "Weiter herunterladen",
+    "close": "Trotzdem schließen",
+    "closing": "Wird geschlossen…"
+  },
+  "update": {
+    "available": "Flow Downloader {{version}} ist verfügbar",
+    "install": "Aktualisieren",
+    "installing": "Wird installiert…",
+    "dismiss": "Ausblenden"
+  },
+  "context_menu": {
+    "copy": "Kopieren",
+    "cut": "Ausschneiden",
+    "paste": "Einfügen",
+    "reload": "Neu laden",
+    "copy_console": "Konsolen-Diagnose kopieren",
+    "screenshot": "Screenshot",
+    "paste_search": "Link einfügen und suchen",
+    "open_last_folder": "Letzten Download-Ordner öffnen",
+    "settings": "Einstellungen",
+    "always_on_top": "Fenster im Vordergrund halten",
+    "open_file": "Datei öffnen",
+    "show_in_folder": "Im Ordner anzeigen",
+    "copy_link": "Originallink kopieren",
+    "retry": "Erneut versuchen",
+    "download_again": "Erneut in anderer Qualität herunterladen",
+    "cancel": "Abbrechen",
+    "remove": "Aus der Liste entfernen",
+    "clear": "Leeren",
+    "recent": "Zuletzt verwendet",
+    "save_thumbnail": "Vorschaubild speichern",
+    "copy_image": "Bild kopieren",
+    "copy_title": "Titel kopieren",
+    "clear_finished": "Abgeschlossene entfernen",
+    "cancel_all": "Alle abbrechen"
+  },
+  "tooltips": {
+    "minimize": "Minimieren",
+    "maximize": "Maximieren",
+    "close": "Schließen",
+    "remove": "Entfernen"
+  }
 }

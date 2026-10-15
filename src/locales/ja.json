@@ -1,7 +1,6 @@
 {
   "hero": {
-    "title": "FlowDownloader",
-    "subtitle": "いつでも、どこからでも、すべてをダウンロード。"
+    "subtitle": "なんでも、いつでも、2クリックでダウンロード"
   },
   "search": {
     "placeholder": "ここにURLを貼り付け...",
@@ -12,7 +11,6 @@
   },
   "queue": {
     "title": "ダウンロード待ち行列",
-    "empty": "待ち行列は空です",
     "open_folder": "ファイルを開く",
     "cancel": "ダウンロードをキャンセル",
     "retry": "再試行",
@@ -22,18 +20,13 @@
     "error": "ダウンロードエラー",
     "speed": "速度",
     "eta": "残り時間",
-    "calculating": "計算中...",
-    "error_missing": "ファイルが見つかりません（移動または削除済み）",
     "finished_in": "{{time}} で完了",
-    "processing": "処理・変換中…"
+    "processing": "処理・変換中…",
+    "items_other": "{{count}} 件"
   },
   "media_modal": {
-    "title": "ダウンロードオプション",
     "format": "形式",
     "quality": "品質",
-    "directory": "保存先",
-    "cancel": "キャンセル",
-    "download": "今すぐダウンロード",
     "output_format": "ダウンロードするものを選択",
     "format_video_audio": "動画 + 音声",
     "format_video_only": "動画のみ",
@@ -41,19 +34,19 @@
     "destination": "保存先",
     "change": "変更",
     "audio": "オーディオ",
-    "fps": "FPS",
-    "native_fps": "ネイティブ",
     "download_png": "画像をダウンロード",
     "open_folder": "ファイルの場所を開く",
     "start_download": "ダウンロード",
-    "codec": "コーデック",
-    "codec_h264": "H.264",
-    "codec_prores": "ProRes",
-    "codec_dnxhr": "DNxHR",
     "editor_warning": "1080p を超える解像度は {{codec}} 形式で、動画編集ソフト（Premiere、DaVinci…）では開けません。H.264 にするには 1080p 以下を選ぶか、オンライン変換ツールでこのファイルを H.264 に変換してください。",
     "audio_best": "最高 (~160 kbps)",
     "audio_medium": "標準 (128 kbps)",
-    "audio_low": "低 (96 kbps)"
+    "audio_low": "低 (96 kbps)",
+    "edit_title": "タイトルを編集",
+    "save_title": "タイトルを保存",
+    "cancel_edit": "キャンセル",
+    "reset_title": "元のタイトルに戻す",
+    "file_name": "ファイル名",
+    "title_placeholder": "カスタムタイトル…"
   },
   "playlist_modal": {
     "badge": "プレイリスト",
@@ -70,8 +63,7 @@
   "setup_modal": {
     "title": "FlowDownloaderへようこそ！",
     "subtitle": "初期ダウンロード場所を設定しましょう",
-    "select_folder": "デフォルトのダウンロードフォルダを選択",
-    "finish": "開始"
+    "select_folder": "デフォルトのダウンロードフォルダを選択"
   },
   "settings": {
     "title": "設定",
@@ -83,12 +75,13 @@
     "search_language": "言語を検索...",
     "tabs": {
       "general": "全般",
-      "visual": "外観"
+      "visual": "外観",
+      "shortcuts": "ショートカット"
     },
     "general": {
       "path": "デフォルトのダウンロードパス",
       "limit": "プレイリストの項目数制限",
-      "limit_info": "制限を増やしてプレイリスト全体をスキャンできます。マシンの低速化やYouTubeサーバーのブロック（エラー429）を避けるため、Flowは3本ずつインテリジェントにダウンロードを処理します。",
+      "limit_info": "制限を増やしてプレイリスト全体をスキャンできます。マシンの低速化やYouTubeサーバーのブロック（エラー429）を避けるため、Flowは{{n}}本ずつインテリジェントにダウンロードを処理します。",
       "quality": "デフォルトの品質",
       "language": "インターフェース言語",
       "engine": "ダウンロードエンジン (yt-dlp)",
@@ -100,7 +93,13 @@
       "cookies_file_choose": "cookies.txt ファイルを使用…",
       "cookies_file_info": "Flow Downloader に「ロボットでないことを確認」エラーが出ますか？cookies.txt ファイルを使ってください。ログイン状態で 'Get cookies.txt LOCALLY' などのブラウザ拡張機能で YouTube の Cookie を書き出し、ここでそのファイルを選択します。",
       "autopaste": "リンクを自動貼り付け",
-      "autopaste_info": "アプリを開いたりフォーカスしたりすると、クリップボードのリンクで検索バーを自動的に埋めます。"
+      "autopaste_info": "アプリを開いたりフォーカスしたりすると、クリップボードのリンクで検索バーを自動的に埋めます。",
+      "concurrent": "同時ダウンロード数",
+      "concurrent_info": "同時に多く落とすほど高速ですが、多すぎるとサイト側で速度制限されることがあります（エラー 429）。",
+      "engine_uptodate": "最新です",
+      "engine_updated": "更新しました",
+      "engine_error": "更新できませんでした。もう一度お試しください",
+      "license": "MIT ライセンス"
     },
     "visual": {
       "style": "背景グラフィックエンジン",
@@ -114,12 +113,6 @@
       "quantity": "ラインの数",
       "distance": "間隔",
       "radius": "インタラクション (マウス)",
-      "strength": "強度 (マウス)",
-      "speed": "速度",
-      "scale": "スケール",
-      "distortion": "歪み",
-      "noise": "ノイズ",
-      "base_color": "背景色",
       "static_or_image": "静的カラーまたはカスタム画像",
       "static_color": "静的カラー",
       "image": "カスタム壁紙",
@@ -129,40 +122,131 @@
       "gradient": "上部ビネット",
       "darken": "暗くする",
       "blur": "ぼかし",
-      "presets": "プリセット背景",
       "animated": "アニメ (GIF)",
       "still": "静止画 (画像)",
       "randomize": "起動時にランダム",
-      "wallpaper_credit": "壁紙は wallpaperaccess.com より"
+      "wallpaper_credit": "壁紙は wallpaperaccess.com より",
+      "film_grain": "フィルムグレイン",
+      "film_grain_info": "アプリ全体に軽い色収差のあるフィルム風の粒子を重ねます。0でオフ。"
     },
     "done": "完了",
-    "no_languages": "言語が見つかりません"
+    "no_languages": "言語が見つかりません",
+    "shortcuts": {
+      "main_group": "メインウィンドウ",
+      "modal_group": "ダウンロードウィンドウ",
+      "info": "ショートカットをクリックし、新しいキーの組み合わせを押してください。Esc でキャンセルします。",
+      "press_key": "キーを押してください…",
+      "reset": "デフォルトに戻す",
+      "reset_all": "すべてデフォルトに戻す",
+      "conflict": "この組み合わせはすでに「{{action}}」で使われています。",
+      "actions": {
+        "search": "リンクを検索",
+        "paste": "リンクを貼り付け",
+        "selectBar": "検索バーを選択",
+        "openSettings": "設定を開く",
+        "download": "ダウンロードを開始",
+        "closeModal": "ウィンドウを閉じる"
+      }
+    }
   },
   "toast": {
-    "error_empty": "リンクを入力してください",
     "error_invalid": "無効またはサポートされていないリンクです",
     "success_added": "ビデオをキューに追加しました！",
     "success_thumb": "サムネイルのダウンロードに成功しました！",
     "error_thumb": "サムネイルをダウンロードできませんでした",
-    "download_started": "ダウンロードを開始しました！",
-    "download_finished": "完了しました！ダウンロードが終了しました。",
-    "error_generic": "問題が発生しました。もう一度お試しください。",
     "clipboard_success": "リンクを貼り付けました！",
     "clipboard_empty": "クリップボードが空です。",
-    "clipboard_error": "クリップボードへのアクセスエラー。",
-    "link_error": "有効なリンクを貼り付けてください。",
-    "data_error": "受信データのエラー。",
-    "video_not_found": "ビデオが見つからないか、利用不可能です。",
-    "open_error": "場所を開く際にエラーが発生しました。",
-    "config_saved": "設定が適用されました！",
-    "ytdlp_checking": "yt-dlp の更新を確認中…",
-    "ytdlp_updated": "yt-dlp を最新バージョンに更新しました！",
-    "ytdlp_uptodate": "yt-dlp はすでに最新です。",
-    "ytdlp_update_error": "yt-dlp を更新できませんでした。",
+    "clipboard_error": "クリップボードを読み取れませんでした。",
+    "open_error": "ファイルまたはフォルダーを開けませんでした。",
+    "ytdlp_checking": "ダウンロードエンジンの更新を確認しています…",
+    "ytdlp_updated": "ダウンロードエンジンを更新しました。",
+    "ytdlp_uptodate": "ダウンロードエンジンはすでに最新です。",
+    "ytdlp_update_error": "ダウンロードエンジンを更新できませんでした。",
     "youtube_bot_check": "YouTube がリクエストをブロックしました（ボット確認）。設定 → 一般で Cookie を有効にしてください。",
     "cookie_error": "ブラウザの Cookie を読み取れませんでした。Firefox か cookies.txt ファイルを試してください。",
     "no_formats": "この動画にダウンロード可能な形式がありません（ライブ配信、プレミア公開、または処理中の可能性があります）。",
-    "clipboard_autopaste": "クリップボードのリンクを自動的に貼り付けました。"
+    "clipboard_autopaste": "クリップボードのリンクを自動的に貼り付けました。",
+    "err_age": "年齢制限があります。設定で Cookie を追加するとダウンロードできます。",
+    "err_private": "非公開またはメンバー限定です。アクセス権のあるアカウントの Cookie が必要です。",
+    "err_geo": "お住まいの国では利用できません。",
+    "err_live": "このライブ配信またはプレミア公開はまだ始まっていません。",
+    "err_unavailable": "この動画は利用できないか、削除されました。",
+    "err_disk": "ファイルを保存できませんでした。フォルダーと空き容量を確認してください。",
+    "err_ffmpeg": "ファイルを完成できませんでした。もう一度試すか、別の形式を選んでください。",
+    "err_network": "接続に問題があります。インターネットを確認して再試行してください。",
+    "err_unsupported": "このリンクには対応していません。",
+    "err_download": "ダウンロードに失敗しました。再試行するか、設定でエンジンを更新してください。",
+    "app_update_error": "アップデートを確認またはインストールできませんでした。",
+    "app_update_wait": "ダウンロードが終わってから更新してください。",
+    "diagnostics_error": "診断情報を作成できませんでした。",
+    "console_copied": "コンソール診断をコピーしました。サポートを依頼するときに貼り付けてください。",
+    "screenshot_saved": "スクリーンショットを <path>ピクチャ/Flow Downloader</path> に保存し、クリップボードにコピーしました。",
+    "screenshot_error": "スクリーンショットを撮れませんでした。",
+    "link_copied": "リンクをコピーしました。",
+    "title_copied": "タイトルをコピーしました。",
+    "image_copied": "画像をクリップボードにコピーしました。",
+    "image_copy_error": "画像をコピーできませんでした。",
+    "titles": {
+      "success": "完了",
+      "error": "エラー",
+      "info": "お知らせ",
+      "download": "ダウンロード"
+    },
+    "close": "閉じる"
   },
-  "support_flow": "Flow Downloader を支援する 🪙"
+  "support_flow": "Flow Downloader を支援する 🪙",
+  "folder_picker": {
+    "title": "ダウンロード先フォルダーを選択",
+    "ok": "フォルダーを選択",
+    "file_name": "このフォルダー",
+    "filter_media": "動画・音声・画像",
+    "filter_all": "すべてのファイル"
+  },
+  "close_prompt": {
+    "title": "Flow Downloader を終了しますか？",
+    "count": "ダウンロード中のファイル：{{n}}",
+    "message": "今アプリを終了すると、これらのダウンロードはキャンセルされ、未完成のファイルは削除されます。",
+    "waiting": "キューで待機中：{{n}}",
+    "keep": "ダウンロードを続ける",
+    "close": "終了する",
+    "closing": "終了しています…"
+  },
+  "update": {
+    "available": "Flow Downloader {{version}} が利用可能です",
+    "install": "更新",
+    "installing": "インストール中…",
+    "dismiss": "閉じる"
+  },
+  "context_menu": {
+    "copy": "コピー",
+    "cut": "切り取り",
+    "paste": "貼り付け",
+    "reload": "再読み込み",
+    "copy_console": "コンソール診断をコピー",
+    "screenshot": "スクリーンショット",
+    "paste_search": "リンクを貼り付けて検索",
+    "open_last_folder": "最後のダウンロードフォルダーを開く",
+    "settings": "設定",
+    "always_on_top": "ウィンドウを常に手前に表示",
+    "open_file": "ファイルを開く",
+    "show_in_folder": "フォルダーに表示",
+    "copy_link": "元のリンクをコピー",
+    "retry": "再試行",
+    "download_again": "別の画質で再ダウンロード",
+    "cancel": "キャンセル",
+    "remove": "リストから削除",
+    "clear": "クリア",
+    "recent": "最近",
+    "save_thumbnail": "サムネイルを保存",
+    "copy_image": "画像をコピー",
+    "copy_title": "タイトルをコピー",
+    "clear_finished": "完了したものを消去",
+    "cancel_all": "すべてキャンセル"
+  },
+  "tooltips": {
+    "minimize": "最小化",
+    "maximize": "最大化",
+    "close": "閉じる",
+    "remove": "削除"
+  }
 }

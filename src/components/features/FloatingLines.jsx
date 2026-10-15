@@ -5,6 +5,7 @@
 // parallax. Everything below the imports is the shader source; the React component
 // only sets up three.js, feeds uniforms, and runs the render loop.
 import { useEffect, useRef, memo } from 'react';
+import { createRenderLoop } from '../../utils/renderLoop';
 import {
   Scene,
   OrthographicCamera,
@@ -13,8 +14,7 @@ import {
   Mesh,
   ShaderMaterial,
   Vector3,
-  Vector2,
-  Clock
+  Vector2
 } from 'three';
 
 const vertexShader = `
@@ -189,9 +189,14 @@ function FloatingLines({
   mouseDamping = 0.05,
   parallax = true,
   parallaxStrength = 0.2,
-  mixBlendMode = 'screen'
+  mixBlendMode = 'screen',
+  paused = false, // stop rendering (e.g. while a dialog covers the screen)
+  'data-glass-layer': glassLayer // lets the liquid-glass search bar sample this canvas
 }) {
   const containerRef = useRef(null);
+  const loopRef = useRef(null);
+  const pausedRef = useRef(paused);
+  pausedRef.current = paused;
   const targetMouseRef = useRef(new Vector2(-1000, -1000));
   const currentMouseRef = useRef(new Vector2(-1000, -1000));
   const targetInfluenceRef = useRef(0);
@@ -230,10 +235,17 @@ function FloatingLines({
     const scene = new Scene();
     const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 1);
     camera.position.z = 1;
-    const renderer = new WebGLRenderer({ antialias: true, alpha: false });
+    const renderer = new WebGLRenderer({ antialias: true, alpha: false, preserveDrawingBuffer: true }) // readable by the glass search bar;
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.domElement.style.width = '100%';
     renderer.domElement.style.height = '100%';
+    renderer.domElement.style.display = 'block';
+    // The blend happens INSIDE this component (canvas over the container's own
+    // dark background, see the style below), so the result never depends on
+    // what the parents are doing. When the blend was on the container itself,
+    // it changed the moment the entrance/crossfade fade finished (the parent
+    // stops being a separate group at opacity 1) — a sudden brightness jump.
+    renderer.domElement.style.mixBlendMode = mixBlendMode;
     containerRef.current.appendChild(renderer.domElement);
 
     const uniforms = {
@@ -278,8 +290,7 @@ function FloatingLines({
     const mesh = new Mesh(geometry, material);
     scene.add(mesh);
 
-    const clock = new Clock();
-    
+
     const setSize = () => {
       const el = containerRef.current;
       if (!el) return; // If the element is already off-screen, do nothing
@@ -323,9 +334,9 @@ function FloatingLines({
       window.addEventListener('pointerleave', handlePointerLeave);
     }
 
-    let raf = 0;
-    const renderLoop = () => {
-      uniforms.iTime.value = clock.getElapsedTime();
+    // Paused while hidden / covered, 30 fps while unfocused (see renderLoop.js).
+    const loop = createRenderLoop((time) => {
+      uniforms.iTime.value = time;
       if (interactive) {
         currentMouseRef.current.lerp(targetMouseRef.current, mouseDamping);
         uniforms.iMouse.value.copy(currentMouseRef.current);
@@ -337,12 +348,12 @@ function FloatingLines({
         uniforms.parallaxOffset.value.copy(currentParallaxRef.current);
       }
       renderer.render(scene, camera);
-      raf = requestAnimationFrame(renderLoop);
-    };
-    renderLoop();
+    }, { isPaused: () => pausedRef.current });
+    loopRef.current = loop;
 
     return () => {
-      cancelAnimationFrame(raf);
+      loop.dispose();
+      loopRef.current = null;
       if (ro && containerRef.current) ro.disconnect();
       if (interactive) {
         window.removeEventListener('pointermove', handlePointerMove);
@@ -359,11 +370,17 @@ function FloatingLines({
     mouseDamping, parallax, parallaxStrength
   ]);
 
+  // Resume when un-paused.
+  useEffect(() => { if (!paused) loopRef.current?.wake(); }, [paused]);
+
   return (
     <div
       ref={containerRef}
+      data-glass-layer={glassLayer}
       className="w-full h-full relative overflow-hidden floating-lines-container"
-      style={{ mixBlendMode: mixBlendMode }}
+      // Own isolated group with the app's base color: the canvas always blends
+      // against #09090b, during fades and after them.
+      style={{ isolation: 'isolate', backgroundColor: '#09090b' }}
     />
   );
 }
