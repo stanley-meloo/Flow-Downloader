@@ -108,7 +108,11 @@ export class LiquidGlassRenderer {
       this.out = canvas.getContext("2d");
       if (!this.out) throw new Error("Canvas 2D unavailable.");
     } else {
-      this.gpu = new GlassGL(canvas);
+      // preserveDrawingBuffer: the glass is only redrawn when something changed.
+      // Without it, Chromium/WebView2 may show an empty or stale buffer for a
+      // frame whenever the page's layers are rebuilt (e.g. the dimming starts
+      // fading when the search bar gets focus) — every glass "flicked".
+      this.gpu = new GlassGL(canvas, true);
     }
     this.backdrop = backdrop;
     this.settings = settings;

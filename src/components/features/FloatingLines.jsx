@@ -350,6 +350,8 @@ function FloatingLines({
       renderer.render(scene, camera);
     }, { isPaused: () => pausedRef.current });
     loopRef.current = loop;
+    // Starting paused (a still thumbnail): draw one frame so there's a picture.
+    if (pausedRef.current) renderer.render(scene, camera);
 
     return () => {
       loop.dispose();

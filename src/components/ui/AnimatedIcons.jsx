@@ -62,16 +62,34 @@ function IconFrame({ iconRef, size = 24, strokeWidth = 2, className = "", svgPro
   );
 }
 
+// Leaving an icon: every icon glides back to its resting look with this same
+// soft ease (overrides each animation's own timing), from wherever its hover
+// animation was — never a hard cut.
+const ICON_RETURN = { type: "tween", duration: 0.35, ease: [0.22, 1, 0.36, 1] };
+
 // Most icons: one Motion controller switching between "normal" and "animate".
 function useSimpleControls() {
   const controls = useAnimation();
-  const ref = useControlHover(() => controls.start("animate"), () => controls.start("normal"));
+  const ref = useControlHover(() => controls.start("animate"), () => controls.start("normal", ICON_RETURN));
   return [controls, ref];
 }
 
 // --- Settings: the gear turns half a revolution ---------------------------
-export function SettingsIcon(props) {
-  const [controls, ref] = useSimpleControls();
+// `active` (e.g. the Settings window is open) keeps the gear turned: it only
+// turns back when it's no longer active AND the pointer isn't on its button.
+export function SettingsIcon({ active = false, ...props }) {
+  const controls = useAnimation();
+  const hovered = useRef(false);
+  const activeRef = useRef(active);
+  activeRef.current = active;
+  const ref = useControlHover(
+    () => { hovered.current = true; controls.start("animate"); },
+    () => { hovered.current = false; if (!activeRef.current) controls.start("normal", ICON_RETURN); }
+  );
+  useEffect(() => {
+    if (active) controls.start("animate");
+    else if (!hovered.current) controls.start("normal", ICON_RETURN);
+  }, [active, controls]);
   return (
     <IconFrame {...props} iconRef={ref} Svg={motion.svg}
       svgProps={{
@@ -163,8 +181,9 @@ export function RotateCcwIcon(props) {
 
 // --- Sparkles: the star fills and hops, the small stars blink -------------
 const SPARKLE = {
-  normal: { y: 0, fill: "rgba(0,0,0,0)" },
-  animate: { y: [0, -1, 0, 0], fill: "currentColor", transition: { duration: 1, bounce: 0.3 } },
+  // fillOpacity, not fill: "currentColor" can't be interpolated (it jumped).
+  normal: { y: 0, fillOpacity: 0 },
+  animate: { y: [0, -1, 0, 0], fillOpacity: 1, transition: { duration: 1, bounce: 0.3 } },
 };
 const STAR = {
   normal: { opacity: 1 },
@@ -174,7 +193,7 @@ export function SparklesIcon(props) {
   const [controls, ref] = useSimpleControls();
   return (
     <IconFrame {...props} iconRef={ref}>
-      <motion.path animate={controls} initial="normal" variants={SPARKLE}
+      <motion.path animate={controls} initial="normal" variants={SPARKLE} fill="currentColor"
         d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z" />
       <motion.path animate={controls} initial="normal" variants={STAR} d="M20 3v4" />
       <motion.path animate={controls} initial="normal" variants={STAR} d="M22 5h-4" />
@@ -238,7 +257,7 @@ export function KeyboardIcon(props) {
       opacity: [1, 0.2, 1],
       transition: { duration: 1.5, times: [0, 0.5, 1], delay: i * 0.2 * Math.random(), repeat: 1, repeatType: "reverse" },
     })),
-    () => { controls.stop(); controls.set({ opacity: 1 }); }
+    () => controls.start({ opacity: 1, transition: ICON_RETURN })
   );
   return (
     <IconFrame {...props} iconRef={ref}>
@@ -346,7 +365,7 @@ export function LayersIcon(props) {
   const controls = useAnimation();
   const ref = useControlHover(
     async () => { await controls.start("firstState"); await controls.start("secondState"); },
-    () => controls.start("normal")
+    () => controls.start("normal", ICON_RETURN)
   );
   return (
     <IconFrame {...props} iconRef={ref}>
@@ -441,7 +460,7 @@ export function BanIcon(props) {
   const controls = useAnimation();
   const ref = useControlHover(
     () => { controls.start("animate"); controls.start("slash", { delay: 0.5 }); },
-    () => controls.start("normal")
+    () => controls.start("normal", ICON_RETURN)
   );
   return (
     <IconFrame {...props} iconRef={ref}>
@@ -649,6 +668,494 @@ export function ChartColumnIncreasingIcon(props) {
       <motion.path {...bar(0)} d="M6 20v-4" />
       <motion.path {...bar(1)} d="M12 20v-10" />
       <motion.path {...bar(2)} d="M18 20v-16" />
+    </IconFrame>
+  );
+}
+
+// ============================================================================
+// Icons below complete the set so EVERY icon in the app is animated.
+// Maximize2 and the alert shake are ported from lucide-animated
+// ("maximize-2", "badge-alert"); the others are new, in the same style
+// (Lucide shapes + Motion, triggered by hovering their control).
+// ============================================================================
+
+// Shared "alert" shake (lucide-animated badge-alert).
+const ALERT_SHAKE = {
+  normal: { scale: 1, rotate: 0 },
+  animate: {
+    scale: [1, 1.1, 1.1, 1.1, 1],
+    rotate: [0, -3, 3, -2, 2, 0],
+    transition: { duration: 0.5, times: [0, 0.2, 0.4, 0.6, 1], ease: "easeInOut" },
+  },
+};
+const shakeSvg = (controls) => ({ animate: controls, initial: "normal", variants: ALERT_SHAKE });
+
+// --- Circle alert: shakes -----------------------------------------------------
+export function CircleAlertIcon(props) {
+  const [controls, ref] = useSimpleControls();
+  return (
+    <IconFrame {...props} iconRef={ref} Svg={motion.svg} svgProps={shakeSvg(controls)}>
+      <circle cx="12" cy="12" r="10" />
+      <line x1="12" x2="12" y1="8" y2="12" />
+      <line x1="12" x2="12.01" y1="16" y2="16" />
+    </IconFrame>
+  );
+}
+
+// --- Triangle alert: shakes ---------------------------------------------------
+export function TriangleAlertIcon(props) {
+  const [controls, ref] = useSimpleControls();
+  return (
+    <IconFrame {...props} iconRef={ref} Svg={motion.svg} svgProps={shakeSvg(controls)}>
+      <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" />
+      <path d="M12 9v4" />
+      <path d="M12 17h.01" />
+    </IconFrame>
+  );
+}
+
+// --- Maximize 2: the two arrows push outwards (lucide-animated) ---------------
+const MAX_SPRING = { type: "spring", stiffness: 250, damping: 25 };
+export function Maximize2Icon(props) {
+  const [controls, ref] = useSimpleControls();
+  return (
+    <IconFrame {...props} iconRef={ref}>
+      <motion.path animate={controls} initial="normal" transition={MAX_SPRING}
+        variants={{ normal: { x: 0, y: 0 }, animate: { x: -2, y: 2 } }}
+        d="M3 16.2V21m0 0h4.8M3 21l6-6" />
+      <motion.path animate={controls} initial="normal" transition={MAX_SPRING}
+        variants={{ normal: { x: 0, y: 0 }, animate: { x: 2, y: -2 } }}
+        d="M21 7.8V3m0 0h-4.8M21 3l-6 6" />
+    </IconFrame>
+  );
+}
+
+// --- Square (window maximize): grows a little ----------------------------------
+export function SquareIcon(props) {
+  const [controls, ref] = useSimpleControls();
+  return (
+    <IconFrame {...props} iconRef={ref}>
+      <motion.rect animate={controls} initial="normal" transition={MAX_SPRING}
+        variants={{ normal: { scale: 1 }, animate: { scale: 1.12 } }}
+        style={{ transformOrigin: "12px 12px" }}
+        width="18" height="18" x="3" y="3" rx="2" />
+    </IconFrame>
+  );
+}
+
+// --- Minus (window minimize): the line drops ------------------------------------
+export function MinusIcon(props) {
+  const [controls, ref] = useSimpleControls();
+  return (
+    <IconFrame {...props} iconRef={ref}>
+      <motion.path animate={controls} initial="normal" transition={MAX_SPRING}
+        variants={{ normal: { y: 0 }, animate: { y: 3 } }}
+        d="M5 12h14" />
+    </IconFrame>
+  );
+}
+
+// --- Power: the stem pulls down and springs back, the arc pulses ---------------
+export function PowerIcon(props) {
+  const [controls, ref] = useSimpleControls();
+  return (
+    <IconFrame {...props} iconRef={ref}>
+      <motion.path animate={controls} initial="normal"
+        variants={{ normal: { y: 0 }, animate: { y: [0, 2, 0], transition: { duration: 0.45, ease: "easeInOut" } } }}
+        d="M12 2v10" />
+      <motion.path animate={controls} initial="normal"
+        variants={{ normal: { scale: 1 }, animate: { scale: [1, 0.92, 1], transition: { duration: 0.45, ease: "easeInOut" } } }}
+        style={{ transformOrigin: "12px 13px" }}
+        d="M18.4 6.6a9 9 0 1 1-12.77.04" />
+    </IconFrame>
+  );
+}
+
+// --- Music: the notes hop --------------------------------------------------------
+const HOP = { normal: { y: 0 }, animate: { y: [0, -2.5, 0, -1, 0], transition: { duration: 0.6, ease: "easeOut" } } };
+export function MusicIcon(props) {
+  const [controls, ref] = useSimpleControls();
+  return (
+    <IconFrame {...props} iconRef={ref} Svg={motion.svg} svgProps={{ animate: controls, initial: "normal", variants: HOP }}>
+      <path d="M9 18V5l12-2v13" />
+      <circle cx="6" cy="18" r="3" />
+      <circle cx="18" cy="16" r="3" />
+    </IconFrame>
+  );
+}
+
+// --- Video (camera): the lens part nudges, like recording ------------------------
+export function VideoIcon(props) {
+  const [controls, ref] = useSimpleControls();
+  return (
+    <IconFrame {...props} iconRef={ref}>
+      <motion.path animate={controls} initial="normal"
+        variants={{ normal: { x: 0 }, animate: { x: [0, 1.5, 0, 1, 0], transition: { duration: 0.6 } } }}
+        d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5" />
+      <rect x="2" y="6" width="14" height="12" rx="2" />
+    </IconFrame>
+  );
+}
+
+// --- Ear off ("video only"): the slash redraws ------------------------------------
+export function EarOffIcon(props) {
+  const [controls, ref] = useSimpleControls();
+  return (
+    <IconFrame {...props} iconRef={ref}>
+      <path d="M6 18.5a3.5 3.5 0 1 0 7 0c0-1.57.92-2.52 2.04-3.46" />
+      <path d="M6 8.5c0-.75.13-1.47.36-2.14" />
+      <path d="M8.8 3.15A6.5 6.5 0 0 1 19 8.5c0 1.63-.44 2.81-1.09 3.76" />
+      <path d="M12.5 6A2.5 2.5 0 0 1 15 8.5M10 13a2 2 0 0 0 1.82-1.18" />
+      <motion.line animate={controls} initial="normal"
+        variants={{ normal: { pathLength: 1 }, animate: { pathLength: [0, 1], transition: { duration: 0.4, ease: "easeOut" } } }}
+        x1="2" x2="22" y1="2" y2="22" />
+    </IconFrame>
+  );
+}
+
+// --- Paintbrush: the brush sweeps --------------------------------------------------
+export function PaintbrushIcon(props) {
+  const [controls, ref] = useSimpleControls();
+  return (
+    <IconFrame {...props} iconRef={ref} Svg={motion.svg}
+      svgProps={{ animate: controls, initial: "normal", style: { overflow: "visible", display: "block", transformOrigin: "20px 4px" },
+        variants: { normal: { rotate: 0 }, animate: { rotate: [0, -12, 8, -4, 0], transition: { duration: 0.6, ease: "easeInOut" } } } }}>
+      <path d="m14.622 17.897-10.68-2.913" />
+      <path d="M18.376 2.622a1 1 0 1 1 3.002 3.002L17.36 9.643a.5.5 0 0 0 0 .707l.944.944a2.41 2.41 0 0 1 0 3.408l-.944.944a.5.5 0 0 1-.707 0L8.354 7.348a.5.5 0 0 1 0-.707l.944-.944a2.41 2.41 0 0 1 3.408 0l.944.944a.5.5 0 0 0 .707 0z" />
+      <path d="M9 8c-1.804 2.71-3.97 3.46-6.583 3.948a.507.507 0 0 0-.302.819l7.32 8.883a1 1 0 0 0 1.185.204C12.735 20.405 16 16.792 16 15" />
+    </IconFrame>
+  );
+}
+
+// --- Wand: waves, the sparkles blink ------------------------------------------------
+export function WandSparklesIcon(props) {
+  const [controls, ref] = useSimpleControls();
+  const blink = (d) => ({ normal: { opacity: 1 }, animate: { opacity: [1, 0, 1], transition: { duration: 0.5, delay: d } } });
+  return (
+    <IconFrame {...props} iconRef={ref}>
+      <motion.path animate={controls} initial="normal" style={{ transformOrigin: "3px 21px" }}
+        variants={{ normal: { rotate: 0 }, animate: { rotate: [0, -8, 6, 0], transition: { duration: 0.5 } } }}
+        d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72M14 7l3 3" />
+      <motion.path animate={controls} initial="normal" variants={blink(0)} d="M5 6v4M7 8H3" />
+      <motion.path animate={controls} initial="normal" variants={blink(0.12)} d="M19 14v4M21 16h-4" />
+      <motion.path animate={controls} initial="normal" variants={blink(0.24)} d="M10 2v2M11 3H9" />
+    </IconFrame>
+  );
+}
+
+// --- List checks: the ticks redraw one after the other --------------------------------
+export function ListChecksIcon(props) {
+  const [controls, ref] = useSimpleControls();
+  const tick = (d) => ({ normal: { pathLength: 1 }, animate: { pathLength: [0, 1], transition: { duration: 0.3, delay: d } } });
+  return (
+    <IconFrame {...props} iconRef={ref}>
+      <motion.path animate={controls} initial="normal" variants={tick(0)} d="m3 7 2 2 4-4" />
+      <motion.path animate={controls} initial="normal" variants={tick(0.15)} d="m3 17 2 2 4-4" />
+      <path d="M13 6h8M13 12h8M13 18h8" />
+    </IconFrame>
+  );
+}
+
+// --- List video: the play triangle pulses ----------------------------------------------
+export function ListVideoIcon(props) {
+  const [controls, ref] = useSimpleControls();
+  return (
+    <IconFrame {...props} iconRef={ref}>
+      <path d="M12 12H3M16 6H3M12 18H3" />
+      <motion.path animate={controls} initial="normal" style={{ transformOrigin: "18px 15px" }}
+        variants={{ normal: { scale: 1, x: 0 }, animate: { scale: [1, 1.2, 1], x: [0, 1, 0], transition: { duration: 0.45 } } }}
+        d="m16 12 5 3-5 3v-6Z" />
+    </IconFrame>
+  );
+}
+
+// --- Pencil (edit title): writes a little stroke ------------------------------------------
+export function PencilIcon(props) {
+  const [controls, ref] = useSimpleControls();
+  return (
+    <IconFrame {...props} iconRef={ref} Svg={motion.svg}
+      svgProps={{ animate: controls, initial: "normal", style: { overflow: "visible", display: "block", transformOrigin: "3px 21px" },
+        variants: { normal: { rotate: 0, x: 0 }, animate: { rotate: [0, -10, 4, -6, 0], x: [0, 1, -1, 1, 0], transition: { duration: 0.6 } } } }}>
+      <path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" />
+      <path d="m15 5 4 4" />
+    </IconFrame>
+  );
+}
+
+// --- Loader (spinner): always spinning (status, not a hover icon) ------------------------------
+export function LoaderCircleIcon({ className = "", ...props }) {
+  return (
+    <IconFrame {...props} className={`animate-spin ${className}`}>
+      <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+    </IconFrame>
+  );
+}
+
+// --- Cookie (browser cookies setting): rolls a little, the chips twinkle -------------
+export function CookieIcon(props) {
+  const [controls, ref] = useSimpleControls();
+  const chip = (d) => ({ normal: { scale: 1 }, animate: { scale: [1, 1.6, 1], transition: { duration: 0.35, delay: d } } });
+  const chips = [[8.5, 9], [15, 8.5], [12, 13], [8.5, 15], [15.5, 14.5]];
+  return (
+    <IconFrame {...props} iconRef={ref} Svg={motion.svg}
+      svgProps={{ animate: controls, initial: "normal",
+        variants: { normal: { rotate: 0 }, animate: { rotate: [0, -20, 10, 0], transition: { duration: 0.6, ease: "easeInOut" } } } }}>
+      <circle cx="12" cy="12" r="9.5" />
+      {chips.map(([cx, cy], i) => (
+        <motion.circle key={i} animate={controls} initial="normal" variants={chip(i * 0.06)}
+          style={{ transformOrigin: `${cx}px ${cy}px` }}
+          cx={cx} cy={cy} r="1" fill="currentColor" stroke="none" />
+      ))}
+    </IconFrame>
+  );
+}
+
+// --- Palette (colors): the paint dots pop one after another ---------------------
+export function PaletteIcon(props) {
+  const [controls, ref] = useSimpleControls();
+  const dots = [[13.5, 6.5], [17.5, 10.5], [8.5, 7.5], [6.5, 12.5]];
+  return (
+    <IconFrame {...props} iconRef={ref} Svg={motion.svg}
+      svgProps={{ animate: controls, initial: "normal",
+        variants: { normal: { rotate: 0 }, animate: { rotate: [0, -8, 6, 0], transition: { duration: 0.6 } } } }}>
+      <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z" />
+      {dots.map(([cx, cy], i) => (
+        <motion.circle key={i} cx={cx} cy={cy} r="1" fill="currentColor" stroke="none"
+          style={{ transformOrigin: `${cx}px ${cy}px` }}
+          animate={controls} initial="normal"
+          variants={{ normal: { scale: 1 }, animate: { scale: [1, 1.9, 1], transition: { duration: 0.35, delay: i * 0.07 } } }} />
+      ))}
+    </IconFrame>
+  );
+}
+
+// --- Sun dim (darken): the rays turn and dim --------------------------------------
+export function SunDimIcon(props) {
+  const [controls, ref] = useSimpleControls();
+  return (
+    <IconFrame {...props} iconRef={ref}>
+      <circle cx="12" cy="12" r="4" />
+      <motion.g style={{ transformOrigin: "12px 12px" }} animate={controls} initial="normal"
+        variants={{ normal: { rotate: 0, opacity: 1 }, animate: { rotate: 45, opacity: [1, 0.35, 1], transition: { duration: 0.6 } } }}>
+        <path d="M12 4h.01" /><path d="M20 12h.01" /><path d="M12 20h.01" /><path d="M4 12h.01" />
+        <path d="M17.657 6.343h.01" /><path d="M17.657 17.657h.01" /><path d="M6.343 17.657h.01" /><path d="M6.343 6.343h.01" />
+      </motion.g>
+    </IconFrame>
+  );
+}
+
+// --- Droplet (blur): wobbles like a falling drop ----------------------------------
+export function DropletIcon(props) {
+  const [controls, ref] = useSimpleControls();
+  return (
+    <IconFrame {...props} iconRef={ref} Svg={motion.svg}
+      svgProps={{ animate: controls, initial: "normal",
+        variants: { normal: { y: 0, scaleY: 1, scaleX: 1 }, animate: { y: [0, -2, 1.5, 0], scaleY: [1, 1.08, 0.9, 1], scaleX: [1, 0.94, 1.08, 1], transition: { duration: 0.6 } } } }}>
+      <path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z" />
+    </IconFrame>
+  );
+}
+
+// --- Mouse pointer (interaction): taps ---------------------------------------------
+export function MousePointerIcon(props) {
+  const [controls, ref] = useSimpleControls();
+  return (
+    <IconFrame {...props} iconRef={ref} Svg={motion.svg}
+      svgProps={{ animate: controls, initial: "normal",
+        variants: { normal: { x: 0, y: 0, scale: 1 }, animate: { x: [0, 2, 0], y: [0, 2, 0], scale: [1, 0.88, 1], transition: { duration: 0.45 } } } }}>
+      <path d="M4.037 4.688a.495.495 0 0 1 .651-.651l16 6.5a.5.5 0 0 1-.063.947l-6.124 1.58a2 2 0 0 0-1.438 1.435l-1.579 6.126a.5.5 0 0 1-.947.063z" />
+    </IconFrame>
+  );
+}
+
+// --- Sliders (spacing / amount): the knobs slide ------------------------------------
+export function SlidersHorizontalIcon(props) {
+  const [controls, ref] = useSimpleControls();
+  const knob = (dx, d) => ({ normal: { x: 0 }, animate: { x: [0, dx, 0], transition: { duration: 0.6, delay: d } } });
+  return (
+    <IconFrame {...props} iconRef={ref}>
+      <line x1="21" x2="3" y1="4" y2="4" />
+      <line x1="21" x2="3" y1="12" y2="12" />
+      <line x1="21" x2="3" y1="20" y2="20" />
+      <motion.line x1="14" x2="14" y1="2" y2="6" animate={controls} initial="normal" variants={knob(-5, 0)} />
+      <motion.line x1="8" x2="8" y1="10" y2="14" animate={controls} initial="normal" variants={knob(6, 0.08)} />
+      <motion.line x1="16" x2="16" y1="18" y2="22" animate={controls} initial="normal" variants={knob(-4, 0.16)} />
+    </IconFrame>
+  );
+}
+
+// --- Engine (download engine / yt-dlp): the engine block idles and vibrates ---------
+// Fast small x/y jitter of the whole engine (like a motor running), while the
+// top cap and the side mount kick a little out of phase.
+const ENGINE_BODY = {
+  normal: { x: 0, y: 0, rotate: 0 },
+  animate: {
+    x: [0, -0.6, 0.6, -0.5, 0.5, -0.4, 0.4, -0.2, 0],
+    y: [0, 0.4, -0.4, 0.5, -0.3, 0.3, -0.2, 0.1, 0],
+    rotate: [0, -1.5, 1.5, -1.2, 1.2, -0.8, 0.8, -0.3, 0],
+    transition: { duration: 0.7, ease: "linear" },
+  },
+};
+const ENGINE_PART = (dy) => ({
+  normal: { y: 0 },
+  animate: { y: [0, -dy, 0, -dy, 0, -dy * 0.6, 0], transition: { duration: 0.7, ease: "easeInOut" } },
+});
+export function EngineIcon(props) {
+  const [controls, ref] = useSimpleControls();
+  return (
+    <IconFrame {...props} iconRef={ref} Svg={motion.svg}
+      svgProps={{ animate: controls, initial: "normal", variants: ENGINE_BODY }}>
+      <motion.g animate={controls} initial="normal" variants={ENGINE_PART(1)}>
+        <path d="M10 3h6" />
+        <path d="M13 3v4" />
+      </motion.g>
+      <motion.g animate={controls} initial="normal" variants={ENGINE_PART(0.6)}>
+        <path d="M2 10v6" />
+        <path d="M2 13h4" />
+      </motion.g>
+      <path d="M6 16a2 2 0 002 2h1a2 2 0 011.6.8l.3.4a2 2 0 001.6.8h2.264a2 2 0 001.789-1.106l1.67-3.341a1 1 0 01.895-.553H21a1 1 0 001-1v-4a1 1 0 00-1-1h-3.5a1 1 0 01-.8-.4l-.9-1.2A1 1 0 0015 7h-4a1 1 0 00-.8.4l-.9 1.2a1 1 0 01-.8.4H7a1 1 0 00-1 1z" />
+    </IconFrame>
+  );
+}
+
+// --- Clap (video + audio), from lucide-animated "clap": the clapper snaps shut ------
+const CLAP_BOARD = {
+  normal: { rotate: 0 },
+  animate: { rotate: [-10, -10, 0], transition: { duration: 0.8, times: [0, 0.5, 1], ease: "easeInOut" } },
+};
+const CLAP_STICK = {
+  normal: { rotate: 0 },
+  animate: { rotate: [0, -10, 16, 0], transition: { duration: 0.4, times: [0, 0.3, 0.6, 1], ease: "easeInOut" } },
+};
+export function ClapIcon(props) {
+  const [controls, ref] = useSimpleControls();
+  return (
+    <IconFrame {...props} iconRef={ref}>
+      <motion.g animate={controls} initial="normal" variants={CLAP_BOARD} style={{ transformOrigin: "4px 20px" }}>
+        <motion.g animate={controls} initial="normal" variants={CLAP_STICK} style={{ transformOrigin: "3px 11px" }}>
+          <path d="M20.2 6 3 11l-.9-2.4c-.3-1.1.3-2.2 1.3-2.5l13.5-4c1.1-.3 2.2.3 2.5 1.3Z" />
+          <path d="m6.2 5.3 3.1 3.9" />
+          <path d="m12.4 3.4 3.1 4" />
+        </motion.g>
+        <path d="M3 11h18v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" />
+      </motion.g>
+    </IconFrame>
+  );
+}
+
+// --- Folder input (format), from lucide-animated "folder-input": the arrow goes in ----
+export function FolderInputIcon(props) {
+  const [controls, ref] = useSimpleControls();
+  return (
+    <IconFrame {...props} iconRef={ref}>
+      <path d="M2 9V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H20a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-1" />
+      <motion.g animate={controls} initial="normal" transition={{ times: [0, 0.4, 1], duration: 0.5 }}
+        variants={{ normal: { x: 0 }, animate: { x: [0, 2, 0] } }}>
+        <path d="M2 13h10" />
+        <path d="m9 16 3-3-3-3" />
+      </motion.g>
+    </IconFrame>
+  );
+}
+
+// --- Monitor cog (quality), from lucide-animated "monitor-cog": the cog turns --------
+export function MonitorCogIcon(props) {
+  const [controls, ref] = useSimpleControls();
+  return (
+    <IconFrame {...props} iconRef={ref}>
+      <path d="M12 17v4" />
+      <path d="M22 13v2a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7" />
+      <path d="M8 21h8" />
+      <motion.g animate={controls} initial="normal" style={{ transformOrigin: "18px 6px" }}
+        transition={{ type: "spring", stiffness: 50, damping: 10 }}
+        variants={{ normal: { rotate: 0 }, animate: { rotate: 180 } }}>
+        <path d="m14.305 7.53.923-.382" />
+        <path d="m15.228 4.852-.923-.383" />
+        <path d="m16.852 3.228-.383-.924" />
+        <path d="m16.852 8.772-.383.923" />
+        <path d="m19.148 3.228.383-.924" />
+        <path d="m19.53 9.696-.382-.924" />
+        <path d="m20.772 4.852.924-.383" />
+        <path d="m20.772 7.148.924.383" />
+        <circle cx="18" cy="6" r="3" />
+      </motion.g>
+    </IconFrame>
+  );
+}
+
+// --- Run: a running stick figure (filled head). Idle it holds a running pose;
+// while its control is hovered it actually runs: a 6-frame run cycle (contact →
+// down → push → toe-off → heel kick → knee drive) where the knees bend and the
+// back foot kicks up, elbows stay bent while the arms pump opposite to the
+// legs, and the body dips on each landing. The figure is narrow, so it's
+// scaled 1.3× around its own center (12.35, 11.6) to the middle of the grid:
+// it fills the icon box like other icons and sits centered next to its label.
+// Every limb is one path whose points morph between frames. Drawn for this app
+// in Lucide's style (24 grid, 2 px).
+const runPath = (a, b, c) => `M${a[0]} ${a[1]} L${b[0]} ${b[1]} L${c[0]} ${c[1]}`;
+const RUN_HIP = [11.4, 13];
+const RUN_SHOULDER = [13.3, 8.5];
+// [knee, foot] per frame
+const RUN_LEG = [
+  [[14.3, 15.7], [15.9, 19.8]], // contact (front leg reaching)
+  [[13.4, 16.5], [12.9, 20.4]], // down (weight on it)
+  [[11.2, 16.9], [8.8, 19.9]],  // push
+  [[10.2, 16.6], [7.4, 18.6]],  // toe-off
+  [[9.9, 15.8], [7.7, 15.6]],   // heel kicks up behind
+  [[14.6, 14.4], [14.0, 17.8]], // knee drives forward
+];
+// [elbow, hand] per frame (bent arm pumping)
+const RUN_ARM = [
+  [[15.3, 10.6], [17.3, 9.1]],  // forward, hand up
+  [[14.7, 11.3], [16.6, 11.6]],
+  [[14.2, 11.6], [16.2, 12.2]],
+  [[11.1, 11.0], [9.6, 12.4]],  // back
+  [[10.9, 10.1], [9.0, 9.4]],   // back, high
+  [[12.0, 11.4], [11.6, 13.4]],
+];
+const RUN_STRIDE = 0.6; // s per full cycle (two steps)
+const runCycle = (frames, root, offset) => {
+  const seq = frames.map((_, k) => frames[(k + offset) % frames.length]).map(([j, e]) => runPath(root, j, e));
+  return {
+    normal: { d: seq[0], transition: { duration: 0.25, ease: "easeOut" } },
+    animate: { d: [...seq, seq[0]], transition: { duration: RUN_STRIDE, ease: "linear", repeat: Infinity } },
+  };
+};
+const RUN_LEG_A = runCycle(RUN_LEG, RUN_HIP, 0);
+const RUN_LEG_B = runCycle(RUN_LEG, RUN_HIP, 3);
+const RUN_ARM_A = runCycle(RUN_ARM, RUN_SHOULDER, 3); // opposite to leg A
+const RUN_ARM_B = runCycle(RUN_ARM, RUN_SHOULDER, 0);
+const RUN_BODY = {
+  normal: { y: 0, transition: { duration: 0.25 } },
+  animate: { y: [0.2, 0.8, 0, 0.2, 0.8, 0, 0.2], transition: { duration: RUN_STRIDE, ease: "easeInOut", repeat: Infinity } },
+};
+export function RunIcon(props) {
+  const [controls, ref] = useSimpleControls();
+  const p = (variants) => ({ animate: controls, initial: "normal", variants });
+  return (
+    <IconFrame {...props} iconRef={ref}>
+      <g transform="translate(12 12) scale(1.3) translate(-12.35 -11.6)" strokeWidth={2 / 1.3}>
+      <motion.g {...p(RUN_BODY)}>
+        <circle cx="14.9" cy="4.5" r="2.1" fill="currentColor" stroke="none" />
+        <path d={`M${RUN_SHOULDER[0]} ${RUN_SHOULDER[1]} L${RUN_HIP[0]} ${RUN_HIP[1]}`} />
+        <motion.path {...p(RUN_ARM_A)} d={RUN_ARM_A.normal.d} />
+        <motion.path {...p(RUN_ARM_B)} d={RUN_ARM_B.normal.d} />
+        <motion.path {...p(RUN_LEG_A)} d={RUN_LEG_A.normal.d} />
+        <motion.path {...p(RUN_LEG_B)} d={RUN_LEG_B.normal.d} />
+      </motion.g>
+      </g>
+    </IconFrame>
+  );
+}
+
+// --- Plus (add a wallpaper): turns a quarter on hover -----------------------
+export function PlusIcon(props) {
+  const [controls, ref] = useSimpleControls();
+  return (
+    <IconFrame {...props} iconRef={ref} Svg={motion.svg}
+      svgProps={{ animate: controls, initial: "normal", transition: { type: "spring", stiffness: 300, damping: 18 }, variants: { normal: { rotate: 0, scale: 1 }, animate: { rotate: 90, scale: 1.1 } } }}>
+      <path d="M5 12h14" />
+      <path d="M12 5v14" />
     </IconFrame>
   );
 }

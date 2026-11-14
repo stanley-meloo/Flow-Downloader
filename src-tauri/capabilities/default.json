@@ -1,15 +1,16 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Hardened permission set for Flow Downloader. yt-dlp is never exposed to the webview: it runs only through the validated Rust commands in src-tauri/src/ytdlp.rs.",
+  "description": "Hardened permission set for Flow Downloader. yt-dlp is never exposed to the webview: it runs only through the validated Rust commands in src-tauri/src/ytdlp.rs. File reads outside the app's own folders are limited to image files (the custom background photo).",
   "windows": [
     "main"
   ],
   "permissions": [
     "core:default",
     "dialog:default",
-    "opener:default",
-    "shell:allow-open",
+    "opener:allow-reveal-item-in-dir",
+    "opener:allow-open-url",
+    "opener:allow-default-urls",
     "core:window:allow-minimize",
     "core:window:allow-maximize",
     "core:window:allow-unmaximize",
@@ -18,11 +19,14 @@
     "core:window:allow-destroy",
     "core:window:allow-start-dragging",
     "core:window:allow-set-always-on-top",
+    "core:window:allow-set-progress-bar",
+    "core:window:allow-show",
     "clipboard-manager:default",
     "clipboard-manager:allow-read-text",
     "clipboard-manager:allow-write-text",
     "updater:default",
     "process:allow-restart",
+    "aptabase:allow-track-event",
     {
       "identifier": "fs:allow-read-text-file",
       "allow": [
@@ -66,22 +70,154 @@
           "path": "$APPDATA/**"
         },
         {
-          "path": "$DOWNLOAD/**"
+          "path": "$HOME/**/*.png"
         },
         {
-          "path": "$VIDEO/**"
+          "path": "$HOME/**/*.PNG"
         },
         {
-          "path": "$AUDIO/**"
+          "path": "$HOME/**/*.jpg"
         },
         {
-          "path": "$DESKTOP/**"
+          "path": "$HOME/**/*.JPG"
         },
         {
-          "path": "$DOCUMENT/**"
+          "path": "$HOME/**/*.jpeg"
         },
         {
-          "path": "$HOME/**"
+          "path": "$HOME/**/*.JPEG"
+        },
+        {
+          "path": "$HOME/**/*.webp"
+        },
+        {
+          "path": "$HOME/**/*.WEBP"
+        },
+        {
+          "path": "$HOME/**/*.gif"
+        },
+        {
+          "path": "$HOME/**/*.GIF"
+        },
+        {
+          "path": "$PICTURE/**/*.png"
+        },
+        {
+          "path": "$PICTURE/**/*.PNG"
+        },
+        {
+          "path": "$PICTURE/**/*.jpg"
+        },
+        {
+          "path": "$PICTURE/**/*.JPG"
+        },
+        {
+          "path": "$PICTURE/**/*.jpeg"
+        },
+        {
+          "path": "$PICTURE/**/*.JPEG"
+        },
+        {
+          "path": "$PICTURE/**/*.webp"
+        },
+        {
+          "path": "$PICTURE/**/*.WEBP"
+        },
+        {
+          "path": "$PICTURE/**/*.gif"
+        },
+        {
+          "path": "$PICTURE/**/*.GIF"
+        },
+        {
+          "path": "$DESKTOP/**/*.png"
+        },
+        {
+          "path": "$DESKTOP/**/*.PNG"
+        },
+        {
+          "path": "$DESKTOP/**/*.jpg"
+        },
+        {
+          "path": "$DESKTOP/**/*.JPG"
+        },
+        {
+          "path": "$DESKTOP/**/*.jpeg"
+        },
+        {
+          "path": "$DESKTOP/**/*.JPEG"
+        },
+        {
+          "path": "$DESKTOP/**/*.webp"
+        },
+        {
+          "path": "$DESKTOP/**/*.WEBP"
+        },
+        {
+          "path": "$DESKTOP/**/*.gif"
+        },
+        {
+          "path": "$DESKTOP/**/*.GIF"
+        },
+        {
+          "path": "$DOWNLOAD/**/*.png"
+        },
+        {
+          "path": "$DOWNLOAD/**/*.PNG"
+        },
+        {
+          "path": "$DOWNLOAD/**/*.jpg"
+        },
+        {
+          "path": "$DOWNLOAD/**/*.JPG"
+        },
+        {
+          "path": "$DOWNLOAD/**/*.jpeg"
+        },
+        {
+          "path": "$DOWNLOAD/**/*.JPEG"
+        },
+        {
+          "path": "$DOWNLOAD/**/*.webp"
+        },
+        {
+          "path": "$DOWNLOAD/**/*.WEBP"
+        },
+        {
+          "path": "$DOWNLOAD/**/*.gif"
+        },
+        {
+          "path": "$DOWNLOAD/**/*.GIF"
+        },
+        {
+          "path": "$DOCUMENT/**/*.png"
+        },
+        {
+          "path": "$DOCUMENT/**/*.PNG"
+        },
+        {
+          "path": "$DOCUMENT/**/*.jpg"
+        },
+        {
+          "path": "$DOCUMENT/**/*.JPG"
+        },
+        {
+          "path": "$DOCUMENT/**/*.jpeg"
+        },
+        {
+          "path": "$DOCUMENT/**/*.JPEG"
+        },
+        {
+          "path": "$DOCUMENT/**/*.webp"
+        },
+        {
+          "path": "$DOCUMENT/**/*.WEBP"
+        },
+        {
+          "path": "$DOCUMENT/**/*.gif"
+        },
+        {
+          "path": "$DOCUMENT/**/*.GIF"
         }
       ]
     },

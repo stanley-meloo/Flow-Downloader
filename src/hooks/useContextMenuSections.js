@@ -4,7 +4,7 @@
 // or null anywhere else). Each section: { id, title?, items: [...] };
 // each item: { id, icon, label, action, hint?, checked?, danger?, title? }.
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { downloadDir } from "@tauri-apps/api/path";
 import { invoke } from "@tauri-apps/api/core";
@@ -13,17 +13,29 @@ import { readText, writeText } from "@tauri-apps/plugin-clipboard-manager";
 import {
   ClipboardPasteIcon, FolderOpenIcon, SettingsIcon, PinIcon, ExternalLinkIcon,
   LinkIcon, RotateCcwIcon, BanIcon, TrashIcon, DownloadIcon, XIcon, ClockIcon,
-  ImageIcon, CopyIcon, CircleCheckIcon,
+  ImageIcon, CopyIcon,
 } from "../components/ui/AnimatedIcons";
 import { getSearchHistory, getLastDownloadFolder } from "../utils/recent";
 import { openMediaLocation, resolveMediaPath, openPath } from "../utils/fileSystem";
+
+export const ON_TOP_KEY = "fd-always-on-top";
 
 const ACTIVE = ["Downloading", "Processing..."];
 const isLink = (s) => /^https?:\/\/\S+$/i.test((s || "").trim());
 
 export default function useContextMenuSections({ downloader, settings, openSettings, showToast, modalOpen }) {
   const { t } = useTranslation();
-  const [onTop, setOnTop] = useState(false);
+  // "Keep window on top" is remembered between launches: the saved choice is
+  // re-applied to the window at startup, so the checkmark and the window
+  // always agree (it used to show unchecked while the window stayed on top).
+  const [onTop, setOnTop] = useState(() => {
+    try { return localStorage.getItem(ON_TOP_KEY) === "1"; } catch { return false; }
+  });
+  useEffect(() => {
+    let saved = false;
+    try { saved = localStorage.getItem(ON_TOP_KEY) === "1"; } catch { /* storage unavailable */ }
+    getCurrentWindow().setAlwaysOnTop(saved).catch(() => {});
+  }, []);
   const L = (key, fallback, opts) => t(`context_menu.${key}`, { defaultValue: fallback, ...opts });
 
   // --- shared actions ---------------------------------------------------------
@@ -51,6 +63,8 @@ export default function useContextMenuSections({ downloader, settings, openSetti
     try {
       await getCurrentWindow().setAlwaysOnTop(next);
       setOnTop(next);
+      try { localStorage.setItem(ON_TOP_KEY, next ? "1" : "0"); } catch { /* storage unavailable */ }
+      window.dispatchEvent(new CustomEvent("fd:on-top", { detail: next })); // TitleBar's pin
     } catch (e) {
       console.error("[ContextMenu] always on top", e);
     }
@@ -117,7 +131,7 @@ export default function useContextMenuSections({ downloader, settings, openSetti
     const q = downloader.queue;
     const items = [];
     if (q.some((i) => i.status === "Done")) {
-      items.push({ id: "clear-done", icon: CircleCheckIcon, label: L("clear_finished", "Clear completed"), action: downloader.clearFinished });
+      items.push({ id: "clear-done", icon: TrashIcon, label: L("clear_finished", "Clear completed"), action: downloader.clearFinished });
     }
     if (q.some((i) => i.status === "Waiting" || ACTIVE.includes(i.status))) {
       items.push({ id: "cancel-all", icon: BanIcon, label: L("cancel_all", "Cancel all"), danger: true, action: downloader.cancelAll });
@@ -139,7 +153,7 @@ export default function useContextMenuSections({ downloader, settings, openSetti
         id: "recent",
         title: L("recent", "Recent"),
         items: history.map((h, i) => ({
-          id: `recent-${i}`, icon: ClockIcon, label: h.title, title: h.url,
+          id: `recent-${i}`, icon: ClockIcon, label: h.title,
           action: () => downloader.analyzeLink(h.url),
         })),
       });

@@ -20,7 +20,7 @@ const HERO_WRITE_TIME =
 export default function HeroTitle({ subtitle, delay = 0 }) {
   let index = 0;
   return (
-    <div className="text-center mb-12 shrink-0">
+    <div className="text-center mb-6 shrink-0">
       <h1 className="text-5xl tracking-tight mb-2 text-white" aria-label="Flow Downloader">
         {WORDS.map((word, w) => (
           <span key={word.text} className={`${word.className} inline-block whitespace-nowrap`} aria-hidden="true">
@@ -46,7 +46,7 @@ export default function HeroTitle({ subtitle, delay = 0 }) {
         initial={{ opacity: 0, y: 8, filter: "blur(4px)" }}
         animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
         transition={{ duration: 0.6, ease: EASE, delay: delay + HERO_WRITE_TIME + 0.1 }}
-        className="text-zinc-500 text-sm tracking-widest uppercase"
+        className="text-zinc-300 text-sm tracking-widest uppercase"
       >
         {subtitle}
       </motion.p>

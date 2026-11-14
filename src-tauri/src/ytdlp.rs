@@ -79,7 +79,21 @@ pub struct YtdlpPath(Mutex<Option<PathBuf>>);
 
 /// Locates a bundled sidecar (`ytdlp`, `ffmpeg`, `deno`) next to the executable.
 /// Production builds use the plain name; `tauri dev` may keep the target triple.
+/// On macOS, ffmpeg and deno are run from clean copies (see `mac_tools`).
 pub fn bundled_binary(base: &str) -> Option<PathBuf> {
+    #[cfg(target_os = "macos")]
+    {
+        if base != "ytdlp" {
+            if let Some(p) = mac_tools().get(base).filter(|p| p.is_file()) {
+                return Some(p.clone());
+            }
+        }
+    }
+    sidecar_in_bundle(base)
+}
+
+/// The sidecar file itself, inside the app's install folder / .app bundle.
+fn sidecar_in_bundle(base: &str) -> Option<PathBuf> {
     let dir = std::env::current_exe().ok()?.parent()?.to_path_buf();
     let names: Vec<String> = if cfg!(target_os = "windows") {
         vec![format!("{base}.exe"), format!("{base}-x86_64-pc-windows-msvc.exe")]
@@ -89,9 +103,95 @@ pub fn bundled_binary(base: &str) -> Option<PathBuf> {
         let triple = if cfg!(target_arch = "aarch64") { "aarch64-apple-darwin" } else { "x86_64-apple-darwin" };
         vec![base.to_string(), format!("{base}-{triple}")]
     } else {
-        vec![base.to_string(), format!("{base}-x86_64-unknown-linux-gnu")]
+        // Linux packages install the sidecars into /usr/bin, so they carry a
+        // "flowdl-" prefix there (tauri.linux.conf.json): a plain "ffmpeg" or
+        // "deno" would clash with the system's own packages.
+        vec![
+            format!("flowdl-{base}"),
+            format!("flowdl-{base}-x86_64-unknown-linux-gnu"),
+            base.to_string(),
+            format!("{base}-x86_64-unknown-linux-gnu"),
+        ]
     };
     names.into_iter().map(|n| dir.join(n)).find(|p| p.is_file())
+}
+
+// --- macOS: run the tools from clean copies ----------------------------------
+// The app isn't notarized, so everything inside the .app carries the
+// "quarantine" flag it got when the .dmg was downloaded. Opening the app with
+// right-click → Open approves the app itself, but the helper programs it starts
+// (ffmpeg, deno) can still be blocked by Gatekeeper — yt-dlp then fails to
+// merge video + audio (ffmpeg) or to read sites that need a JS runtime (deno),
+// so nothing downloads. Like yt-dlp (prepare_writable_copy), ffmpeg and deno
+// are copied to <app local data>/bin once per app version, made executable
+// and stripped of every extended attribute (quarantine included). On APFS the
+// copy is a clone (instant, no extra disk space).
+
+#[cfg(target_os = "macos")]
+static MAC_BIN_DIR: std::sync::OnceLock<PathBuf> = std::sync::OnceLock::new();
+
+/// Called at startup (lib.rs setup) with the app's local data folder.
+#[cfg(target_os = "macos")]
+pub fn set_mac_bin_dir(app: &AppHandle) {
+    if let Ok(dir) = app.path().app_local_data_dir() {
+        let _ = MAC_BIN_DIR.set(dir.join("bin"));
+    }
+}
+
+#[cfg(not(target_os = "macos"))]
+pub fn set_mac_bin_dir(_app: &AppHandle) {}
+
+#[cfg(target_os = "macos")]
+fn mac_tools() -> &'static HashMap<String, PathBuf> {
+    static TOOLS: std::sync::OnceLock<HashMap<String, PathBuf>> = std::sync::OnceLock::new();
+    TOOLS.get_or_init(|| {
+        let mut map = HashMap::new();
+        let Some(dir) = MAC_BIN_DIR.get() else { return map };
+        for base in ["ffmpeg", "deno"] {
+            if let Some(bundled) = sidecar_in_bundle(base) {
+                if let Some(copy) = copy_to_bin(dir, &bundled, base, &format!("{base}.source")) {
+                    map.insert(base.to_string(), copy);
+                }
+            }
+        }
+        map
+    })
+}
+
+/// Copies `bundled` to `<dir>/<name>` (refreshed when the app version or the
+/// file changes), makes it executable and, on macOS, clears its extended
+/// attributes (the quarantine flag blocks it otherwise).
+fn copy_to_bin(dir: &Path, bundled: &Path, name: &str, marker_name: &str) -> Option<PathBuf> {
+    std::fs::create_dir_all(dir).ok()?;
+    let target = dir.join(name);
+    let marker = dir.join(marker_name);
+    let stamp = format!("{}:{}", env!("CARGO_PKG_VERSION"), std::fs::metadata(bundled).ok()?.len());
+    let current = std::fs::read_to_string(&marker).unwrap_or_default();
+    if !target.is_file() || current.trim() != stamp {
+        let tmp = dir.join(format!("{name}.tmp"));
+        std::fs::copy(bundled, &tmp).ok()?;
+        let _ = std::fs::remove_file(&target);
+        if std::fs::rename(&tmp, &target).is_err() {
+            let _ = std::fs::remove_file(&tmp);
+            return None;
+        }
+        let _ = std::fs::write(&marker, &stamp);
+    }
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let _ = std::fs::set_permissions(&target, std::fs::Permissions::from_mode(0o755));
+    }
+    #[cfg(target_os = "macos")]
+    {
+        let _ = Command::new("/usr/bin/xattr")
+            .arg("-c")
+            .arg(&target)
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .status();
+    }
+    Some(target)
 }
 
 fn ytdlp_file_name() -> &'static str {
@@ -105,43 +205,9 @@ fn ytdlp_file_name() -> &'static str {
 /// refreshed; otherwise a self-updated copy is kept as is.
 fn prepare_writable_copy(app: &AppHandle, bundled: &Path) -> Option<PathBuf> {
     let dir = app.path().app_local_data_dir().ok()?.join("bin");
-    std::fs::create_dir_all(&dir).ok()?;
-    let target = dir.join(ytdlp_file_name());
-    let marker = dir.join("yt-dlp.source");
-    let stamp = format!(
-        "{}:{}",
-        env!("CARGO_PKG_VERSION"),
-        std::fs::metadata(bundled).ok()?.len()
-    );
-    let current = std::fs::read_to_string(&marker).unwrap_or_default();
-
-    if !target.is_file() || current.trim() != stamp {
-        let tmp = dir.join(format!("{}.tmp", ytdlp_file_name()));
-        std::fs::copy(bundled, &tmp).ok()?;
-        let _ = std::fs::remove_file(&target);
-        if std::fs::rename(&tmp, &target).is_err() {
-            let _ = std::fs::remove_file(&tmp);
-            return None;
-        }
-        let _ = std::fs::write(&marker, &stamp);
-    }
-
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        let _ = std::fs::set_permissions(&target, std::fs::Permissions::from_mode(0o755));
-    }
-    #[cfg(target_os = "macos")]
-    {
-        // A copied binary can inherit the quarantine flag, which blocks it.
-        let _ = Command::new("xattr")
-            .args(["-d", "com.apple.quarantine"])
-            .arg(&target)
-            .stdout(Stdio::null())
-            .stderr(Stdio::null())
-            .status();
-    }
-    Some(target)
+    // Same marker name as before ("yt-dlp.source"), so an existing copy that
+    // updated itself isn't replaced needlessly.
+    copy_to_bin(&dir, bundled, ytdlp_file_name(), "yt-dlp.source")
 }
 
 /// Path of the yt-dlp to run (resolved once, then cached).
@@ -713,6 +779,9 @@ pub struct DownloadOpts {
     audio_kbps: Option<u32>,
     #[serde(default)]
     cookies: Cookies,
+    /// The user chose "Replace" for a file that already existed in the folder.
+    #[serde(default)]
+    overwrite: bool,
 }
 
 #[derive(Serialize, Default)]
@@ -985,7 +1054,11 @@ pub async fn ytdlp_download(
         let bin = ytdlp_path(&app)?;
         // A free name: never the file of another video with the same title,
         // nor the target of a download still running (`_reserved` frees it).
-        let (stem, _reserved) = unique_stem(&dir, &opts.stem, &final_ext);
+        let (stem, _reserved) = if opts.overwrite {
+            exact_stem(&dir, &opts.stem, &final_ext)
+        } else {
+            unique_stem(&dir, &opts.stem, &final_ext)
+        };
 
         // Output template: '%' in the folder name must not be read as a field.
         let folder = dir.to_string_lossy().replace('\\', "/").replace('%', "%%");
@@ -1008,6 +1081,9 @@ pub async fn ytdlp_download(
         ]);
         args.extend(common_args());
         args.extend(cookie);
+        if opts.overwrite {
+            args.push("--force-overwrites".into());
+        }
         let host = host_of(&url);
         if let Some(ffmpeg) = bundled_binary("ffmpeg") {
             args.push("--ffmpeg-location".into());
@@ -1136,11 +1212,38 @@ fn unique_stem(dir: &Path, stem: &str, ext: &str) -> (String, Reservation) {
     loop {
         let candidate = if n == 1 { stem.to_string() } else { format!("{stem}_({n})") };
         let target = dir.join(format!("{candidate}.{ext}"));
-        if (!target.exists() && !list.contains(&target)) || n >= 999 {
+        if (!target.exists() && !list.iter().any(|p| same_path(p, &target))) || n >= 999 {
             list.push(target.clone());
             return (candidate, Reservation(target));
         }
         n += 1;
+    }
+}
+
+/// The exact name, reserved — for "Replace" (the user chose to overwrite the
+/// file already in the folder). Still never the target of a running download.
+fn exact_stem(dir: &Path, stem: &str, ext: &str) -> (String, Reservation) {
+    let target = dir.join(format!("{stem}.{ext}"));
+    let busy = {
+        let list = RESERVED_TARGETS.lock().unwrap_or_else(|e| e.into_inner());
+        list.iter().any(|p| same_path(p, &target))
+    };
+    if busy {
+        return unique_stem(dir, stem, ext);
+    }
+    let mut list = RESERVED_TARGETS.lock().unwrap_or_else(|e| e.into_inner());
+    list.push(target.clone());
+    (stem.to_string(), Reservation(target))
+}
+
+/// Same file? On Windows and macOS file names ignore upper/lower case, so
+/// "Title.mp4" and "title.mp4" are the same file (two downloads writing them
+/// at once both failed with "file is being used by another process").
+fn same_path(a: &Path, b: &Path) -> bool {
+    if cfg!(any(windows, target_os = "macos")) {
+        a.to_string_lossy().to_lowercase() == b.to_string_lossy().to_lowercase()
+    } else {
+        a == b
     }
 }
 

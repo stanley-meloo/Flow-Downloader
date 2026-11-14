@@ -37,7 +37,7 @@ function makeNoiseTile() {
 }
 
 // Default intensity (also used for the old on/off setting: true → default).
-const DEFAULT_GRAIN = 5;
+const DEFAULT_GRAIN = 15;
 
 // Intensity 0–100 (0 = off).
 export function grainIntensity(value) {

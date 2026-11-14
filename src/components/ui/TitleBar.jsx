@@ -1,8 +1,43 @@
 import { useState, useEffect } from "react";
+import { TAP } from "./Motion"; // fast, hard button press
 import BrandShine from "./BrandShine";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { X, Minus, Square, Maximize2 } from "lucide-react";
-import { motion } from "framer-motion";
+import { XIcon as X, MinusIcon as Minus, SquareIcon as Square, Maximize2Icon as Maximize2, PinIcon } from "./AnimatedIcons"; // animated
+import { motion, AnimatePresence } from "framer-motion";
+import { ON_TOP_KEY } from "../../hooks/useContextMenuSections";
+
+// "Keep window on top" is on: a small diagonal pin in the top-left of the
+// title bar (pops in / out). Follows the right-click menu's toggle.
+function OnTopPin({ label }) {
+  const [on, setOn] = useState(() => {
+    try { return localStorage.getItem(ON_TOP_KEY) === "1"; } catch { return false; }
+  });
+  useEffect(() => {
+    const onChange = (e) => setOn(!!e.detail);
+    window.addEventListener("fd:on-top", onChange);
+    return () => window.removeEventListener("fd:on-top", onChange);
+  }, []);
+  return (
+    <AnimatePresence>
+      {on && (
+        <motion.span
+          key="pin"
+          initial={{ opacity: 0, scale: 0.4, rotate: 0 }}
+          animate={{ opacity: 0.8, scale: 1, rotate: 45, transition: { type: "spring", stiffness: 420, damping: 18 } }}
+          exit={{ opacity: 0, scale: 0.4, rotate: 0, transition: { duration: 0.18 } }}
+          className="flex items-center justify-center text-white pointer-events-auto cursor-default"
+          data-tooltip={label}
+          data-tooltip-variant="text"
+          data-tooltip-place="bottom"
+          aria-label={label}
+          role="img"
+        >
+          <PinIcon size={14} />
+        </motion.span>
+      )}
+    </AnimatePresence>
+  );
+}
 import appLogo from "../../assets/logo.png";
 import { useTranslation } from "react-i18next";
 import { IS_MAC } from "../../utils/keybinds";
@@ -14,6 +49,7 @@ export default function TitleBar() {
     minimize: t('tooltips.minimize', { defaultValue: 'Minimize' }),
     maximize: t('tooltips.maximize', { defaultValue: 'Maximize' }),
     close: t('tooltips.close', { defaultValue: 'Close' }),
+    onTop: t('context_menu.always_on_top', { defaultValue: 'Keep window on top' }),
   };
 
   useEffect(() => {
@@ -25,13 +61,13 @@ export default function TitleBar() {
   const buttonLightVariants = {
     initial: { opacity: 0.6, scale: 1, background: "radial-gradient(closest-side at center, rgba(255,255,255,0) 0%, rgba(255,255,255,0) 100%)", color: "rgb(161 161 170)" },
     hover: { opacity: 1, scale: 1.1, background: "radial-gradient(closest-side at center, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 100%)", color: "rgb(255 255 255)", transition: { type: "spring", stiffness: 300, damping: 25 } },
-    tap: { scale: 0.95, background: "radial-gradient(closest-side at center, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0) 100%)" }
+    tap: { scale: 0.97, background: "radial-gradient(closest-side at center, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0) 100%)", transition: TAP }
   };
 
   const closeLightVariants = {
     initial: { opacity: 0.6, scale: 1, background: "radial-gradient(closest-side at center, rgba(220, 38, 38, 0) 0%, rgba(220, 38, 38, 0) 100%)", color: "rgb(161 161 170)" },
     hover: { opacity: 1, scale: 1.1, background: "radial-gradient(closest-side at center, rgba(220, 38, 38, 0.25) 0%, rgba(220, 38, 38, 0) 100%)", color: "rgb(255 255 255)", transition: { type: "spring", stiffness: 300, damping: 25 } },
-    tap: { scale: 0.95, background: "radial-gradient(closest-side at center, rgba(220, 38, 38, 0.35) 0%, rgba(220, 38, 38, 0) 100%)" }
+    tap: { scale: 0.97, background: "radial-gradient(closest-side at center, rgba(220, 38, 38, 0.35) 0%, rgba(220, 38, 38, 0) 100%)", transition: TAP }
   };
 
   // --- MAC OS RENDER ---
@@ -49,7 +85,7 @@ export default function TitleBar() {
           {/* Close button (red) */}
           <button 
             onClick={() => appWindow?.close()} 
-            data-tooltip={tip.close}
+            aria-label={tip.close}
             className="w-3.5 h-3.5 rounded-full flex items-center justify-center bg-[#FF5F56] border border-[#E0443E] hover:bg-[#FF5F56] active:bg-[#C24139] transition-colors"
           >
             <X size={8} strokeWidth={3} className="text-black/60 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -58,7 +94,7 @@ export default function TitleBar() {
           {/* Minimize button (yellow) */}
           <button 
             onClick={() => appWindow?.minimize()} 
-            data-tooltip={tip.minimize}
+            aria-label={tip.minimize}
             className="w-3.5 h-3.5 rounded-full flex items-center justify-center bg-[#FFBD2E] border border-[#DEA123] hover:bg-[#FFBD2E] active:bg-[#B8861E] transition-colors"
           >
             <Minus size={8} strokeWidth={4} className="text-black/60 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -67,11 +103,16 @@ export default function TitleBar() {
           {/* Maximize button (green) */}
           <button 
             onClick={() => appWindow?.toggleMaximize()} 
-            data-tooltip={tip.maximize}
+            aria-label={tip.maximize}
             className="w-3.5 h-3.5 rounded-full flex items-center justify-center bg-[#27C93F] border border-[#1AAB29] hover:bg-[#27C93F] active:bg-[#1D912C] transition-colors"
           >
             <Maximize2 size={7} strokeWidth={3} className="text-black/60 opacity-0 group-hover:opacity-100 transition-opacity" />
           </button>
+        </div>
+
+        {/* Pinned on top: right after the traffic lights (top-left) */}
+        <div className="absolute left-[84px] flex items-center z-10">
+          <OnTopPin label={tip.onTop} />
         </div>
 
         {/* Logo and Title */}
@@ -99,12 +140,14 @@ export default function TitleBar() {
            {/* Logo + name with a light sweep every 10 s (BrandShine) */}
            <BrandShine logo={appLogo} logoClass="w-5 h-5" />
         </motion.div>
+        {/* Pinned on top: next to the name, top-left */}
+        <OnTopPin label={tip.onTop} />
       </div>
 
       <div className="flex items-center px-2 gap-2">
-        <motion.div variants={buttonLightVariants} initial="initial" whileHover="hover" whileTap="tap" onClick={() => appWindow?.minimize()} data-tooltip={tip.minimize} className="h-8 w-10 flex items-center justify-center rounded-lg cursor-pointer relative"><Minus size={16} /></motion.div>
-        <motion.div variants={buttonLightVariants} initial="initial" whileHover="hover" whileTap="tap" onClick={() => appWindow?.toggleMaximize()} data-tooltip={tip.maximize} className="h-8 w-10 flex items-center justify-center rounded-lg cursor-pointer relative"><Square size={14} /></motion.div>
-        <motion.div variants={closeLightVariants} initial="initial" whileHover="hover" whileTap="tap" onClick={() => appWindow?.close()} data-tooltip={tip.close} className="h-8 w-10 flex items-center justify-center rounded-lg cursor-pointer relative"><X size={16} /></motion.div>
+        <motion.button type="button" variants={buttonLightVariants} initial="initial" whileHover="hover" whileTap="tap" onClick={() => appWindow?.minimize()} aria-label={tip.minimize} className="h-8 w-10 flex items-center justify-center rounded-lg cursor-pointer relative"><Minus size={16} /></motion.button>
+        <motion.button type="button" variants={buttonLightVariants} initial="initial" whileHover="hover" whileTap="tap" onClick={() => appWindow?.toggleMaximize()} aria-label={tip.maximize} className="h-8 w-10 flex items-center justify-center rounded-lg cursor-pointer relative"><Square size={14} /></motion.button>
+        <motion.button type="button" variants={closeLightVariants} initial="initial" whileHover="hover" whileTap="tap" onClick={() => appWindow?.close()} aria-label={tip.close} className="h-8 w-10 flex items-center justify-center rounded-lg cursor-pointer relative"><X size={16} /></motion.button>
       </div>
     </div>
   );

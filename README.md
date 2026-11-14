@@ -1,106 +1,175 @@
-# 🌊 Flow Downloader
-
-[![Download for Windows](https://img.shields.io/badge/DOWNLOAD%20FOR%20WINDOWS-AVAILABLE-FF0055?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/stanley-meloo/Flow-Downloader/releases/latest)
-[![Download for Mac](https://img.shields.io/badge/DOWNLOAD%20FOR%20MAC-AVAILABLE-FF0055?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/stanley-meloo/Flow-Downloader/releases/latest)
-![Download for Linux](https://img.shields.io/badge/DOWNLOAD%20FOR%20LINUX-COMING%20SOON-555555?style=for-the-badge&logo=linux&logoColor=white)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
-[![Tauri](https://img.shields.io/badge/Tauri-v2-24C8D8?style=for-the-badge&logo=tauri)](https://tauri.app/)
-
-**Flow Downloader** is a modern, high-speed, and multilingual desktop application designed for high-fidelity media downloads. Built with **Tauri v2** and **React**, it offers a lightweight yet powerful experience for grabbing content from across the web.
+<h1 align="center">🌊 Flow Downloader</h1>
 
 <p align="center">
-  <img src="src/assets/screenshot1.png" width="900" alt="Flow Downloader Home">
+  <b>Download videos, music and playlists from 1000+ sites — in 2 clicks.</b><br>
+  Free, open source, no ads, no account.
 </p>
 
 <p align="center">
-  <img src="src/assets/screenshot2.png" width="900" alt="Flow Downloader Home">
+  <a href="https://github.com/stanley-meloo/Flow-Downloader/releases/latest">
+    <img src="https://img.shields.io/badge/Download%20for-Windows-0078D4?style=for-the-badge&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0id2hpdGUiPjxwYXRoIGQ9Ik0wIDMuNCA5LjggMnY5LjVIMHpNMTAuOSAxLjkgMjQgMHYxMS40SDEwLjl6TTAgMTIuNWg5LjhWMjJMMCAyMC42ek0xMC45IDEyLjZIMjRWMjRsLTEzLjEtMS45eiIvPjwvc3ZnPg%3D%3D" alt="Download for Windows" height="48">
+  </a>
+  &nbsp;
+  <a href="https://github.com/stanley-meloo/Flow-Downloader/releases/latest">
+    <img src="https://img.shields.io/badge/Download%20for-macOS-000000?style=for-the-badge&logo=apple&logoColor=white" alt="Download for macOS" height="48">
+  </a>
+  &nbsp;
+  <a href="https://github.com/stanley-meloo/Flow-Downloader/releases/latest">
+    <img src="https://img.shields.io/badge/Download%20for-Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black" alt="Download for Linux" height="48">
+  </a>
 </p>
 
-## 🌟 How to Use (Simple Install)
+<p align="center">
+  <sub>The buttons open the latest release. Scroll down to <b>Assets</b> and pick the file for your computer 👇</sub>
+</p>
 
-You don't need any technical knowledge to use Flow Downloader. Everything required is bundled inside the installer.
+<div align="center">
 
-1.  **Download**: Visit the **[Latest Releases](https://github.com/stanley-meloo/Flow-Downloader/releases/latest)** page.
-2.  **Install**: Download and run the `.exe` installer (e.g., `Flow-Downloader_1.0.0_x64-setup.exe`).
-3.  **Run**: Open the app, paste your link, and choose your preferred quality.
+| Your computer | File to download |
+|---|---|
+| 🪟 **Windows** 10 / 11 | `..._x64-setup.exe` |
+| 🍎 **Mac** with Apple chip (M1, M2, M3, M4…) — macOS 12+ | `..._aarch64.dmg` |
+| 🍎 **Mac** with Intel chip — macOS 12+ | `..._x64.dmg` |
+| 🐧 **Linux** (any distro) | `..._amd64.AppImage` |
+| 🐧 **Linux** — Ubuntu / Debian / Fedora | `.deb` / `.rpm` |
 
-## ✨ Features & Capabilities
+</div>
 
-### 📥 Versatile Download Modes
-Control exactly what you download with specialized modes:
-* **Video + Audio**: Get the best of both worlds in up to **8K Ultra HD** with perfectly synced sound.
-* **Video Only**: Perfect for editors needing raw 4K/8K footage without the audio track.
-* **Audio Only**: High-fidelity extraction for music and podcasts, optimized for compatibility.
-* **Thumbnails**: Automatically extract and view high-resolution video cover art.
-
-### 🍱 Smart Playlist Support
-Save time by downloading entire collections at once.
-* **Auto-Detection**: Paste a playlist link, and the app will intelligently index every valid video.
-* **Queue Management**: Process up to 3 concurrent downloads with real-time progress tracking.
-
-### 🌍 Global Compatibility & Localization
-Flow Downloader is compatible with hundreds of video platforms and social networks.
-👉 **[Check all 1000+ supported sites here](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md)**
-
-#### **Supported Languages (16)**
-The interface is fully localized in:
-1.  **English**
-2.  **Português (Brasil)**
-3.  **Español**
-4.  **Français**
-5.  **Deutsch**
-6.  **Italiano**
-7.  **Русский (Russian)**
-8.  **Türkçe (Turkish)**
-9.  **Tiếng Việt (Vietnamese)**
-10. **简体中文 (Chinese Simplified)**
-11. **日本語 (Japanese)**
-12. **한국어 (Korean)**
-13. **Hindi**
-14. **Bengali**
-15. **Arabic**
-16. **Polish**
----
-
-## ❤️ Support the Creator
-
-If this tool helps your workflow, consider supporting its development. Every contribution helps me keep the project updated and free.
-
-* **[Linktree](https://linktr.ee/flow.downloader)**: Explore all support options and follow my work.
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square" alt="MIT License"></a>
+  <img src="https://img.shields.io/badge/Languages-16-8A2BE2?style=flat-square" alt="16 languages">
+  <a href="https://tauri.app/"><img src="https://img.shields.io/badge/Built%20with-Tauri%20v2-24C8D8?style=flat-square&logo=tauri&logoColor=white" alt="Tauri v2"></a>
+</p>
 
 ---
 
-## 🛠️ Technical Overview (For Developers)
+<!-- GIF: the app opening + a download from start to finish -->
+<p align="center">
+  <img src="docs/gifs/overview.webp" width="900" alt="Flow Downloader in action">
+</p>
 
-Built for performance and security, leveraging the best of the Rust and JavaScript ecosystems.
+## ✨ What is Flow Downloader?
 
-### Tech Stack
-* **Frontend**: React + Vite + Tailwind CSS with a modern Glassmorphism UI.
-* **Backend**: Rust (Tauri v2) for native speed and safe system calls.
-* **Optimization**: Custom logic to bypass 1080p limits and handle 8K (VP9/AV1) codecs.
-* **Audio Engine**: Automatic remuxing to AAC/M4A for guaranteed playback on all devices.
+Flow Downloader is a desktop app that saves videos and music from the internet to your computer. Copy a link, open the app — the link is already there — pick the quality and it's done.
 
-### Building from Source
-1.  **Clone**: `git clone https://github.com/stanley-meloo/Flow-Downloader.git`
-2.  **Dependencies**: `npm install`
-3.  **Sidecars**: Place `ytdlp`, `ffmpeg` and `deno` directly in `src-tauri/`, named with the target triple (e.g., `ytdlp-x86_64-pc-windows-msvc.exe`, `ffmpeg-aarch64-apple-darwin`).
-4.  **Launch**: `npm run tauri dev`
-5.  **Build**: `npm run tauri build`
+Everything it needs comes inside the installer: no Python, no command line, no extra programs to install.
+
+## 🚀 How to use
+
+1. **Copy** the link of a video or playlist.
+2. **Open** Flow Downloader — the link is pasted for you.
+3. **Choose** the format and quality, and click **Download**.
+
+That's it. The file goes to your Downloads folder (or any folder you choose).
+
+
+## 🎬 Features
+
+### 📥 Download what you need
+- **Video + audio** in up to **8K**, perfectly in sync.
+- **Video only** — clean footage for video editing (no audio track).
+- **Audio only** — MP3, M4A, FLAC, WAV, OPUS… for music and podcasts.
+- **Thumbnails** — save the cover image of any video in full resolution.
+- Editor-friendly by default: H.264 MP4 whenever the site offers it.
+
+### 🍱 Playlists and queue
+- Paste a playlist and choose which videos to download.
+- Up to **5 downloads at the same time**, with speed and time remaining.
+- **Auto Download**: skip the options and send videos straight to the queue with your last settings.
+- Closed the app in the middle of a download? It offers to resume next time.
+- Drag a finished file straight from the queue into a folder, an editor or a chat.
+- Checks the free space on your disk before starting.
+
+<!-- GIF: playlist + queue with several downloads -->
+<p align="center">
+  <img src="docs/gifs/playlist.webp" width="900" alt="Playlist and download queue">
+</p>
+
+### 🎨 Make it yours
+- **Live backgrounds**: interactive animations, video wallpapers and images.
+- **Your own wallpapers**: add photos or videos and frame them exactly how you like.
+- **Wallpaper extension**: download dozens of extra wallpapers (4K on big screens) from Settings.
+- The interface picks its accent color from your wallpaper automatically.
+- Color picker with an eyedropper that works anywhere on the screen.
+
+<!-- GIF: changing backgrounds / adding your own wallpaper -->
+<p align="center">
+  <img src="docs/gifs/customize.webp" width="900" alt="Customizing the look">
+</p>
+
+### ⚡ Made for everyday use
+- Keyboard shortcuts for everything (customizable).
+- Right-click menu: download again, copy link, open folder, keep window on top…
+- Updates itself — and keeps its download engine (yt-dlp) up to date with one click.
+- Works with sites that need a login, using your browser's cookies.
+- **16 languages**: English, Português (Brasil), Español, Français, Deutsch, Italiano, Русский, Türkçe, Tiếng Việt, 简体中文, 日本語, 한국어, हिन्दी, বাংলা, العربية, Polski.
+
+👉 **[See all 1000+ supported sites](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md)**
+
+## 🛡️ First time opening it?
+
+The app isn't signed with a paid certificate yet, so your system may show a warning the first time:
+
+- **Windows** — "Windows protected your PC": click **More info → Run anyway**.
+- **macOS** — "can't be opened": right-click the app → **Open** → **Open**. (Or System Settings → Privacy & Security → **Open Anyway**.)
+- **Linux (AppImage)** — right-click the file → Properties → allow it to run as a program (or `chmod +x` it).
+
+## 🔒 Privacy
+
+Flow Downloader doesn't collect personal data. It only sends an anonymous "app opened" signal (app version, system and country — via [Aptabase](https://aptabase.com), no IP stored, no device ID), so I know how many people use it. Nothing about your links or downloads. You can turn it off in **Settings → General → Anonymous usage statistics**.
+
+## ❤️ Support
+
+Flow Downloader is free and always will be. If it saves you time, consider supporting its development:
+
+👉 **[linktr.ee/flow.downloader](https://linktr.ee/flow.downloader)**
+
+## 🙏 Credits
+
+- Download engine: [yt-dlp](https://github.com/yt-dlp/yt-dlp), with [FFmpeg](https://ffmpeg.org/) and [Deno](https://deno.com/).
+- Interactive backgrounds: [React Bits](https://reactbits.dev).
+- Video wallpapers: [MotionBGs](https://motionbgs.com) · Image wallpapers: [WallpaperAccess](https://wallpaperaccess.com).
+
+---
+
+<details>
+<summary><b>🛠️ For developers</b></summary>
+
+<br>
+
+**Stack:** React 19 + Vite + Tailwind CSS 4 (frontend) · Rust + Tauri v2 (backend). yt-dlp, FFmpeg and Deno ship as sidecars; every yt-dlp call goes through validated Rust commands (the webview never builds a command line).
+
+**Run from source**
+
+```bash
+git clone https://github.com/stanley-meloo/Flow-Downloader.git
+cd Flow-Downloader
+npm install
+npm run tauri dev
+```
+
+The sidecars (`ytdlp`, `ffmpeg`, `deno`) must be in `src-tauri/`, named with the target triple — e.g. `ytdlp-x86_64-pc-windows-msvc.exe`. On Linux, get them with `bash scripts/fetch-linux-sidecars.sh`.
+
+**Build:** `npm run tauri build`
+
+Full developer guide (architecture, wallpapers, release workflow): **[Readme (for devs)](Readme(for_devs).md)**
+
+</details>
 
 ## 📄 License
-This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
+
+MIT — see [LICENSE](LICENSE).
+
+## ⚖️ Legal disclaimer
+
+Flow Downloader is intended for **personal use and archiving** of content you have the right to download.
+
+1. **Your responsibility** — you are solely responsible for what you download. Make sure you have the right or permission from the copyright holder.
+2. **Third-party terms** — downloading from some platforms may go against their Terms of Service. The developer isn't responsible for account restrictions resulting from the use of this software.
+3. **No commercial use** — the software is free. Donations are voluntary support for its development, not a purchase of content.
+4. **Third-party engines** — yt-dlp, FFmpeg and Deno are governed by their own licenses.
+5. **No warranty** — provided "as is", without warranty of any kind.
 
 ---
 
-## ⚖️ Legal Disclaimer
-
-**Flow Downloader** is a tool designed for **educational purposes and personal archiving only**. By using this software, you agree to the following terms:
-
-1.  **User Responsibility**: The user is solely responsible for the content they download. You must ensure that you have the legal right or explicit permission from the copyright holder before downloading any media.
-2.  **Terms of Service**: This application interacts with third-party platforms (such as YouTube, TikTok, and others). Using this tool may violate their respective Terms of Service. The developer of Flow Downloader is not responsible for any account bans or IP restrictions resulting from the use of this software.
-3.  **No Commercial Use**: This software is provided for free and is not intended for commercial exploitation. Any donation made via PayPal or Linktree is a voluntary contribution toward the development of the software and does not constitute a purchase of content.
-4.  **Third-Party Engines**: Flow Downloader utilizes `yt-dlp` and `ffmpeg` as backend engines. These tools are governed by their own licenses and the developer does not claim ownership over their respective technologies.
-5.  **No Warranty**: This software is provided "as is" without any warranty of any kind, express or implied. The developer will not be held liable for any damages, data loss, or legal consequences arising from the use of this application.
-
----
-*Developed by Stanley Melo*
+<p align="center"><sub>Made by Stanley Melo</sub></p>

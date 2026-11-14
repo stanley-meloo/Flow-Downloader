@@ -1,8 +1,42 @@
 @import "tailwindcss";
 
-/* Quicksand is bundled with the app (@fontsource/quicksand, imported in main.jsx)
+/* Poppins is bundled with the app (@fontsource/poppins, imported in main.jsx)
    instead of loaded from Google Fonts: the app's CSP blocks external stylesheets
    and fonts, and it must also work offline. */
+
+/* Keyboard focus (Tab): one clear white ring on whatever is focused, app-wide.
+   Only for keyboard focus (:focus-visible), never on mouse clicks. Text
+   fields are left out — the search bar and inputs show focus their own way. */
+:where(button, a, [role="button"], [role="switch"], [role="option"], [role="menuitem"], [tabindex]:not([tabindex="-1"]), select, input[type="range"], input[type="checkbox"]):focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.85) !important;
+  outline-offset: 2px !important;
+}
+
+/* Accent color (utils/accentColor.js): the background's most prominent color,
+   tuned for the dark UI. Used by icons and accents via Tailwind's
+   text-(--accent) / bg-(--accent-strong)… Registered so it can fade smoothly
+   when the background (or its colors) change. Default: indigo. */
+@property --accent { syntax: "<color>"; inherits: true; initial-value: #818cf8; }
+@property --accent-strong { syntax: "<color>"; inherits: true; initial-value: #6366f1; }
+@property --accent-2 { syntax: "<color>"; inherits: true; initial-value: #38bdf8; } /* second color */
+@property --glow-1 { syntax: "<color>"; inherits: true; initial-value: #7a6cf0; } /* more saturated: search bar lights */
+@property --glow-2 { syntax: "<color>"; inherits: true; initial-value: #3db4ee; }
+:root {
+  transition: --accent 1.2s ease, --accent-strong 1.2s ease, --accent-2 1.2s ease, --glow-1 1.2s ease, --glow-2 1.2s ease;
+}
+/* Download buttons of the cards: a gradient of the accent (follows the
+   background's main color), darker in the middle so white text always reads. */
+.accent-button {
+  background: linear-gradient(90deg,
+    var(--accent-strong),
+    color-mix(in srgb, var(--accent-strong) 72%, black),
+    color-mix(in srgb, var(--accent-strong) 88%, black));
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  box-shadow: 0 0 30px -5px color-mix(in srgb, var(--accent-strong) 50%, transparent);
+}
+.accent-button:hover {
+  box-shadow: 0 0 40px 0 color-mix(in srgb, var(--accent-strong) 70%, transparent);
+}
 
 /* Text selection: neutral gray everywhere (instead of the system blue) */
 ::selection {
@@ -56,8 +90,45 @@ body,
   font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
 }
 
+/* Auto-marquee (utils/autoMarquee.js): truncated text that doesn't fit scrolls
+   back and forth. While it runs, the "…" is replaced by faded edges on the
+   side(s) where text is hidden (--mq-l / --mq-r are set per frame). */
+[data-marquee-on] {
+  text-overflow: clip !important;
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 var(--mq-l, 0px), #000 calc(100% - var(--mq-r, 0px)), transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0, #000 var(--mq-l, 0px), #000 calc(100% - var(--mq-r, 0px)), transparent 100%);
+}
+
+/* Desktop app, not a web page: text can't be selected (dragging the mouse
+   over the UI used to highlight labels like a website). Only fields where
+   the user types keep normal selection. */
 body {
-  font-family: 'Quicksand', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+input,
+textarea,
+[contenteditable="true"],
+[contenteditable=""] {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* Right-to-left languages (Arabic): the layout stays left-to-right (App.jsx),
+   but each piece of text takes its own direction from its first letter, so
+   Arabic reads right-to-left with its punctuation in the right place, while
+   links, paths and numbers stay left-to-right. Text keeps the layout's left
+   alignment unless a component sets another one. */
+html[data-rtl-text] body {
+  text-align: left;
+}
+html[data-rtl-text] body * {
+  unicode-bidi: plaintext;
+}
+
+body {
+  font-family: 'Poppins', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
 /* Scrollbar gutter: 14px wide, fully transparent (no background of its own,
@@ -106,6 +177,15 @@ body {
     scrollbar-color: #27272a transparent;
   }
 }
+/* Lenis smooth scrolling (components/ui/SmoothScroll.jsx) — the two rules of
+   lenis.css that apply to scroll areas inside the page. */
+.lenis.lenis-stopped {
+  overflow: clip;
+}
+.lenis [data-lenis-prevent] {
+  overscroll-behavior: contain; /* a nested list doesn't hand its scroll to the outer one */
+}
+
 /* Hides the native scrollbar (scrolling still works). Used with <ScrollThumb>. */
 .no-scrollbar {
   scrollbar-width: none;
@@ -206,61 +286,320 @@ body {
 }
 
 /* ---------------------------------------------------------------------------
-   Search bar "searching" snake (components/ui/SearchSnake.jsx). The motion,
-   colors and acceleration are driven in JS; only the halo is styled here.
+   Search shockwave (SearchInput.jsx): when a search starts, a wave of light
+   leaves the search button (w-12 inside the bar's p-2 → centered 32 px from
+   the right). Like a real shockwave the ring decelerates as it expands, gets
+   thinner and fades; a quick flash at the source, a blurred copy for the
+   glow and a fainter, later echo. Colors match the search ring (StarBorder).
+   Rings grow by animating `inset` (not scale) so the line stays thin.
    --------------------------------------------------------------------------- */
-.search-snake__halo {
-  filter: blur(5px);
-  opacity: 0.8;
-}
-/* Loading spinner inside the search button (lucide Loader2, original shape):
-   its color pulses through the snake's palette, a bit deeper so it reads on
-   the white button. The icon draws with currentColor. */
-.search-spinner {
-  animation:
-    spin 1s linear infinite,
-    search-spinner-colors 3s linear infinite;
-}
-@keyframes search-spinner-colors {
-  0%, 100% { color: #0891b2; }
-  17%      { color: #2563eb; }
-  33%      { color: #9333ea; }
-  50%      { color: #db2777; }
-  67%      { color: #d97706; }
-  83%      { color: #16a34a; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .search-spinner { animation-duration: 2.5s, 6s; }
-}
-
-/* Shockwave when the snake is released: a thin RGB ring that expands from
-   the search button (w-12 inside the bar's p-2 → centered 32px from the right). */
-.search-snake-burst {
+.search-wave {
   position: absolute;
   right: 8px;
   top: 50%;
   width: 48px;
   height: 48px;
   margin-top: -24px;
+  pointer-events: none;
+  mix-blend-mode: plus-lighter;
+}
+.search-wave__flash {
+  position: absolute;
+  inset: -6px;
   border-radius: 9999px;
-  padding: 2px;
-  background: conic-gradient(from 90deg, #06b6d4, #3b82f6, #a855f7, #ec4899, #f59e0b, #22c55e, #06b6d4);
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.85) 0%, color-mix(in srgb, var(--glow-1) 45%, transparent) 38%, color-mix(in srgb, var(--glow-2) 22%, transparent) 58%, transparent 72%);
+  opacity: 0;
+  animation: search-wave-flash 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.search-wave__ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  border: 3px solid transparent;
+  background: conic-gradient(from 200deg, var(--glow-1), var(--glow-2), white, var(--glow-2), var(--glow-1)) border-box;
+  -webkit-mask: linear-gradient(#000 0 0) padding-box, linear-gradient(#000 0 0) border-box;
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) padding-box exclude, linear-gradient(#000 0 0) border-box;
+  opacity: 0;
+  animation: search-wave-ring 0.95s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.search-wave__ring--echo {
+  animation-delay: 0.14s;
+  animation-duration: 1.1s;
+  animation-name: search-wave-echo;
+}
+/* blur on a wrapper: on the same element the mask would cut it */
+.search-wave__glow {
+  position: absolute;
+  inset: 0;
+  filter: blur(6px);
+}
+.search-wave__glow > .search-wave__ring { animation-name: search-wave-glow; }
+@keyframes search-wave-flash {
+  0%   { transform: scale(0.55); opacity: 0; }
+  18%  { opacity: 1; }
+  100% { transform: scale(1.5);  opacity: 0; }
+}
+@keyframes search-wave-ring {
+  0%   { inset: 4px;   border-width: 3px;   opacity: 0; transform: rotate(0deg); }
+  8%   { opacity: 1; }
+  45%  { opacity: 0.8; }
+  100% { inset: -40px; border-width: 0.5px; opacity: 0; transform: rotate(70deg); }
+}
+@keyframes search-wave-glow {
+  0%   { inset: 2px;   border-width: 8px;   opacity: 0; transform: rotate(0deg); }
+  8%   { opacity: 0.9; }
+  45%  { opacity: 0.6; }
+  100% { inset: -42px; border-width: 2px;   opacity: 0; transform: rotate(70deg); }
+}
+@keyframes search-wave-echo {
+  0%   { inset: 6px;   border-width: 2px;   opacity: 0; transform: rotate(0deg); }
+  15%  { opacity: 0.6; }
+  50%  { opacity: 0.4; }
+  100% { inset: -28px; border-width: 0.5px; opacity: 0; transform: rotate(-50deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .search-wave { display: none; }
+}
+
+/* "Working hard" shake of the whole search bar while a search runs
+   (SearchInput.jsx). Very small, irregular jitter of position + angle.
+   Uses the individual `translate` / `rotate` properties, so it adds to the
+   transform Motion writes (entrance animation) instead of replacing it.
+   Starts only once the burst and the sheen across the bar are over (1.3 s
+   delay): shaking under the sheen made it look glitchy. */
+.search-working {
+  animation: search-working 0.42s linear 1.3s infinite;
+}
+@keyframes search-working {
+  0%   { translate: 0 0;          rotate: 0deg; }
+  12%  { translate: -0.6px 0.3px; rotate: -0.12deg; }
+  26%  { translate: 0.5px -0.4px; rotate: 0.1deg; }
+  38%  { translate: -0.3px -0.2px; rotate: -0.06deg; }
+  52%  { translate: 0.7px 0.2px;  rotate: 0.13deg; }
+  66%  { translate: -0.5px 0.4px; rotate: -0.1deg; }
+  80%  { translate: 0.3px -0.3px; rotate: 0.07deg; }
+  92%  { translate: -0.2px 0.1px; rotate: -0.04deg; }
+  100% { translate: 0 0;          rotate: 0deg; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .search-working { animation: none; }
+}
+
+/* "Renewed" search bar (SearchInput.jsx): when the download card closes, the
+   bar gives a soft breath (scale up a hair and settle), a band of light
+   sweeps across it from left to right and its rim lights up and fades —
+   fresh and ready for the next link. Starts after the card's exit. */
+.search-renewed {
+  animation: search-renewed 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.2s both;
+}
+/* A search starting: the breath (scale) and the shake (translate / rotate)
+   touch different properties, so both run — the shake keeps its own late
+   start, the same as without the breath, so nothing jumps when it ends. */
+.search-working.search-renewed {
+  animation:
+    search-renewed 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.2s both,
+    search-working 0.42s linear 1.3s infinite;
+}
+@keyframes search-renewed {
+  0%   { scale: 1; }
+  35%  { scale: 1.018; }
+  100% { scale: 1; }
+}
+.search-renew {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  pointer-events: none;
+  border-radius: 9999px;
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--accent) 55%, transparent)); /* rim glow (on the parent: the rim's own mask would cut it) */
+}
+.search-renew__clip {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  overflow: hidden;
+}
+.search-renew__sheen {
+  position: absolute;
+  top: -20%;
+  bottom: -20%;
+  left: 0;
+  width: 38%;
+  background: linear-gradient(100deg, transparent 0%, rgba(214, 196, 255, 0.10) 30%, rgba(255, 255, 255, 0.26) 50%, rgba(196, 220, 255, 0.10) 70%, transparent 100%);
+  filter: blur(6px);
+  mix-blend-mode: plus-lighter;
+  transform: translateX(-120%) skewX(-18deg);
+  animation: search-renew-sheen 1.05s cubic-bezier(0.45, 0, 0.2, 1) 0.25s both;
+}
+@keyframes search-renew-sheen {
+  from { transform: translateX(-120%) skewX(-18deg); opacity: 1; }
+  85%  { opacity: 1; }
+  to   { transform: translateX(290%) skewX(-18deg);  opacity: 0; }
+}
+.search-renew__rim {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--accent) 85%, white) 30%, rgba(255, 255, 255, 0.95) 50%, color-mix(in srgb, var(--accent) 85%, white) 70%, transparent) border-box;
+  background-size: 250% 100%;
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
-  opacity: 0;
-  animation: search-snake-burst 0.65s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: search-renew-rim 1.2s cubic-bezier(0.45, 0, 0.2, 1) 0.25s both;
 }
-/* blur on a wrapper: on the same element the mask would cut it */
-.search-snake-burst-halo {
+@keyframes search-renew-rim {
+  0%   { background-position: 100% 0; opacity: 0; }
+  20%  { opacity: 1; }
+  100% { background-position: 0% 0;   opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .search-renewed { animation: none; }
+  .search-renew__sheen { display: none; }
+  .search-renew__rim { animation-duration: 0.6s; }
+}
+
+/* ---------------------------------------------------------------------------
+   Auto Download switch (components/features/AutoDownloadToggle.jsx).
+   Based on the switch from Uiverse.io (by vihstorck), on a liquid-glass track:
+   neutral, see-through tints so it fits any background (barely-there white
+   off, brighter frosted white on — no color of its own), a white knob (like
+   the search button) whose icon pops
+   from pause to play with a slight overshoot, and a small white dash that
+   slides to the side the knob left. Track 46×24 · knob 18 px · 3 px offset.
+   --------------------------------------------------------------------------- */
+.auto-dl {
+  --sw-w: 46px;
+  --sw-h: 24px;
+  --sw-off: rgba(255, 255, 255, 0.05);
+  --sw-on: rgba(255, 255, 255, 0.24);
+  --knob: 18px;
+  --gap: calc((var(--sw-h) - var(--knob)) / 2);
+  --ease: cubic-bezier(0.27, 0.2, 0.25, 1.51);
+  --line-w: calc(var(--knob) / 2);
+  --line-h: calc(var(--line-w) / 2 - 1px);
+}
+.auto-dl__track {
+  width: var(--sw-w);
+  height: var(--sw-h);
+  display: flex;
+  align-items: center;
+}
+.auto-dl__tint {
   position: absolute;
   inset: 0;
-  filter: blur(5px);
+  border-radius: inherit;
+  background: var(--sw-off);
+  transition: background 0.2s var(--ease);
 }
-.search-snake-burst-halo > .search-snake-burst { padding: 4px; }
-@keyframes search-snake-burst {
-  0%   { transform: scale(0.6) rotate(0deg);   opacity: 1; }
-  100% { transform: scale(1.7) rotate(90deg);  opacity: 0; }
+.auto-dl.is-on .auto-dl__tint { background: var(--sw-on); }
+.auto-dl__line {
+  position: absolute;
+  width: var(--line-w);
+  height: var(--line-h);
+  left: calc(var(--gap) + var(--line-w) / 2);
+  border-radius: 1px;
+  background: rgba(255, 255, 255, 0.55);
+  transition: left 0.2s ease-in-out, background 0.2s ease;
+}
+.auto-dl.is-on .auto-dl__line { background: rgba(255, 255, 255, 0.85); left: calc(100% - var(--line-w) - var(--line-w) / 2 - var(--gap)); }
+.auto-dl__circle {
+  position: absolute;
+  z-index: 1;
+  left: var(--gap);
+  width: var(--knob);
+  height: var(--knob);
+  border-radius: 9999px;
+  background: #fff;
+  box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: left 0.2s var(--ease), box-shadow 0.2s var(--ease);
+}
+.auto-dl.is-on .auto-dl__circle {
+  left: calc(100% - var(--knob) - var(--gap));
+  box-shadow: -1px 1px 2px rgba(0, 0, 0, 0.35);
+}
+.auto-dl__circle svg {
+  position: absolute;
+  transition: transform 0.2s var(--ease);
+}
+.auto-dl__pause { width: 10px; height: 10px; color: #71717a; }  /* zinc-500 */
+.auto-dl__play  { width: 12px; height: 12px; color: #18181b;  /* zinc-900, like the search icon */ transform: scale(0); } /* the triangle's visual center sits in the middle of its 24-grid: no offset */
+.auto-dl.is-on .auto-dl__pause { transform: scale(0); }
+.auto-dl.is-on .auto-dl__play  { transform: scale(1); }
+.auto-dl__glow {
+  position: absolute;
+  inset: -4px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.12);
+  filter: blur(12px);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+.auto-dl.is-on .auto-dl__glow { opacity: 1; }
+/* Light background behind them (utils/contrastWatch.js → data-on-light):
+   the search bar's placeholder and the Settings gear turn dark to stay readable. */
+input[data-contrast]::placeholder {
+  transition: color 0.4s ease;
+}
+input[data-contrast][data-on-mid="true"]::placeholder {
+  color: rgba(244, 244, 245, 0.62); /* zinc-100: reads on mid-grey glass */
+}
+input[data-contrast][data-on-light="true"]::placeholder {
+  color: rgba(9, 9, 11, 0.72); /* zinc-950 */
+}
+.settings-gear {
+  transition: color 0.4s ease;
+}
+.settings-gear[data-on-light="true"] {
+  color: #18181b !important; /* zinc-900 */
+}
+.settings-gear[data-on-light="true"]:hover {
+  color: #000 !important;
+}
+
+/* Fade-in for liquid-glass surfaces at startup. The fade must be on the glass
+   element ITSELF, never on a parent: an ancestor with opacity < 1 cuts its
+   CSS backdrop-filter off from the background ("backdrop root"), so the blur
+   behind the glass was missing during the fade and popped in all at once when
+   the parent reached full opacity (the search bar's "late" glass).
+   --fade-delay / --fade-duration set per element. */
+.glass-fade-in {
+  animation: glass-fade-in var(--fade-duration, 0.5s) ease-out var(--fade-delay, 0s) both;
+}
+@keyframes glass-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Same switch inside panels (components/ui/Switch.jsx): a frosted track
+   instead of liquid glass. */
+.auto-dl__track--flat {
+  background: rgba(9, 9, 11, 0.55);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+}
+
+/* Queue card spotlight (App.jsx → focusQueueItem): after jumping to a download
+   from the close confirmation, its card glows softly and breathes once.
+   Uses the individual `scale` property, so it never fights Motion's
+   layout transform. */
+.queue-spotlight {
+  animation: queue-spotlight 1.6s cubic-bezier(0.22, 1, 0.36, 1);
+  border-radius: 20px;
+}
+@keyframes queue-spotlight {
+  0%   { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);    scale: 1; }
+  18%  { box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.75), 0 0 28px rgba(255, 255, 255, 0.25); scale: 1.015; }
+  45%  { box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.55), 0 0 22px rgba(255, 255, 255, 0.18); scale: 1; }
+  100% { box-shadow: 0 0 0 2px rgba(255, 255, 255, 0),  0 0 0 rgba(255, 255, 255, 0);       scale: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .queue-spotlight { animation-duration: 1s; }
 }
 
 /* Screenshot flash (right-click menu → Screenshot): a quick white flash over
@@ -286,6 +625,38 @@ body {
 /* ---------------------------------------------------------------------------
    Download queue (components/features/QueueList.jsx)
    --------------------------------------------------------------------------- */
+/* Soft edges of a scrolling list (download queue, Settings): content dissolves into the background toward
+   an edge (mask only — a blur layer would show its own rectangle over the
+   animated background). The fade follows an eased curve (several stops)
+   instead of a straight line, so there's no visible line where it starts.
+   --fade-top / --fade-bottom are set by the component (0 = no fade) and animate
+   thanks to @property. */
+@property --fade-top { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --fade-bottom { syntax: "<length>"; inherits: false; initial-value: 0px; }
+.scroll-fade {
+  --fade-curve-top:
+    rgba(0,0,0,0) 0,
+    rgba(0,0,0,0.05) calc(var(--fade-top) * 0.15),
+    rgba(0,0,0,0.2) calc(var(--fade-top) * 0.32),
+    rgba(0,0,0,0.45) calc(var(--fade-top) * 0.5),
+    rgba(0,0,0,0.72) calc(var(--fade-top) * 0.68),
+    rgba(0,0,0,0.9) calc(var(--fade-top) * 0.84),
+    #000 var(--fade-top);
+  --fade-curve-bottom:
+    #000 calc(100% - var(--fade-bottom)),
+    rgba(0,0,0,0.9) calc(100% - var(--fade-bottom) * 0.84),
+    rgba(0,0,0,0.72) calc(100% - var(--fade-bottom) * 0.68),
+    rgba(0,0,0,0.45) calc(100% - var(--fade-bottom) * 0.5),
+    rgba(0,0,0,0.2) calc(100% - var(--fade-bottom) * 0.32),
+    rgba(0,0,0,0.05) calc(100% - var(--fade-bottom) * 0.15),
+    rgba(0,0,0,0) 100%;
+  -webkit-mask-image: linear-gradient(to bottom, var(--fade-curve-top), var(--fade-curve-bottom));
+  mask-image: linear-gradient(to bottom, var(--fade-curve-top), var(--fade-curve-bottom));
+  transition: --fade-top 0.35s ease, --fade-bottom 0.35s ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .scroll-fade { transition: none; }
+}
 /* Soft blue glow at the tip of the progress bar (no hard dot): a blurred,
    slightly oval halo that breathes gently. */
 .queue-bar-spark {
@@ -339,3 +710,58 @@ body {
   .queue-bar-spark { animation: none; }
   .queue-finish-shine::before { animation-duration: 0.01s; }
 }
+
+/* Settings row slider (RowSlider): thin filled track + round white knob.
+   The filled part is painted by an inline linear-gradient on the input. */
+.row-range { -webkit-appearance: none; appearance: none; background: transparent; }
+.row-range::-webkit-slider-runnable-track { height: 6px; border-radius: 9999px; background: transparent; }
+.row-range::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 16px; height: 16px; margin-top: -5px; border-radius: 9999px;
+  background: #fff; border: 0;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.45), 0 0 0 3px rgb(99 102 241 / 0.25);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.row-range:hover::-webkit-slider-thumb { transform: scale(1.12); box-shadow: 0 1px 4px rgb(0 0 0 / 0.45), 0 0 0 5px rgb(99 102 241 / 0.3); }
+.row-range:active::-webkit-slider-thumb { transform: scale(0.95); }
+.row-range::-moz-range-thumb { width: 16px; height: 16px; border-radius: 9999px; background: #fff; border: 0; box-shadow: 0 1px 4px rgb(0 0 0 / 0.45); }
+.row-range::-moz-range-track { height: 6px; border-radius: 9999px; background: transparent; }
+
+/* Small liquid-glass chip over a picture (gear on the background cards).
+   CSS-only on purpose: the WebGL LiquidGlass refracts the app background
+   layers, not a thumbnail, so here the glass is made from the picture behind
+   it — blurred, brightened and saturated — plus a light rim and a top sheen. */
+.glass-chip {
+  background: linear-gradient(160deg, rgb(255 255 255 / 0.28), rgb(255 255 255 / 0.06) 55%, rgb(255 255 255 / 0.12));
+  -webkit-backdrop-filter: blur(3px) saturate(1.6) brightness(1.1);
+  backdrop-filter: blur(3px) saturate(1.6) brightness(1.1);
+  box-shadow:
+    inset 0 1px 0.5px rgb(255 255 255 / 0.55),
+    inset 0 -1px 1px rgb(255 255 255 / 0.12),
+    inset 0 0 0 1px rgb(255 255 255 / 0.22),
+    0 6px 18px rgb(0 0 0 / 0.35);
+  transition: transform 0.3s ease, background-color 0.2s ease;
+}
+.glass-chip:hover { background-color: rgb(255 255 255 / 0.12); }
+.glass-chip > * { filter: drop-shadow(0 1px 2px rgb(0 0 0 / 0.45)); }
+
+/* Rows that arrive one after another (a background's options page). */
+.stagger-in > * { animation: stagger-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.stagger-in > *:nth-child(1) { animation-delay: 0.12s; }
+.stagger-in > *:nth-child(2) { animation-delay: 0.17s; }
+.stagger-in > *:nth-child(3) { animation-delay: 0.22s; }
+.stagger-in > *:nth-child(4) { animation-delay: 0.27s; }
+.stagger-in > *:nth-child(5) { animation-delay: 0.32s; }
+.stagger-in > *:nth-child(n+6) { animation-delay: 0.37s; }
+@keyframes stagger-in {
+  from { opacity: 0; transform: translateY(14px); filter: blur(4px); }
+  to   { opacity: 1; transform: none; filter: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .stagger-in > * { animation: none; }
+}
+/* Slower cascade (whole sections, e.g. back to the background list). */
+.stagger-in.stagger-slow > * { animation-duration: 0.7s; }
+.stagger-in.stagger-slow > *:nth-child(1) { animation-delay: 0.18s; }
+.stagger-in.stagger-slow > *:nth-child(2) { animation-delay: 0.3s; }
+.stagger-in.stagger-slow > *:nth-child(n+3) { animation-delay: 0.42s; }

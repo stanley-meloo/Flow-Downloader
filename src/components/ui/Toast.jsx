@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import LiquidGlass from './liquidGlass/LiquidGlass';
 import { XIcon } from './AnimatedIcons';
 
-// Toast notifications. Exposes an imperative `add(messageKey, type)` via ref so
+// Toast notifications. Exposes an imperative `add(messageKey, type, params?)` via ref so
 // any component can fire a toast through the app-level `showToast` helper.
 // `messageKey` is an i18n key under "toast.*"; `type` picks the color, icon and
 // short title (toast.titles.*): success, error, info, download.
@@ -142,7 +142,7 @@ function ToastCard({ toast, onClose, t }) {
   }, [paused, onClose]);
 
   const title = t(`toast.titles.${toast.type}`, { defaultValue: cfg.title });
-  const message = t(`toast.${toast.messageKey}`, { defaultValue: toast.messageKey });
+  const message = t(`toast.${toast.messageKey}`, { defaultValue: toast.messageKey, ...(toast.params || {}) });
 
   return (
     <motion.div
@@ -192,10 +192,9 @@ function ToastCard({ toast, onClose, t }) {
       {/* Close: round, centered on the tile's row (40 px tile, 28 px button → 6 px down) */}
       <button
         onClick={onClose}
-        aria-label={t('toast.close', { defaultValue: 'Close' })}
-        data-tooltip={t('tooltips.close', { defaultValue: 'Close' })}
+        aria-label={t('tooltips.close', { defaultValue: 'Close' })}
         style={{ marginTop: (tile - 28) / 2 }}
-        className="shrink-0 w-7 h-7 flex items-center justify-center rounded-full text-zinc-500 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+        className="shrink-0 w-7 h-7 flex items-center justify-center rounded-full text-zinc-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
       >
         <XIcon size={14} />
       </button>
@@ -219,10 +218,10 @@ const Toast = forwardRef((props, ref) => {
   };
 
   useImperativeHandle(ref, () => ({
-    add(messageKey, type = 'info') {
+    add(messageKey, type = 'info', params) {
       const id = ++nextToastId;
       // Same message already on screen: replace it instead of stacking duplicates.
-      setToasts(prev => [...prev.filter(x => x.messageKey !== messageKey), { id, messageKey, type }].slice(-4));
+      setToasts(prev => [...prev.filter(x => x.messageKey !== messageKey), { id, messageKey, type, params }].slice(-4));
     }
   }));
 

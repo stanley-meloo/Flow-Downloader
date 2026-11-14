@@ -13,13 +13,14 @@
 // Geometry: panel padding 6 + item radius 10 → panel radius 16 (concentric).
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { fireBurst } from "./SearchBurst";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   RefreshCwIcon as RotateCw, BugIcon as Bug, CameraIcon as Camera,
   CopyIcon as Copy, ScissorsIcon as Scissors, ClipboardPasteIcon as ClipboardPaste,
   CheckIcon as Check, HeartIcon as Heart,
 } from "./AnimatedIcons";
-import { open as openExternal } from "@tauri-apps/plugin-shell"; // opens links in the default browser // animated on hover (lucide-animated style)
+import { openUrl as openExternal } from "@tauri-apps/plugin-opener"; // opens links in the default browser // animated on hover (lucide-animated style)
 import { invoke } from "@tauri-apps/api/core";
 import { readText, writeText } from "@tauri-apps/plugin-clipboard-manager";
 import { useTranslation } from "react-i18next";
@@ -220,14 +221,13 @@ export default function ContextMenu({ showToast, buildSections }) {
       key={item.id}
       role={item.checked !== undefined ? "menuitemcheckbox" : "menuitem"}
       aria-checked={item.checked}
-      data-tooltip={item.title}
-      onClick={run(item.action)}
+      onClick={(e) => { if (item.burst) fireBurst(e.clientX, e.clientY); run(item.action)(); }} /* burst: the same explosion as a search */
       className={`w-full flex items-center gap-2.5 h-9 px-2.5 rounded-[10px] text-[12.5px] font-semibold transition-colors cursor-pointer outline-none hover:bg-white/10 focus-visible:bg-white/10 ${item.danger ? "text-red-300 hover:text-red-200" : item.support ? "text-rose-300 hover:text-rose-200" : "text-zinc-200 hover:text-white"}`}
     >
-      <item.icon size={15} className={`shrink-0 ${item.danger ? "text-red-400" : item.support ? "text-rose-400" : "text-zinc-400"}`} />
+      <item.icon size={15} className={`shrink-0 ${item.danger ? "text-red-400" : item.support ? "text-rose-400" : "text-zinc-300"}`} />
       <span className="flex-1 min-w-0 text-left truncate">{item.label}</span>
-      {item.hint && <span className="text-[10.5px] font-mono text-zinc-500 shrink-0">{item.hint}</span>}
-      {item.checked && <Check size={14} strokeWidth={3} className="shrink-0 text-indigo-400" />}
+      {item.hint && <span className="text-[10.5px] font-mono text-zinc-300 shrink-0">{item.hint}</span>}
+      {item.checked && <Check size={14} strokeWidth={3} className="shrink-0 text-(--accent)" />}
     </button>
   );
 
@@ -238,7 +238,7 @@ export default function ContextMenu({ showToast, buildSections }) {
     { id: "app", items: appItems },
     // Always the very last option: support link (same as the heart button).
     // The label drops the emoji (the coin stays on the heart button's tooltip).
-    { id: "support", items: [{ id: "support", icon: Heart, label: t("support_flow", { defaultValue: "Support Flow Downloader 🪙" }).replace(/\s*\p{Extended_Pictographic}\uFE0F?/gu, "").trim(), support: true, action: () => openExternal(SUPPORT_URL) }] },
+    { id: "support", items: [{ id: "support", icon: Heart, label: t("support_flow", { defaultValue: "Support Flow Downloader 🪙" }).replace(/\s*\p{Extended_Pictographic}\uFE0F?/gu, "").trim(), support: true, burst: true, action: () => openExternal(SUPPORT_URL) }] },
   ].filter(Boolean);
   const separator = <div className="my-1 mx-2 h-px bg-white/10" />;
 
@@ -271,7 +271,7 @@ export default function ContextMenu({ showToast, buildSections }) {
             <div key={group.id} role="group">
               {i > 0 && separator}
               {group.title && (
-                <div className="px-2.5 pt-1 pb-0.5 text-[10px] font-black uppercase tracking-widest text-zinc-500">{group.title}</div>
+                <div className="px-2.5 pt-1 pb-0.5 text-[10px] font-black uppercase tracking-widest text-zinc-300">{group.title}</div>
               )}
               {group.items.map(renderItem)}
             </div>

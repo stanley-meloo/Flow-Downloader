@@ -10,6 +10,7 @@
 //   data-glass-layer="fill"          solid background-color (with opacity)
 //   data-glass-layer="canvas"        a container holding a WebGL <canvas>
 //   data-glass-layer="image"         an <img> drawn like object-fit: cover
+//   data-glass-layer="video"         a <video> (MP4 wallpaper), same cover fit
 //   data-glass-layer="gradient"      top → transparent vignette (data-glass-color)
 //   data-glass-static="true"         nothing animates right now (refresh slowly)
 //
@@ -128,8 +129,16 @@ function effectiveOpacity(el, root) {
   return opacity;
 }
 
+// Fully transparent color? Only an alpha of 0 counts: "rgb(0, 0, 0)" (black)
+// is NOT transparent — the old check matched its last ", 0)" and skipped every
+// black layer (the wallpaper darkening, the dialog dimming), so the glass
+// refracted the background brighter than it really was.
 function isTransparent(color) {
-  return !color || color === "transparent" || /rgba?\([^)]*,\s*0\s*\)$/.test(color);
+  if (!color || color === "transparent") return true;
+  const m = color.match(/^rgba\(([^)]*)\)$/);
+  if (!m) return false;
+  const parts = m[1].split(/[\s,/]+/).filter(Boolean);
+  return parts.length === 4 && parseFloat(parts[3]) === 0;
 }
 
 function createBackdrop() {
@@ -200,6 +209,19 @@ function createBackdrop() {
         const blur = parseFloat((style.filter.match(/blur\(([\d.]+)px\)/) || [])[1] || "0");
         drawBlurred(ctx, source, sx, sy, sw, sh, b.x, b.y, b.w, b.h, blur * SCALE);
       }
+    } else if (type === "video") {
+      // Video wallpaper (MP4 loop): the frame on screen right now.
+      const video = el;
+      const nw = video.videoWidth, nh = video.videoHeight;
+      if (video.readyState >= 2 && nw > 0 && nh > 0) {
+        const ir = nw / nh;
+        const br = b.w / b.h;
+        let sw = nw, sh = nh, sx = 0, sy = 0;
+        if (ir > br) { sw = sh * br; sx = (nw - sw) / 2; }
+        else { sh = sw / br; sy = (nh - sh) / 2; }
+        const blur = parseFloat((style.filter.match(/blur\(([\d.]+)px\)/) || [])[1] || "0");
+        drawBlurred(ctx, video, sx, sy, sw, sh, b.x, b.y, b.w, b.h, blur * SCALE);
+      }
     } else if (type === "gradient") {
       const color = el.getAttribute("data-glass-color") || "#000000";
       const g = ctx.createLinearGradient(0, b.y, 0, b.y + b.h * 0.6);
@@ -213,14 +235,43 @@ function createBackdrop() {
 
   // Re-composes the snapshot when due. Returns the snapshot version, so each
   // glass surface knows when to re-upload it.
-  const capture = () => {
+  // opts.undimmed: a fresh snapshot WITHOUT the dialog dimming layer
+  // ([data-glass-dim]) — used by the color picker's eyedropper to read the
+  // background's real colors. The next normal capture redraws it as usual.
+  let undimmedLast = false; // the last snapshot skipped the dimming: redraw next time
+
+  // What the layers look like right now (opacity, color, blur). On a still
+  // background the snapshot is only refreshed every STATIC_INTERVAL ms — but
+  // when a layer is fading (the dimming while the search bar gets / loses
+  // focus, the darkening slider, a crossfade) it must follow every frame,
+  // otherwise the glass jumps in 400 ms steps (flicker). Computed once per
+  // frame, however many glass surfaces ask.
+  let lastLook = "";
+  let lookAt = -1;
+  let lookCache = "";
+  const look = (rootEl, now) => {
+    if (now - lookAt < 4) return lookCache;
+    lookAt = now;
+    let sig = "";
+    rootEl.querySelectorAll("[data-glass-layer]").forEach((el) => {
+      const st = getComputedStyle(el);
+      sig += `${effectiveOpacity(el, rootEl).toFixed(3)}|${st.backgroundColor}|${st.filter};`;
+    });
+    lookCache = sig;
+    return sig;
+  };
+
+  const capture = (opts = {}) => {
     if (!ctx) return version;
     const rootEl = root();
     const now = performance.now();
     const isStatic = rootEl?.getAttribute("data-glass-static") === "true";
     const interval = isStatic ? STATIC_INTERVAL : ANIMATED_INTERVAL;
-    if (lastCapture && now - lastCapture < interval) return version;
+    const changing = isStatic && rootEl ? look(rootEl, now) !== lastLook : false;
+    if (!changing && !opts.undimmed && !undimmedLast && lastCapture && now - lastCapture < interval) return version;
+    if (isStatic && rootEl) lastLook = look(rootEl, now);
     lastCapture = now;
+    undimmedLast = !!opts.undimmed;
 
     const base = rect();
     const w = Math.max(2, Math.round(base.width * SCALE));
@@ -235,18 +286,30 @@ function createBackdrop() {
     ctx.fillRect(0, 0, w, h);
     activeSrcs = new Set();
     if (rootEl) {
-      try {
-        if (rootEl.hasAttribute("data-glass-layer")) drawLayer(rootEl, rootEl, base);
-        rootEl.querySelectorAll("[data-glass-layer]").forEach((el) => drawLayer(el, rootEl, base));
-      } catch (e) {
-        // A layer that can't be read (e.g. tainted image) just isn't drawn.
+      const layers = rootEl.hasAttribute("data-glass-layer") ? [rootEl] : [];
+      layers.push(...rootEl.querySelectorAll("[data-glass-layer]"));
+      for (const el of layers) {
+        if (opts.undimmed && el.hasAttribute("data-glass-dim")) continue;
+        // A layer that can't be read (e.g. a closed GIF frame) just isn't
+        // drawn — without skipping the layers above it (darkening, dimming).
+        try { drawLayer(el, rootEl, base); } catch (e) { ctx.restore(); }
       }
     }
     releasePlayers(activeSrcs);
     return ++version;
   };
 
-  return { canvas, rect, capture };
+  // Color of the background at a window point (x, y in CSS px) → "#rrggbb".
+  const sampleAt = (x, y) => {
+    capture({ undimmed: true });
+    const base = rect();
+    const px = Math.round((x - base.left) * SCALE);
+    const py = Math.round((y - base.top) * SCALE);
+    const [r, g, b] = ctx.getImageData(Math.max(0, Math.min(canvas.width - 1, px)), Math.max(0, Math.min(canvas.height - 1, py)), 1, 1).data;
+    return "#" + [r, g, b].map((v) => v.toString(16).padStart(2, "0")).join("");
+  };
+
+  return { canvas, rect, capture, sampleAt };
 }
 
 // One snapshot shared by every glass surface on screen.

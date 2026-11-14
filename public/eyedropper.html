@@ -1,0 +1,16 @@
+<!doctype html>
+<!-- Eyedropper loupe: a tiny transparent window that follows the cursor outside
+     the app (src-tauri/src/actions.rs sets the color). -->
+<html>
+<head>
+<meta charset="utf-8" />
+<style>
+  html, body { margin: 0; background: transparent; overflow: hidden; user-select: none; }
+  body { opacity: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; padding-top: 4px;
+         font: 700 11px Poppins, system-ui, sans-serif; }
+  #c { width: 48px; height: 48px; border-radius: 50%; box-shadow: 0 0 0 2px #fff, 0 4px 12px rgba(0,0,0,.45); }
+  #t { padding: 2px 6px; border-radius: 6px; background: rgba(0,0,0,.7); color: #fff; font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body><div id="c"></div><span id="t"></span></body>
+</html>

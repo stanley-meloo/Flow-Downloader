@@ -14,6 +14,10 @@ import { motion, AnimatePresence } from "framer-motion";
 
 // Shared feel for UI micro-interactions.
 export const SPRING = { type: "spring", stiffness: 420, damping: 32, mass: 0.7 };
+// Press (whileTap) of every button: a near-instant snap (30 ms, no spring, no
+// wobble) so the click lands hard and fast. Press depths are shallow
+// (scale ~0.95–0.99) so buttons don't "sink".
+export const TAP = { type: "tween", duration: 0.03, ease: "easeOut" };
 const FAST = { duration: 0.14, ease: "easeOut" };
 
 // Crossfades its children whenever `id` changes. `as` picks the wrapper element

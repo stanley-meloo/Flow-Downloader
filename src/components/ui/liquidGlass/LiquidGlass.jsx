@@ -121,8 +121,8 @@ export default function LiquidGlass({
             left: -PAD,
             top: -PAD,
             zIndex: -1, // behind the children (the root isolates the stacking context)
-            filter: focused ? "brightness(1.1)" : "none",
-            transition: "filter 0.3s ease",
+            // No brightness boost on focus: while the background dims (focus),
+            // a brighter glass read as a flash of light on the bar.
           }}
         />
       )}

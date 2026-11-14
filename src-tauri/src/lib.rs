@@ -1,8 +1,14 @@
 mod actions;
 mod screenshot;
+mod wallpaper_pack;
+mod window_corners;
 mod ytdlp;
 
 use tauri::{Emitter, Manager};
+
+/// Aptabase App Key (dashboard → the app → Instructions). Not a secret: it
+/// only lets the app SEND anonymous events, never read them.
+const APTABASE_APP_KEY: &str = "A-US-0248253117";
 
 /// True if `name` is a file yt-dlp / ffmpeg can create for a download whose
 /// output template is "<stem>.%(ext)s". Matches, for example:
@@ -247,13 +253,33 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_dialog::init())
-        .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_fs::init())
         // App self-update (checks GitHub Releases' latest.json, verifies the
         // signature with the public key in tauri.conf.json) + relaunch after it.
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
+        // Anonymous usage statistics (Aptabase): only the events the frontend
+        // sends (utils/analytics.js), only when the user leaves it on in Settings.
+        .plugin(tauri_plugin_aptabase::Builder::new(APTABASE_APP_KEY).build())
         // yt-dlp runner state (running downloads, resolved binary path).
+        // Rounded window corners on Windows 11 and macOS (window_corners.rs);
+        // fallback for showing the (initially hidden) window.
+        .setup(|app| {
+            // macOS: where ffmpeg / deno get their clean copies (ytdlp.rs).
+            ytdlp::set_mac_bin_dir(app.handle());
+            if let Some(window) = app.get_webview_window("main") {
+                window_corners::apply(&window);
+                // The window starts hidden and the frontend shows it once its
+                // first frame is painted (no blank flash). Safety net: show it
+                // anyway after a few seconds if that never happens.
+                let w = window.clone();
+                std::thread::spawn(move || {
+                    std::thread::sleep(std::time::Duration::from_secs(4));
+                    let _ = w.show();
+                });
+            }
+            Ok(())
+        })
         .manage(ytdlp::Registry::default())
         .manage(ytdlp::YtdlpPath::default())
         .invoke_handler(tauri::generate_handler![
@@ -269,6 +295,18 @@ pub fn run() {
             actions::open_media_path,
             actions::find_media_file,
             actions::copy_image_from_url,
+            actions::start_file_drag,
+            actions::disk_free,
+            actions::import_wallpaper,
+            actions::remove_wallpaper,
+            wallpaper_pack::wallpaper_pack_local,
+            wallpaper_pack::download_wallpaper_pack,
+            wallpaper_pack::cancel_wallpaper_pack,
+            actions::screen_color_at_cursor,
+            actions::eyedropper_prepare,
+            actions::eyedropper_tick,
+            actions::eyedropper_hide,
+            actions::eyedropper_close,
             pick_folder_native
         ])
         // NOTE: we intentionally do NOT force `std::process::exit` on close.

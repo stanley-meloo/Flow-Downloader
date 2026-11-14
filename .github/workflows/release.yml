@@ -43,7 +43,8 @@ jobs:
             }
             return release.id;
 
-  # One build per platform: Windows (x64) and macOS (Apple Silicon + Intel).
+  # One build per platform: Windows (x64), macOS (Apple Silicon + Intel) and
+  # Linux (x64: .AppImage for any distro, .deb, .rpm).
   # Each target uses its own platform-specific sidecars (ytdlp/ffmpeg/deno).
   #
   # App auto-update: when the TAURI_SIGNING_PRIVATE_KEY secret exists, the builds
@@ -63,6 +64,9 @@ jobs:
             target: aarch64-apple-darwin
           - platform: macos-latest
             target: x86_64-apple-darwin
+          # Ubuntu 22.04 (older glibc) so the Linux build runs on more distros.
+          - platform: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
     runs-on: ${{ matrix.platform }}
     env:
       HAS_UPDATER_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY != '' }}
@@ -79,6 +83,24 @@ jobs:
         run: |
           chmod +x src-tauri/ytdlp-*-apple-darwin src-tauri/ffmpeg-*-apple-darwin src-tauri/deno-*-apple-darwin
           ls -l src-tauri/*-apple-darwin
+
+      # Linux: system libraries for Tauri (WebKitGTK…), for the screen capture
+      # used by the eyedropper / "Print" (xcap: X11, PipeWire, Wayland) and the
+      # GStreamer plugins the AppImage bundles for the video wallpapers.
+      - name: Install Linux build dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential file libwebkit2gtk-4.1-dev libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev patchelf \
+            pkg-config libclang-dev libxcb1-dev libxrandr-dev libdbus-1-dev \
+            libpipewire-0.3-dev libwayland-dev libegl-dev libgbm-dev xz-utils unzip \
+            gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-libav
+
+      # Linux sidecars aren't committed (large): downloaded for each build.
+      - name: Download Linux sidecars
+        if: runner.os == 'Linux'
+        run: bash scripts/fetch-linux-sidecars.sh
 
       - name: Setup Node.js
         uses: actions/setup-node@v5

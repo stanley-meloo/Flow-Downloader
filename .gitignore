@@ -3,6 +3,8 @@ node_modules/
 dist/
 dist-ssr/
 src-tauri/target/
+# Linux sidecars: downloaded by scripts/fetch-linux-sidecars.sh (too large to commit)
+src-tauri/*-x86_64-unknown-linux-gnu
 bin/
 obj/
 
@@ -24,3 +26,11 @@ yarn-error.log*
 *.suo
 *.sw?
 ANALISE_CODIGO.md
+
+# --- Wallpapers (scripts/optimize-wallpapers.mjs, scripts/pack-wallpapers.mjs) ---
+wallpapers-build/
+wallpaper-pack/
+# Wallpaper originals: hundreds of MB (GitHub refuses files over 100 MB and
+# warns over 50 MB). Kept on this computer only — the app ships the optimized
+# copies (src/assets/backgrounds) and the pack lives in the "wallpapers" release.
+assets-src/

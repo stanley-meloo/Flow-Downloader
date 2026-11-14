@@ -79,6 +79,7 @@ Flow Downloader/
 │  │  ├─ useYtdlpUpdater.js    # Auto/manual yt-dlp self-update (throttled daily)
 │  │  ├─ useAppUpdater.js      # Flow self-update (Tauri updater) + banner state
 │  │  ├─ useContextMenuSections.js # Right-click menu items per clicked element
+│  │  ├─ useScrollEdges.js     # Which list edges can still scroll (soft fades)
 │  │  └─ useTooltip.js         # Shared tooltip state (anchored to the element)
 │  │
 │  ├─ utils/
@@ -90,15 +91,24 @@ Flow Downloader/
 │  │  ├─ media.js              # sanitizeTitle, YouTube id/thumbnail helpers
 │  │  ├─ recent.js             # Search history + last download folder (localStorage)
 │  │  ├─ consoleCapture.js     # Keeps recent console errors for diagnostics
+│  │  ├─ autoMarquee.js        # Truncated text ("…") scrolls back and forth
+│  │  ├─ scrambleLanguage.js   # "Decoding" text effect on language change
+│  │  ├─ mouseNavigation.js    # Mouse Back/Forward buttons (dialogs, pages)
+│  │  ├─ a11y.js               # `pressable`: keyboard access for clickable divs
+│  │  ├─ coverBox.js           # Custom photo framing math (cover + position + zoom)
+│  │  ├─ accentColor.js        # Accent colors taken from the background
 │  │  └─ diagnostics.js        # Diagnostics report text + REPO_URL
 │  │
 │  ├─ components/
 │  │  ├─ features/
 │  │  │  ├─ SearchInput.jsx    # URL bar + paste/fetch buttons (liquid glass)
+│  │  │  ├─ AutoDownloadToggle.jsx # Auto Download switch (skip the card)
+│  │  │  ├─ LinkDropZone.jsx   # Drag a link onto the window to download it
+│  │  │  ├─ PhotoPositioner.jsx # Frame the custom background photo (drag / zoom)
 │  │  │  ├─ HeroTitle.jsx      # Title written letter by letter + tagline
 │  │  │  ├─ QueueList.jsx      # Download queue list + per-item state UI
-│  │  │  ├─ FloatingLines.jsx  # WebGL background engine #2 (interactive lines)
-│  │  │  └─ ColorBends.jsx     # WebGL background engine #1 (color field)
+│  │  │  ├─ FloatingLines.jsx  # WebGL background engine (interactive lines)
+│  │  │  └─ GhostFibers.jsx    # WebGL background engine (fiber ribbons, React Bits)
 │  │  ├─ modals/
 │  │  │  ├─ MediaModal.jsx     # Single video: format/quality/audio + thumbnail
 │  │  │  ├─ PlaylistModal.jsx  # Playlist: per-video selection + options
@@ -111,7 +121,9 @@ Flow Downloader/
 │  │     ├─ Toast.jsx          # Toast notifications (imperative add() via ref)
 │  │     ├─ Tooltip.jsx        # Liquid-glass tooltips (data-tooltip="…")
 │  │     ├─ ContextMenu.jsx    # Right-click menu (replaces the webview's)
-│  │     ├─ SearchSnake.jsx    # RGB light running around the search bar
+│  │     ├─ StarBorder.jsx     # Stars of light running around the search bar
+│  │     ├─ SearchBurst.jsx    # Burst of light + sparks (search start, support heart)
+│  │     ├─ SmoothScroll.jsx   # Lenis smooth scrolling for every scroll area
 │  │     ├─ AnimatedIcons.jsx  # lucide-animated icons (plain JSX + Motion)
 │  │     ├─ FilmGrain.jsx, BrandShine.jsx, ScrollThumb.jsx, Motion.jsx
 │  │     └─ liquidGlass/       # WebGL liquid glass (LiquidGlass OSS, MIT)
@@ -126,11 +138,11 @@ Flow Downloader/
 │     └─ backgrounds/          # OPTIMIZED wallpapers (generated, see §5.4)
 │        ├─ GIFs/              # animated (animated WebP) → ANIMATED_PRESETS
 │        ├─ JPGs/              # static (WebP)            → STATIC_PRESETS
-│        ├─ by Nipp/           # guest-artist artwork     → NIPP_PRESETS
 │        └─ _thumbs/           # 320×180 still previews for the gallery
 │
 ├─ assets-src/backgrounds/     # ORIGINAL wallpapers (not bundled)
 ├─ scripts/optimize-wallpapers.mjs  # originals → optimized WebP + thumbs (sharp)
+├─ scripts/installer-art.py         # Windows installer (NSIS) artwork → src-tauri/installer/
 ├─ .github/workflows/release.yml    # Windows + macOS builds on tag push (§10)
 │
 └─ src-tauri/                  # ─── BACKEND (Rust) ───
@@ -141,11 +153,13 @@ Flow Downloader/
    │  ├─ ytdlp.rs              # yt-dlp runner: analyze / download / cancel /
    │  │                        #   update / thumbnails / diagnostics / log
    │  ├─ screenshot.rs         # Screenshot of the app window (xcap)
-   │  └─ actions.rs            # Open file/folder, copy image (right-click menu)
+   │  ├─ window_corners.rs     # Rounded window corners (Windows 11 / macOS)
+   │  └─ actions.rs            # Open file/folder, copy image, drag file out, free space
    ├─ tauri.conf.json          # App config: window, CSP, bundle, updater
    ├─ tauri.updater.conf.json  # Merged in CI only when the signing key exists
    ├─ Cargo.toml               # Rust crate + plugin dependencies
    ├─ capabilities/default.json# Permission scopes (fs, shell, dialog, …)
+   ├─ installer/               # NSIS installer art: sidebar.bmp (164×314), header.bmp (150×57)
    ├─ icons/                   # App icons
    └─ <sidecar binaries>       # ytdlp-*, ffmpeg-*, deno-* (see §7)
 ```
@@ -276,13 +290,13 @@ from i18n keys under `queue.*`.
 Three engines, selected by `visuals.activeBackground` and crossfaded in `App.jsx`:
 
 - `floatingLines` → `FloatingLines.jsx` (WebGL)
-- `colorBends` → `ColorBends.jsx` (WebGL)
+- `ghostFibers` → `GhostFibers.jsx` (WebGL 2, React Bits)
 - `static` → a solid color and/or a wallpaper image
 
 Wallpapers are auto-discovered at build time by `utils/backgrounds.js`
 (`import.meta.glob`). The bundled files are **optimized copies**:
 
-1. Put originals (GIF/JPG/PNG…) in `assets-src/backgrounds/GIFs`, `/JPGs` or `/by Nipp`.
+1. Put originals (GIF/JPG/PNG…) in `assets-src/backgrounds/GIFs` or `/JPGs`.
 2. Run `npm run optimize-wallpapers` (uses `sharp`). Stills → WebP ≤2560×1440,
    GIFs → animated WebP ≤1280 px wide (kept as GIF if that is smaller), plus a
    320×180 still thumbnail in `_thumbs/`. Only changed files are processed;
@@ -303,7 +317,7 @@ drops to ~30 fps while unfocused, and resumes where it stopped.
 (`BaseDirectory.AppConfig`), debounced. Notable fields: `downloadPath`,
 `playlistLimit`, `maxConcurrent`, `cookieBrowser`, `cookieFile`, `autoPaste`,
 `defaultQuality`, `language`, and the `visuals` object (background engine +
-wallpaper + per-gallery `randomGif/randomJpg/randomNipp` flags).
+wallpaper + per-gallery `randomGif/randomJpg` flags).
 
 ---
 
@@ -334,11 +348,28 @@ Tauri ships extra executables listed under `bundle.externalBin` in
 **target-triple-suffixed** file at build time, so every platform you build for
 needs its own copy in `src-tauri/`:
 
-| Sidecar | Windows | macOS (Intel) | macOS (Apple Silicon) |
-|---------|---------|---------------|-----------------------|
-| yt-dlp  | `ytdlp-x86_64-pc-windows-msvc.exe` | `ytdlp-x86_64-apple-darwin` | `ytdlp-aarch64-apple-darwin` |
-| ffmpeg  | `ffmpeg-x86_64-pc-windows-msvc.exe` | `ffmpeg-x86_64-apple-darwin` | `ffmpeg-aarch64-apple-darwin` |
-| deno    | `deno-x86_64-pc-windows-msvc.exe` | `deno-x86_64-apple-darwin` | `deno-aarch64-apple-darwin` |
+| Sidecar | Windows | macOS (Intel) | macOS (Apple Silicon) | Linux (x64) |
+|---------|---------|---------------|-----------------------|-------------|
+| yt-dlp  | `ytdlp-x86_64-pc-windows-msvc.exe` | `ytdlp-x86_64-apple-darwin` | `ytdlp-aarch64-apple-darwin` | `flowdl-ytdlp-x86_64-unknown-linux-gnu` |
+| ffmpeg  | `ffmpeg-x86_64-pc-windows-msvc.exe` | `ffmpeg-x86_64-apple-darwin` | `ffmpeg-aarch64-apple-darwin` | `flowdl-ffmpeg-x86_64-unknown-linux-gnu` |
+| deno    | `deno-x86_64-pc-windows-msvc.exe` | `deno-x86_64-apple-darwin` | `deno-aarch64-apple-darwin` | `flowdl-deno-x86_64-unknown-linux-gnu` |
+
+**Linux.** The Linux sidecars carry a `flowdl-` prefix (`tauri.linux.conf.json`):
+the .deb/.rpm install them into `/usr/bin`, where a plain `ffmpeg`/`deno` would
+clash with the system packages. They are not committed (large); get them with
+`bash scripts/fetch-linux-sidecars.sh` (the release workflow does the same).
+Building on Linux needs Tauri's system packages plus the screen-capture libs:
+
+```sh
+sudo apt-get install build-essential file libwebkit2gtk-4.1-dev libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev patchelf \
+  pkg-config libclang-dev libxcb1-dev libxrandr-dev libdbus-1-dev \
+  libpipewire-0.3-dev libwayland-dev libegl-dev libgbm-dev
+```
+
+Linux bundles: `.AppImage` (any distro, libraries included), `.deb` and `.rpm`
+(their runtime dependencies are listed under `bundle.linux` in `tauri.conf.json`).
+Windows installs WebView2 automatically if missing (`webviewInstallMode:
+embedBootstrapper`).
 
 At runtime `bundled_binary()` (`ytdlp.rs`) locates them next to the app
 executable (plain or triple-suffixed name, so dev and production both work).

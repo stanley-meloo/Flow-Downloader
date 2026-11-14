@@ -19,6 +19,7 @@ export const DEFAULT_KEYBINDS = {
   paste: 'Ctrl+V',
   selectBar: 'Ctrl+A',
   openSettings: 'O',
+  autoDownload: 'D', // turn Auto Download on / off
   // Download windows (single video / playlist) and Settings
   download: 'Enter',
   closeModal: 'Escape',
@@ -57,6 +58,7 @@ export const KEYBIND_ACTIONS = [
   { id: 'paste', group: 'main' },
   { id: 'selectBar', group: 'main' },
   { id: 'openSettings', group: 'main' },
+  { id: 'autoDownload', group: 'main' },
   { id: 'download', group: 'modal' },
   { id: 'closeModal', group: 'modal' },
 ];
@@ -116,6 +118,11 @@ export function comboParts(combo) {
 // Prefixes a label with its current shortcut, replacing any "(…)" prefix that
 // the translation already carries. E.g. ("(ENTER) Search", "F2") -> "(F2) Search".
 // On macOS modifier symbols are written together, Mac style: "(⌘V) Paste".
+// Just the keys of a shortcut, e.g. "ENTER" or "CTRL+S" ("" when unset).
+export function bindLabel(combo) {
+  return combo ? comboParts(combo).join(IS_MAC ? '' : '+').toUpperCase() : '';
+}
+
 export function withBind(label, combo) {
   const clean = String(label || '').replace(/^\([^)]*\)\s*/, '');
   if (!combo) return clean;

@@ -8,22 +8,23 @@
     "build": "vite build",
     "preview": "vite preview",
     "tauri": "tauri",
-    "optimize-wallpapers": "node scripts/optimize-wallpapers.mjs"
+    "optimize-wallpapers": "node scripts/optimize-wallpapers.mjs && node scripts/pack-wallpapers.mjs",
+    "pack-wallpapers": "node scripts/pack-wallpapers.mjs"
   },
   "dependencies": {
-    "@fontsource/quicksand": "^5.3.0",
+    "@aptabase/tauri": "^0.7.0",
+    "@fontsource/poppins": "^5.3.0",
     "@tauri-apps/api": "^2.12.4",
     "@tauri-apps/plugin-clipboard-manager": "^2.3.2",
     "@tauri-apps/plugin-dialog": "^2.6.0",
     "@tauri-apps/plugin-fs": "^2.4.5",
     "@tauri-apps/plugin-opener": "^2.5.3",
     "@tauri-apps/plugin-process": "^2.4.0",
-    "@tauri-apps/plugin-shell": "^2.3.5",
     "@tauri-apps/plugin-updater": "^2.13.3",
     "framer-motion": "^12.34.0",
     "i18next": "^25.8.11",
     "i18next-browser-languagedetector": "^8.2.1",
-    "lucide-react": "^0.563.0",
+    "lenis": "^1.3.26",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-i18next": "^16.5.4",
@@ -33,10 +34,12 @@
     "@tailwindcss/postcss": "^4.1.18",
     "@tauri-apps/cli": "^2.12.3",
     "@vitejs/plugin-react": "^4.6.0",
-    "autoprefixer": "^10.4.24",
     "postcss": "^8.5.6",
-    "sharp": "^0.34.5",
+    "sharp": "^0.35.5",
     "tailwindcss": "^4.1.18",
     "vite": "^7.0.4"
+  },
+  "allowScripts": {
+    "sharp@0.35.5": true
   }
 }

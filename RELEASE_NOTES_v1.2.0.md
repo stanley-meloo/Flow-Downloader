@@ -38,6 +38,10 @@ The biggest update yet: a brand-new **liquid glass** interface, animated icons, 
 - The download engine runs only through a small set of validated commands inside the app core. The interface can no longer pass arbitrary options to it, and personal engine config files are ignored.
 - Tighter permissions: the interface has no direct network or file-writing access beyond what it needs.
 
+## 🔒 Privacy
+
+- Flow now collects only anonymous usage statistics: that the app was opened, with the app version, the system and the country it's being used from. No personal data, no device identifiers, nothing about your links or downloads. You can turn it off in Settings → General → **Anonymous usage statistics**.
+
 ## 🧠 Clearer errors & help
 
 - Failed downloads now say **why**: unavailable or removed, private / members-only, not available in your country, age-restricted, live not started yet, connection problem, disk/folder problem, processing failure, unsupported link.

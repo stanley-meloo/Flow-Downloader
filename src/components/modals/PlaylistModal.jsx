@@ -1,17 +1,20 @@
 import { useState, useEffect, useRef } from "react";
+import { pressable } from "../../utils/a11y"; // keyboard access for clickable non-buttons
+import useScrollEdges from "../../hooks/useScrollEdges";
 import { motion } from "framer-motion";
-import { Music, FilePlay, EarOff, Monitor, Camera, FileMusic, Image as ImageIcon, ListChecks, AlertTriangle, Video, X } from "lucide-react"; // Video: fallback for entries without a thumbnail
+import { MusicIcon as Music, FolderInputIcon as FolderInput, EarOffIcon as EarOff, MonitorCogIcon as MonitorCog, ClapIcon as Clap, ImageIcon as ImageIcon, ListChecksIcon as ListChecks, TriangleAlertIcon as AlertTriangle, VideoIcon as Video, XIcon as X } from "../ui/AnimatedIcons"; // animated
 import { FolderOpenIcon as FolderOpen, DownloadIcon as Download, ExternalLinkIcon as ExternalLink, CheckIcon as Check } from "../ui/AnimatedIcons"; // animated (lucide-animated)
 import { openMediaLocation, saveBestThumbnail } from "../../utils/fileSystem";
 import { pickFolder } from "../../utils/folderPicker";
-import { Swap, Collapse, Pop } from "../ui/Motion";
+import { Swap, Collapse, Pop, TAP } from "../ui/Motion";
 import LiquidGlass from "../ui/liquidGlass/LiquidGlass";
 import { DIALOG_GLASS } from "../ui/liquidGlass/presets";
 import { isYouTubeExtractor, youtubeThumb } from "../../utils/media";
-import { DEFAULT_KEYBINDS, matchesBind } from "../../utils/keybinds";
-import { qualitiesOf, initialQuality, qualityOptionsOf, audioOptionsOf, formatOptionsOf, needsEditorWarning, formatDuration, DropdownConfigBox } from "./downloadOptions";
+import { DEFAULT_KEYBINDS, matchesBind, bindLabel } from "../../utils/keybinds";
+import { qualitiesOf, qualityOptionsOf, audioOptionsOf, formatOptionsOf, needsEditorWarning, formatDuration, DropdownConfigBox, useRememberedOptions, CARD_IN } from "./downloadOptions";
 import ScrollThumb from "../ui/ScrollThumb";
 import { useTranslation } from 'react-i18next';
+import SmoothScroll from "../ui/SmoothScroll";
 
 export default function PlaylistModal({
   mediaData,
@@ -24,7 +27,9 @@ export default function PlaylistModal({
   showToast,
   tooltipHandlers,
   defaultQuality,
-  keybinds
+  keybinds,
+  preset,   // remembered card options (settings.lastDownloadPreset)
+  remember  // saves changes to them
 }) {
   const { t } = useTranslation();
   const kb = keybinds || DEFAULT_KEYBINDS;
@@ -43,9 +48,9 @@ export default function PlaylistModal({
   // Shared helpers: ./downloadOptions
   const availableQualities = qualitiesOf(mediaData);
 
-  const [quality, setQuality] = useState(() => initialQuality(availableQualities, defaultQuality));
-  const [audioKbps, setAudioKbps] = useState('160kb'); // YouTube tops out at ~160 kbps (Opus)
-  const [formatExt, setFormatExt] = useState(".mp4");
+  // Quality / audio / format: remembered between sessions (./downloadOptions)
+  const { quality, setQuality, audioKbps, setAudioKbps, formatExt, setFormatExt } =
+    useRememberedOptions({ availableQualities, defaultQuality, selectedFormat, preset, remember });
 
   const [thumbStatus, setThumbStatus] = useState("idle");
   const [savedThumbPath, setSavedThumbPath] = useState("");
@@ -57,6 +62,9 @@ export default function PlaylistModal({
   // Double-submit guard + modal shortcuts (download / close), same as MediaModal.
   const submittedRef = useRef(false);
   const listRef = useRef(null); // video list (custom scroll thumb)
+  // Soft edges on the video list (same as the download queue): videos
+  // dissolve into the card near an edge, only where there's more to scroll.
+  const edges = useScrollEdges(listRef);
   const confirmRef = useRef(null);
   useEffect(() => {
     const onKey = (e) => {
@@ -76,9 +84,6 @@ export default function PlaylistModal({
     return () => tooltipHandlers?.leave();
   }, []);
 
-  useEffect(() => {
-    setFormatExt(selectedFormat === 'audio' ? '.mp3' : '.mp4');
-  }, [selectedFormat]);
 
   const handleToggleVideo = (idx) => {
     setSelectedVideos(prev =>
@@ -133,7 +138,9 @@ export default function PlaylistModal({
     // Keep only the selected videos.
     const filteredEntries = mediaData.entries.filter((_, idx) => selectedVideos.includes(idx));
     const finalData = { ...mediaData, entries: filteredEntries };
-    onConfirm({ res: quality, ext: formatExt.replace('.', ''), audio: audioKbps.replace('kb', '') }, selectedFormat, finalData);
+    // Refused (e.g. not enough disk space) → the card stays open and usable.
+    Promise.resolve(onConfirm({ res: quality, ext: formatExt.replace('.', ''), audio: audioKbps.replace('kb', '') }, selectedFormat, finalData))
+      .then((ok) => { if (ok === false) submittedRef.current = false; });
   };
   confirmRef.current = handleConfirm;
 
@@ -148,9 +155,7 @@ export default function PlaylistModal({
       />
 
       <motion.div
-        initial={{ opacity: 0, scale: 0.98, y: 10 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.98, y: 10 }}
+        variants={CARD_IN} initial="hidden" animate="shown" exit="exit"
         className="relative isolate w-full max-w-4xl rounded-[36px] shadow-2xl overflow-hidden backdrop-blur-md flex flex-col max-h-[95vh]" /* no CSS bg/border: the glass draws them */
       >
         {/* Liquid glass background — same material as the Settings dialog.
@@ -164,7 +169,7 @@ export default function PlaylistModal({
         />
         <div className="p-6 flex flex-col md:flex-row gap-5 border-b border-white/5 bg-transparent shrink-0">
           {displayThumbnail ? (
-            <div
+            <motion.div
               className={`w-full md:w-48 aspect-video md:self-center rounded-xl overflow-hidden isolate [transform:translateZ(0)] shrink-0 relative group transition-all 
               ${thumbStatus === 'success' ? 'ring-1 ring-emerald-500 cursor-default' : 'cursor-pointer'} 
             `}
@@ -211,43 +216,43 @@ export default function PlaylistModal({
               <Pop show={thumbStatus === 'success'} as="div" className="absolute top-2 right-2 bg-emerald-500 text-white p-1 rounded shadow-lg pointer-events-none">
                 <Check size={10} strokeWidth={4} />
               </Pop>
-            </div>
+            </motion.div>
           ) : (
-            <div className="w-full md:w-48 aspect-video md:self-center rounded-xl overflow-hidden shrink-0 bg-zinc-900 border border-white/5 flex flex-col items-center justify-center text-zinc-700">
+            <motion.div className="w-full md:w-48 aspect-video md:self-center rounded-xl overflow-hidden shrink-0 bg-zinc-900 border border-white/5 flex flex-col items-center justify-center text-zinc-300">
               <ListChecks size={32} />
               <span className="text-[12px] font-bold mt-2 uppercase tracking-widest">{t('playlist_modal.badge')}</span>
-            </div>
+            </motion.div>
           )}
 
-          <div className="flex-1 min-w-0 flex flex-col justify-center pt-1">
-            <span className="text-[9px] font-black text-indigo-400 uppercase tracking-widest mb-1">
+          <motion.div className="flex-1 min-w-0 flex flex-col justify-center pt-1">
+            <span className="text-[9px] font-black text-(--accent) uppercase tracking-widest mb-1">
               {t('playlist_modal.badge')}
             </span>
             <h3 className="text-white text-lg font-bold leading-snug line-clamp-2 mb-0.5 pr-6">
               {mediaData.title}
             </h3>
-            <p className="text-zinc-400 text-sm font-semibold cursor-default">
+            <p className="text-zinc-300 text-sm font-semibold cursor-default">
               {displayUploader}
             </p>
-            <div className="flex items-center gap-1 text-zinc-500 text-[12px] font-semibold mt-1">
+            <div className="flex items-center gap-1 text-zinc-300 text-[12px] font-semibold mt-1">
               <span>{t('playlist_modal.videos_listed', { count: mediaData.count || mediaData.entries?.length || 0 })}</span>
             </div>
-          </div>
+          </motion.div>
 
-          <button onClick={close} data-tooltip={t('tooltips.close', { defaultValue: 'Close' })} className="absolute top-4 right-4 p-1 text-zinc-600 hover:text-white hover:bg-white/5 rounded-full transition-all cursor-pointer">
+          <button onClick={close} aria-label={t('tooltips.close', { defaultValue: 'Close' })} className="absolute top-4 right-4 p-1 text-zinc-300 hover:text-white hover:bg-white/5 rounded-full transition-all cursor-pointer">
             <X size={20} />
           </button>
         </div>
 
         <div className="p-6 flex flex-col gap-5 flex-1 min-h-0">
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-5 shrink-0">
+          <motion.div className="grid grid-cols-1 md:grid-cols-5 gap-5 shrink-0">
             <div className="md:col-span-3 space-y-2.5">
-              <label className="text-[12px] font-black text-zinc-600 uppercase tracking-widest px-1">
+              <label className="text-[12px] font-black text-zinc-300 uppercase tracking-widest px-1">
                 {t('playlist_modal.output_label')}
               </label>
               <div className="flex bg-zinc-900/50 p-1 h-[44px] rounded-xl border border-white/5 relative">
                 {[
-                  { id: 'video', icon: Camera, labelKey: 'media_modal.format_video_audio' },
+                  { id: 'video', icon: Clap, labelKey: 'media_modal.format_video_audio' },
                   { id: 'video_only', icon: EarOff, labelKey: 'media_modal.format_video_only' },
                   { id: 'audio', icon: Music, labelKey: 'media_modal.format_audio_only' },
                 ].map((type) => {
@@ -256,7 +261,7 @@ export default function PlaylistModal({
                     <button
                       key={type.id}
                       onClick={() => setSelectedFormat(type.id)}
-                      className={`relative flex-1 flex items-center justify-center h-full px-2 rounded-lg cursor-pointer outline-none transition-colors z-10 ${isActive ? "text-black font-bold" : "text-zinc-500 hover:text-zinc-300 font-medium"}`}
+                      className={`relative flex-1 flex items-center justify-center h-full px-2 rounded-lg cursor-pointer outline-none transition-colors z-10 ${isActive ? "text-black font-bold" : "text-zinc-300 hover:text-white font-medium"}`}
                     >
                       {isActive && <motion.div layoutId="activeFormatBackground" className="absolute inset-0 bg-white rounded-lg shadow-sm" transition={{ type: "spring", stiffness: 350, damping: 25 }} />}
                       <span className="relative z-20 flex items-center gap-1.5">
@@ -272,27 +277,28 @@ export default function PlaylistModal({
             </div>
 
             <div className="md:col-span-2 space-y-2.5">
-              <label className="text-[12px] font-black text-zinc-600 uppercase tracking-widest px-1">
+              <label className="text-[12px] font-black text-zinc-300 uppercase tracking-widest px-1">
                 {t('media_modal.destination')}
               </label>
               <div
+                {...pressable}
                 onClick={() => pickFolder(downloadPath).then(s => s && setDownloadPath(s))}
                 className="flex items-center gap-3 p-1.5 pl-3 h-[44px] bg-zinc-900/50 border border-white/5 rounded-xl hover:border-white/10 transition-all cursor-pointer group"
               >
-                <FolderOpen size={14} className="text-zinc-600 group-hover:text-zinc-400 shrink-0 transition-colors" />
-                <Swap id={downloadPath} className="flex-1 min-w-0 block text-[12px] text-zinc-400 truncate font-path">{downloadPath || t('settings.not_defined')}</Swap>
-                <div className="px-2.5 py-1 bg-zinc-800 rounded-md text-[9px] font-bold text-zinc-500 group-hover:text-white shrink-0 uppercase transition-colors">
+                <FolderOpen size={14} className="text-zinc-300 group-hover:text-white shrink-0 transition-colors" />
+                <Swap id={downloadPath} className="flex-1 min-w-0 block text-[12px] text-zinc-300 truncate font-path">{downloadPath || t('settings.not_defined')}</Swap>
+                <div className="px-2.5 py-1 bg-zinc-800 rounded-md text-[9px] font-bold text-zinc-300 group-hover:text-white shrink-0 uppercase transition-colors">
                   {t('media_modal.change')}
                 </div>
               </div>
             </div>
-          </div>
+          </motion.div>
 
-          <div className="grid grid-cols-3 gap-3 shrink-0">
-            <DropdownConfigBox label={t('media_modal.quality')} icon={Monitor} valueLabel={`${quality}p`} options={qualityOptions} active={selectedFormat !== 'audio'} onSelect={(val) => setQuality(val)} />
-            <DropdownConfigBox label={t('media_modal.format')} icon={FilePlay} valueLabel={formatExt} options={formatOptions} active={true} onSelect={(val) => setFormatExt(val)} />
-            <DropdownConfigBox label={t('media_modal.audio')} icon={FileMusic} valueLabel={currentAudioLabel} options={audioOptions} active={selectedFormat !== 'video_only'} onSelect={(val) => setAudioKbps(val)} />
-          </div>
+          <motion.div className="grid grid-cols-3 gap-3 shrink-0">
+            <DropdownConfigBox label={t('media_modal.quality')} icon={MonitorCog} valueLabel={`${quality}p`} options={qualityOptions} active={selectedFormat !== 'audio'} onSelect={(val) => setQuality(val)} />
+            <DropdownConfigBox label={t('media_modal.format')} icon={FolderInput} valueLabel={formatExt} options={formatOptions} active={true} onSelect={(val) => setFormatExt(val)} />
+            <DropdownConfigBox label={t('media_modal.audio')} icon={Music} valueLabel={currentAudioLabel} options={audioOptions} active={selectedFormat !== 'video_only'} onSelect={(val) => setAudioKbps(val)} />
+          </motion.div>
 
           {/* Editor-compatibility warning — slides open/closed (gap = gap-5 = 20px) */}
           <Collapse show={showEditorWarning} gap={20} className="shrink-0">
@@ -307,15 +313,15 @@ export default function PlaylistModal({
             </div>
           </Collapse>
 
-          <div className="pt-4 border-t border-white/5 flex flex-col gap-2.5 flex-1 min-h-0">
+          <motion.div className="pt-4 border-t border-white/5 flex flex-col gap-2.5 flex-1 min-h-0">
             <div className="flex items-center justify-between px-1 shrink-0">
-              <span className="text-[12px] font-black text-zinc-500 uppercase tracking-widest">
+              <span className="text-[12px] font-black text-zinc-300 uppercase tracking-widest">
                 {t('playlist_modal.select_videos')}
-                <span className="text-indigo-400 ml-2">
+                <span className="text-(--accent) ml-2">
                   (<Swap id={selectedVideos.length} className="inline-block tabular-nums" y={3}>{selectedVideos.length}</Swap> / {mediaData.entries.length})
                 </span>
               </span>
-              <button onClick={handleSelectAll} className="text-[12px] font-bold text-indigo-400 hover:text-indigo-300 uppercase tracking-wider cursor-pointer transition-colors">
+              <button onClick={handleSelectAll} className="text-[12px] font-bold text-(--accent) hover:text-(--accent) uppercase tracking-wider cursor-pointer transition-colors">
                 <Swap id={selectedVideos.length === mediaData.entries.length} className="inline-block">
                   {selectedVideos.length === mediaData.entries.length ? t('playlist_modal.deselect_all') : t('playlist_modal.select_all')}
                 </Swap>
@@ -331,30 +337,32 @@ export default function PlaylistModal({
                 centered in that gutter — 9 px from the cards and 9 px from the
                 dialog's edge — and 8 px away from the list's top and bottom. */}
             <div className="relative flex-1 min-h-0 -mr-6 flex flex-col">
-            <div ref={listRef} className="grid grid-cols-1 md:grid-cols-2 gap-3 overflow-y-auto no-scrollbar pr-6 pb-2 content-start flex-1 min-h-0">
+            <SmoothScroll ref={listRef} className="scroll-fade overflow-y-auto no-scrollbar pr-6 pb-2 flex-1 min-h-0" style={{ "--fade-top": edges.top ? "40px" : "0px", "--fade-bottom": edges.bottom ? "40px" : "0px" }} contentClassName="grid grid-cols-1 md:grid-cols-2 gap-3 content-start">
               {mediaData.entries.map((entry, idx) => {
                 const isSelected = selectedVideos.includes(idx);
                 const entryThumb = entry.thumbnails?.length > 0 ? entry.thumbnails[0].url : (isYouTube ? youtubeThumb(entry.id) : null);
                 return (
                   <motion.div
                     key={idx}
+                    {...pressable}
+                    aria-pressed={isSelected}
                     onClick={() => handleToggleVideo(idx)}
                     // Entries cascade in when the window opens (delay capped so long lists don't drag).
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.25, ease: "easeOut", delay: Math.min(idx, 12) * 0.03 }}
-                    className={`group h-[72px] flex items-center gap-3 p-2 rounded-[17px] border transition-colors duration-300 cursor-pointer ${isSelected ? 'bg-indigo-500/10 border-indigo-500/50 shadow-inner' : 'bg-zinc-900/30 border-white/5 hover:border-white/10 hover:bg-zinc-900/60'}`}
+                    className={`group h-[72px] flex items-center gap-3 p-2 rounded-[17px] border transition-colors duration-300 cursor-pointer ${isSelected ? 'bg-(--accent-strong)/10 border-(--accent-strong)/50 shadow-inner' : 'bg-zinc-900/30 border-white/5 hover:border-white/10 hover:bg-zinc-900/60'}`}
                   >
                     <div className="w-24 h-[54px] bg-zinc-900 rounded-lg overflow-hidden isolate shrink-0 relative shadow-md">
-                      {entryThumb ? <img src={entryThumb} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" /> : <div className="w-full h-full flex items-center justify-center text-zinc-700"><Video size={14} /></div>}
+                      {entryThumb ? <img src={entryThumb} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" /> : <div className="w-full h-full flex items-center justify-center text-zinc-300"><Video size={14} /></div>}
                     </div>
                     <div className="flex-1 min-w-0 h-[54px] flex flex-col justify-center">
-                      <p className={`text-[12px] leading-[18px] font-bold line-clamp-2 transition-colors ${isSelected ? 'text-zinc-200' : 'text-zinc-400 group-hover:text-zinc-300'}`}>
+                      <p className={`text-[12px] leading-[18px] font-bold line-clamp-2 transition-colors ${isSelected ? 'text-zinc-200' : 'text-zinc-300 group-hover:text-white'}`}>
                         {titleOf(entry, idx) || t('playlist_modal.video_placeholder', { num: idx + 1 })}
                       </p>
-                      {entry.duration && <span className="block h-3.5 mt-1 text-[10px] leading-[14px] text-zinc-500 font-semibold">{formatDuration(entry.duration)}</span>}
+                      {entry.duration && <span className="block h-3.5 mt-1 text-[10px] leading-[14px] text-zinc-300 font-semibold">{formatDuration(entry.duration)}</span>}
                     </div>
-                    <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors duration-300 mr-1 ${isSelected ? 'bg-indigo-500 border-indigo-500' : 'border-zinc-600 bg-zinc-950'}`}>
+                    <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors duration-300 mr-1 ${isSelected ? 'bg-(--accent-strong) border-(--accent-strong)' : 'border-zinc-600 bg-zinc-950'}`}>
                       <Pop show={isSelected} className="flex">
                         <Check size={12} className="text-white" strokeWidth={3} />
                       </Pop>
@@ -362,14 +370,15 @@ export default function PlaylistModal({
                   </motion.div>
                 )
               })}
-            </div>
+            </SmoothScroll>
             <ScrollThumb scrollRef={listRef} inset={8} right={9} />
             </div>
-          </div>
+          </motion.div>
 
           <motion.button
-            whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }} onClick={handleConfirm}
-            className="relative mt-2 w-full py-4 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white font-black text-sm flex items-center justify-center gap-3 cursor-pointer group overflow-hidden border border-indigo-400/30 shadow-[0_0_30px_-5px_rgba(79,70,229,0.5)] hover:shadow-[0_0_40px_0px_rgba(79,70,229,0.7)] transition-all shrink-0"
+            whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99, transition: TAP }} onClick={handleConfirm}
+            data-tooltip={bindLabel(kb.download) || undefined} /* only the shortcut */
+            className="relative mt-2 w-full py-4 rounded-xl accent-button text-white font-black text-sm flex items-center justify-center gap-3 cursor-pointer group overflow-hidden transition-all shrink-0"
           >
             <motion.div animate={{ left: ["-100%", "200%"] }} transition={{ duration: 2, ease: "easeInOut", repeat: Infinity, repeatDelay: 2 }} className="absolute top-0 bottom-0 w-1/2 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12 z-0" />
             <div className="relative z-10 flex items-center gap-2.5">

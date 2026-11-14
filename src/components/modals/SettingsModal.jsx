@@ -1,84 +1,115 @@
-import { useState, useEffect, useRef } from "react";
-import { REPO_URL } from "../../utils/diagnostics";
-import { open as openExternal } from "@tauri-apps/plugin-shell"; // opens links in the default browser
+import { useState, useEffect, useLayoutEffect, useRef } from "react";
+import { pressable } from "../../utils/a11y"; // keyboard access for clickable non-buttons
+import { useBackLayer, clearForward } from "../../utils/mouseNavigation";
+import { REPO_URL, buildDiagnosticsReport } from "../../utils/diagnostics";
+import { writeText } from "@tauri-apps/plugin-clipboard-manager";
+import { openUrl as openExternal } from "@tauri-apps/plugin-opener"; // opens links in the default browser
 import { motion, AnimatePresence } from "framer-motion";
-import { FileVideoCamera, Paintbrush, Image as ImageIcon, Wand2, ListVideo, Loader2, X } from "lucide-react";
-import { TrashIcon as Trash2, FolderOpenIcon as FolderOpen, SettingsIcon as Settings, LanguagesIcon as Languages, RefreshCwIcon as RefreshCw, KeyboardIcon as Keyboard, RotateCcwIcon as RotateCcw, FileCogIcon as FileCog, LayersIcon as Layers, ChevronDownIcon as ChevronDown, SearchIcon as Search, CheckIcon as Check, CircleHelpIcon as HelpCircle } from "../ui/AnimatedIcons"; // animated (lucide-animated)
+import { PaletteIcon as Palette, PlusIcon, TrashIcon as Trash, PencilIcon as Pencil, RunIcon, HourglassIcon as Hourglass, SunDimIcon as SunDim, DropletIcon as Droplet, MousePointerIcon as MousePointer, SlidersHorizontalIcon as SlidersHorizontal, SparklesIcon as Sparkles, PaintbrushIcon as Paintbrush, ImageIcon as ImageIcon, WandSparklesIcon as Wand2, ListVideoIcon as ListVideo, LoaderCircleIcon as Loader2, XIcon as X } from "../ui/AnimatedIcons"; // animated
+import { EngineIcon, CookieIcon, MonitorCogIcon as MonitorCog, ClipboardPasteIcon as ClipboardPaste, LinkIcon, DownloadIcon as Download, FolderOpenIcon as FolderOpen, SettingsIcon as Settings, LanguagesIcon as Languages, KeyboardIcon as Keyboard, RotateCcwIcon as RotateCcw, FileCogIcon as FileCog, LayersIcon as Layers, ChevronDownIcon as ChevronDown, SearchIcon as Search, CheckIcon as Check, CircleHelpIcon as HelpCircle, ChartColumnIncreasingIcon } from "../ui/AnimatedIcons"; // animated (lucide-animated)
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
+import { invoke } from "@tauri-apps/api/core";
 import { useTranslation } from "react-i18next";
+import { createPortal } from "react-dom";
+import { changeLanguageScrambled } from "../../utils/scrambleLanguage";
 import {
   DEFAULT_KEYBINDS, KEYBIND_ACTIONS, eventToCombo, matchesBind, isTypingCombo, comboParts, IS_MAC
 } from "../../utils/keybinds";
-import { Swap, Collapse, Pop, SPRING } from "../ui/Motion";
+import { Swap, Collapse, Pop, TAP } from "../ui/Motion";
 import ScrollThumb from "../ui/ScrollThumb";
+import Switch from "../ui/Switch";
+import SmoothScroll from "../ui/SmoothScroll";
 import { grainIntensity } from "../ui/FilmGrain";
 import LiquidGlass from "../ui/liquidGlass/LiquidGlass";
 import { DIALOG_GLASS } from "../ui/liquidGlass/presets";
 
 import { LANGUAGES, resolveLanguage } from "../../locales/languages";
 
-import imgLines from "../../assets/thumb-lines.jpg";
-import imgLiquid from "../../assets/thumb-bend.jpg";
-import imgStatic from "../../assets/thumb-satic.jpg";
+import FloatingLines from "../features/FloatingLines";
+import PhotoPositioner from "../features/PhotoPositioner";
+import { DEFAULT_FRAMING } from "../../utils/coverBox";
+import { newPhotoId, makePhotoThumb, framingOf, isVideoPath } from "../../utils/customPhotos";
+import BackgroundPreview from "../features/BackgroundPreview";
+import GhostFibers from "../features/GhostFibers";
+import GradientWaves from "../features/GradientWaves";
+import { ENGINES, findEngine, engineProps, engineValue } from "../backgrounds/engines";
+import { floatingLinesProps, ghostFibersProps, gradientWavesProps } from "../../utils/backgroundProps";
+import ColorPicker from "../ui/ColorPicker";
 
-// Built-in wallpapers loaded from src/assets/backgrounds/{GIFs,JPGs,by Nipp}.
+// Built-in wallpapers loaded from src/assets/backgrounds/{GIFs,JPGs}.
 // The selected one is stored in bgImage with a "@preset:" prefix to distinguish
 // it from a user-imported image (which is stored as a local file path).
-import { ANIMATED_PRESETS, STATIC_PRESETS, NIPP_PRESETS, presetValue, findPreset } from "../../utils/backgrounds";
-
-// Self-contained cookie SVG icon, used in both cookie selectors.
-const CookieIcon = ({ size = 20, className = "" }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
-    strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <circle cx="12" cy="12" r="9.5" />
-    <circle cx="8.5" cy="9" r="1" fill="currentColor" stroke="none" />
-    <circle cx="15" cy="8.5" r="1" fill="currentColor" stroke="none" />
-    <circle cx="12" cy="13" r="1" fill="currentColor" stroke="none" />
-    <circle cx="8.5" cy="15" r="1" fill="currentColor" stroke="none" />
-    <circle cx="15.5" cy="14.5" r="1" fill="currentColor" stroke="none" />
-  </svg>
-);
+import { ANIMATED_PRESETS, STATIC_PRESETS, presetValue, findPreset, useWallpaperPresets, addWallpaperPack, hasWallpaperPack } from "../../utils/backgrounds";
+import { listen } from "@tauri-apps/api/event";
 
 // One category's wallpaper gallery: a labeled grid of thumbnails plus a
 // "randomize on startup" toggle. Renders nothing if the folder is empty.
 // Every preset shows a small still thumbnail (generated by optimize-wallpapers),
 // so the gallery stays light and animated wallpapers don't play here.
-function PresetGallery({ title, presets, randomKey, visuals, updateVisual, t }) {
-  if (!presets || presets.length === 0) return null;
-  const activeId = findPreset(visuals.bgImage)?.id;
+// Also used for "My wallpapers" (the user's photos): then `items`, `activeId`
+// and `onSelect` are given instead of `presets`.
+function PresetGallery({ title, presets, items, activeId: activeIdProp, onSelect, randomKey, visuals, updateVisual, t, onConfigure, onAdd, addLabel }) {
+  const cards = items || (presets || []).map((p) => ({ id: p.id, name: p.name, thumb: p.thumb, preview: p.preview }));
+  if (cards.length === 0 && !onAdd) return null;
+  // Only counts as selected while a wallpaper is the background: bgImage is
+  // kept when switching to an interactive background (so it comes back).
+  // Only a wallpaper of THIS gallery (findPreset searches every gallery).
+  const shownId = visuals.activeBackground === 'static' ? findPreset(visuals.bgImage)?.id : null;
+  const activeId = items ? activeIdProp : ((presets || []).some((p) => p.id === shownId) ? shownId : null);
   return (
+    // Title row as tall as the title alone (the switch overhangs it, -my), so
+    // the gap down to the cards is the same as under "Interactive" (8 px).
     <div className="space-y-2">
-      <div className="flex items-center justify-between px-1 gap-3">
-        <label className="text-[11px] font-black text-neutral-500 uppercase tracking-widest shrink-0">{title}</label>
-        <div className="flex items-center gap-2 shrink-0">
-          <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest">
+      <div className="flex items-center justify-between px-1 gap-3 h-4">
+        <label className="text-[12px] font-black text-neutral-300 uppercase tracking-widest shrink-0">{title}</label>
+        {/* Randomize on startup: label + "?" + switch (no box of its own). */}
+        <div className={`flex items-center gap-2 h-9 -my-2.5 shrink-0 ${cards.length === 0 ? 'invisible' : ''}`}>
+          <span className="text-[13px] font-medium text-zinc-200">
             {t('settings.visual.randomize', { defaultValue: 'Randomize on startup' })}
           </span>
-          <ToggleSwitch active={!!visuals[randomKey]} onClick={() => updateVisual(randomKey, !visuals[randomKey])} />
+          <span
+            data-tooltip={t('settings.visual.randomize_info', { defaultValue: 'Every time you open the app, a random wallpaper from this gallery becomes the background.' })}
+            data-tooltip-variant="text"
+            data-tooltip-place="top"
+            className="flex cursor-help text-neutral-300 hover:text-(--accent) transition-colors"
+          >
+            <HelpCircle size={15} />
+          </span>
+          {/* Only with a wallpaper of THIS gallery as the background (otherwise
+              off and locked; the startup pick follows the same rule — useSettings). */}
+          <span
+            className="flex"
+            {...(!activeId ? {
+              'data-tooltip': t('settings.visual.randomize_locked', { defaultValue: 'Choose a wallpaper from this gallery first' }),
+              'data-tooltip-variant': 'text',
+              'data-tooltip-place': 'top',
+            } : {})}
+          >
+            <ToggleSwitch
+              active={!!activeId && !!visuals[randomKey]}
+              disabled={!activeId}
+              onClick={() => updateVisual(randomKey, !visuals[randomKey])}
+            />
+          </span>
         </div>
       </div>
-      <div className="grid grid-cols-4 gap-2.5">
-        {presets.map((p) => {
-          const active = activeId === p.id;
-          return (
-            <button key={p.id} onClick={() => updateVisual('bgImage', presetValue(p))} className="group flex flex-col gap-1 cursor-pointer outline-none">
-              <div className={`relative aspect-video rounded-xl overflow-hidden border transition-all duration-300 ${active ? 'border-indigo-500 ring-2 ring-indigo-500/40' : 'border-white/10 group-hover:border-white/30'}`}>
-                <img src={p.thumb} alt={p.name} loading="lazy" decoding="async" className="w-full h-full object-cover pointer-events-none transition-transform duration-500 group-hover:scale-105" />
-                <Pop show={active} as="div" className="absolute top-1 right-1 bg-indigo-500 text-white p-0.5 rounded-full shadow-lg">
-                  <Check size={9} strokeWidth={4} />
-                </Pop>
-              </div>
-              <span className={`block text-[11px] text-center truncate px-0.5 transition-colors duration-300 ${active ? 'text-white font-bold' : 'text-white/80'}`}>{p.name}</span>
-            </button>
-          );
-        })}
-      </div>
+      <CardGallery
+        bare
+        items={cards}
+        activeId={activeId}
+        onSelect={onSelect || ((id) => updateVisual('bgImage', presetValue(presets.find((p) => p.id === id))))}
+        onConfigure={onConfigure ? (id) => onConfigure(id) : undefined}
+        onAdd={onAdd}
+        addLabel={addLabel}
+        configureLabel={t('settings.visual.configure', { defaultValue: 'Configure' })}
+      />
     </div>
   );
 }
 
 export default function SettingsModal({ onClose, settings, ytdlpUpdater, appUpdater, showToast }) {
-  const { defaultPath, playlistLimit, maxConcurrent, defaultQuality, language, visuals, cookieBrowser, cookieFile, autoPaste, keybinds, saveSettings, changeDefaultPath } = settings;
+  useWallpaperPresets(); // re-render when the wallpaper pack's wallpapers are added
+  const { defaultPath, playlistLimit, maxConcurrent, defaultQuality, language, visuals, cookieBrowser, cookieFile, autoPaste, analytics, keybinds, saveSettings, changeDefaultPath } = settings;
   const { updating: updatingYtdlp = false, checkForUpdate, version: ytdlpVersion, status: ytdlpStatus = 'idle' } = ytdlpUpdater || {};
 
   const [activeTab, setActiveTab] = useState("general");
@@ -86,10 +117,12 @@ export default function SettingsModal({ onClose, settings, ytdlpUpdater, appUpda
   // --- Bottom scroll blur: shown until the user reaches the end of the page ---
   const scrollRef = useRef(null);
   const [atScrollEnd, setAtScrollEnd] = useState(true);
+  const [atScrollTop, setAtScrollTop] = useState(true);
   const checkScrollEnd = () => {
     const el = scrollRef.current;
     if (!el) return;
     setAtScrollEnd(el.scrollTop + el.clientHeight >= el.scrollHeight - 4);
+    setAtScrollTop(el.scrollTop <= 4);
   };
   // Re-check when the tab changes or its content grows/shrinks (sections opening, etc.).
   useEffect(() => {
@@ -111,38 +144,305 @@ export default function SettingsModal({ onClose, settings, ytdlpUpdater, appUpda
 
   // Close with the "close window" shortcut (Escape by default). While a new
   // shortcut is being recorded, the recorder swallows the key first (capture phase).
+  // On a background's own page the close shortcut goes BACK instead (set below).
+  const backRef = useRef(null);
   useEffect(() => {
     const handleClose = (e) => {
       const tag = e.target?.tagName;
       const typing = tag === 'INPUT' || tag === 'TEXTAREA';
       // A single-key binding must not close Settings while typing (e.g. language search).
       if (typing && isTypingCombo(closeBind)) return;
-      if (matchesBind(e, closeBind)) onClose();
+      if (!matchesBind(e, closeBind)) return;
+      if (backRef.current) { e.preventDefault(); backRef.current(); }
+      else onClose();
     };
     window.addEventListener("keydown", handleClose);
     return () => window.removeEventListener("keydown", handleClose);
   }, [onClose, closeBind]);
 
+  // Appearance → Background: which of the 3 kinds is shown (starts on the
+  // kind of the current background) and, under Custom, which sub-kind.
+  // Direction of the last kind switch (+1 → to the right, −1 → to the left).
+  const [catDir, setCatDir] = useState(1);
+  const CATS = ['animated', 'images', 'custom'];
+  const switchCategory = (next) => {
+    setCatDir(CATS.indexOf(next) >= CATS.indexOf(bgCategory) ? 1 : -1);
+    setBgCategory(next);
+  };
+  const [bgCategory, setBgCategory] = useState(() => {
+    if (visuals?.activeBackground !== 'static') return 'animated';
+    const p = findPreset(visuals?.bgImage);
+    return !p ? 'custom' : ANIMATED_PRESETS.includes(p) ? 'animated' : 'images';
+  });
+  // Gear on an interactive background's card → its options on their own page.
+  const [bgConfig, setBgConfig] = useState(null);
+  // The list's scroll position is remembered when the page opens and put back
+  // when coming back (back button or Esc).
+  const savedScroll = useRef(null);
+  const openBgConfig = (id) => {
+    const sc = scrollRef.current;
+    savedScroll.current = sc ? sc.scrollTop : null;
+    setBgConfig(id);
+    if (sc?.lenis) sc.lenis.scrollTo(0, { duration: 0.5 }); else sc?.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  const closeBgConfig = () => setBgConfig(null);
+  useEffect(() => { setBgConfig(null); savedScroll.current = null; }, [activeTab]);
+  backRef.current = activeTab === 'visual' && bgConfig ? closeBgConfig : null;
+
+  // Mouse Back / Forward (utils/mouseNavigation.js): leave / reopen a
+  // background's options page, and step through the tabs you visited.
+  useBackLayer(activeTab === 'visual' && !!bgConfig, () => {
+    const id = bgConfig;
+    closeBgConfig();
+    return () => openBgConfig(id);
+  });
+  const [tabHistory, setTabHistory] = useState([]);
+  const goToTab = (id) => {
+    if (id === activeTab) return;
+    setTabHistory((h) => [...h, activeTab]);
+    setActiveTab(id);
+    clearForward();
+  };
+  useBackLayer(tabHistory.length > 0, () => {
+    const prev = tabHistory[tabHistory.length - 1];
+    const current = activeTab;
+    setTabHistory((h) => h.slice(0, -1));
+    setActiveTab(prev);
+    return () => { setTabHistory((h) => [...h, prev]); setActiveTab(current); };
+  });
+  // Back on the list: once it's tall enough again (it re-mounts after the
+  // page's exit animation), jump to the saved position while it's still
+  // fading in — so it simply appears where it was.
+  useEffect(() => {
+    if (bgConfig || savedScroll.current == null) return;
+    const target = savedScroll.current;
+    savedScroll.current = null;
+    const sc = scrollRef.current;
+    if (!sc) return;
+    let raf = 0;
+    const started = performance.now();
+    const tryRestore = () => {
+      const max = sc.scrollHeight - sc.clientHeight;
+      if (max >= target - 1 || performance.now() - started > 1500) {
+        sc.lenis?.resize();
+        if (sc.lenis) sc.lenis.scrollTo(Math.min(target, max), { immediate: true, force: true });
+        else sc.scrollTop = target;
+        return;
+      }
+      raf = requestAnimationFrame(tryRestore);
+    };
+    raf = requestAnimationFrame(tryRestore);
+    return () => cancelAnimationFrame(raf);
+  }, [bgConfig]);
+
+  // Filters of the wallpaper-type backgrounds (GIF, image, gradient, photo,
+  // color): vignette always; darken + blur only when there is an image.
+  // Options page of a registry engine, built from its schema
+  // (components/backgrounds/engines.js). Labels: settings.visual.opt.* (shared
+  // between engines), segment values: settings.visual.optv.*.
+  const engineOptionRows = (engine) => {
+    const value = (prop) => engineValue(engine, visuals, prop);
+    const save = (prop, v) => updateVisual(engine.prefix + prop, v);
+    const label = (key) => t(`settings.visual.opt.${key}`, { defaultValue: key.replace(/_/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, (c) => c.toUpperCase()) });
+    const format = (o) => (v) => {
+      if (o.unit === '%') return `${Math.round(v * 100)}%`;
+      if (o.unit === '°') return `${Math.round(v)}°`;
+      if (o.unit === '×') return `${Number(v).toFixed(2)}×`;
+      if (o.unit === 's') return `${Number(v).toFixed(1)}s`;
+      return o.step >= 1 ? String(Math.round(v)) : Number(v).toFixed(2);
+    };
+    const resetButton = (props) => (
+      <Pop show={props.some((p) => visuals[engine.prefix + p] != null)} className="flex">
+        <button
+          onClick={() => saveSettings({ visuals: { ...visuals, ...Object.fromEntries(props.map((p) => [engine.prefix + p, null])) } })}
+          data-tooltip={t('settings.visual.reset_colors', { defaultValue: 'Restore original colors' })}
+          className="w-10 h-10 flex items-center justify-center rounded-lg border bg-zinc-950/60 border-white/10 hover:border-white/25 text-zinc-300 hover:text-white transition-colors cursor-pointer"
+        >
+          <RotateCcw size={16} />
+        </button>
+      </Pop>
+    );
+    return engine.schema.map((o) => {
+      const key = o.label || o.prop || 'colors';
+      const Icon = OPTION_ICONS[key] || SlidersHorizontal;
+      const id = o.prop || o.props.join('-');
+      if (o.kind === 'color' || o.kind === 'colors') {
+        const props = o.kind === 'color' ? [o.prop] : o.props;
+        return (
+          <SettingRow key={id} icon={Palette} title={label(o.kind === 'color' ? key : (o.label || 'colors'))}>
+            {resetButton(props)}
+            <SwatchGroup colors={props.map(value)} onChange={(i, c) => save(props[i], c)} />
+          </SettingRow>
+        );
+      }
+      if (o.kind === 'palette') {
+        const colors = value(o.prop);
+        return (
+          <SettingRow key={id} icon={Palette} title={label(key)}>
+            {resetButton([o.prop])}
+            <SwatchGroup colors={colors} onChange={(i, c) => { const next = [...colors]; next[i] = c; save(o.prop, next); }} />
+          </SettingRow>
+        );
+      }
+      if (o.kind === 'slider') {
+        return (
+          <SettingRow key={id} icon={Icon} title={label(key)}>
+            <RowSlider value={value(o.prop)} min={o.min} max={o.max} step={o.step} format={format(o)} onChange={(v) => save(o.prop, v)} />
+          </SettingRow>
+        );
+      }
+      if (o.kind === 'segment') {
+        return (
+          <SettingRow key={id} icon={Icon} title={label(key)}>
+            <Segmented
+              value={value(o.prop)}
+              options={o.values.map((v) => ({ value: v, label: t(`settings.visual.optv.${v}`, { defaultValue: v }) }))}
+              onChange={(v) => save(o.prop, v)}
+            />
+          </SettingRow>
+        );
+      }
+      // toggle
+      return (
+        <SettingRow key={id} icon={Icon} title={label(key)} onClick={() => save(o.prop, !value(o.prop))}>
+          <ToggleSwitch active={!!value(o.prop)} onClick={() => save(o.prop, !value(o.prop))} />
+        </SettingRow>
+      );
+    });
+  };
+
+  const staticFilterRows = (imageFilters = true) => (
+    <>
+      <SettingRow icon={Wand2} title={t('settings.visual.gradient', { defaultValue: 'Top Vignette' })}>
+        <Pop show={!!visuals.staticGradientEnabled} className="flex">
+          <SwatchGroup colors={[visuals.staticGradientColor || '#000000']} onChange={(_, c) => updateVisual("staticGradientColor", c)} />
+        </Pop>
+        <ToggleSwitch active={visuals.staticGradientEnabled} onClick={() => updateVisual("staticGradientEnabled", !visuals.staticGradientEnabled)} />
+      </SettingRow>
+      {imageFilters && (
+        <>
+          <SettingRow icon={SunDim} title={t('settings.visual.darken', { defaultValue: 'Darken' })}>
+            <RowSlider value={visuals.imageDarken} min={0} max={0.9} step={0.05} format={(v) => `${Math.round(v * 100)}%`} onChange={(v) => updateVisual("imageDarken", v)} />
+          </SettingRow>
+          <SettingRow icon={Droplet} title={t('settings.visual.blur', { defaultValue: 'Blur' })}>
+            <RowSlider value={visuals.imageBlur} min={0} max={20} step={1} format={(v) => `${v}px`} onChange={(v) => updateVisual("imageBlur", v)} />
+          </SettingRow>
+        </>
+      )}
+    </>
+  );
+  const colorActive = visuals?.activeBackground === 'static' && !visuals?.bgImage;
+  const ownPhotoActive = visuals?.activeBackground === 'static' && !!visuals?.bgImage && !findPreset(visuals.bgImage);
+  // Picks a GIF / photo / color (null) as the background.
+  const pickStatic = (bgImage) => {
+    saveSettings({ visuals: { ...visuals, activeBackground: 'static', bgImage } });
+  };
+
+  // --- My wallpapers (the user's own photos; utils/customPhotos.js) ---
+  // Name on the card: the one the user gave it, else the file name (no extension).
+  const fileStem = (path) => String(path || '').split(/[\\/]/).pop().replace(/\.[^.]+$/, '');
+  // Default name: the original file's name (the stored copy has a generated one).
+  const photoName = (p) => (p.name || '').trim() || fileStem(p.source || p.path);
+  const photos = visuals?.customPhotos || [];
+  const latestVisuals = useRef(visuals);
+  latestVisuals.current = visuals;
+  // Always from the latest settings (also called later, e.g. after a thumbnail is made).
+  const updatePhoto = (id, patch) => {
+    const v = latestVisuals.current;
+    saveSettings({ visuals: { ...v, customPhotos: (v.customPhotos || []).map((p) => (p.id === id ? { ...p, ...patch } : p)) } });
+  };
+  // The photo whose page is open (bgConfig = "photo:<id>").
+  const configPhoto = bgConfig?.startsWith('photo:') ? photos.find((p) => p.id === bgConfig.slice(6)) || null : null;
+  // Its gallery card follows the framing (a new small picture, once it settles).
+  const framingKey = configPhoto ? `${configPhoto.id}|${configPhoto.x}|${configPhoto.y}|${configPhoto.zoom}` : '';
+  useEffect(() => {
+    if (!configPhoto) return undefined;
+    const { id, path } = configPhoto;
+    const framing = framingOf(configPhoto);
+    const timer = setTimeout(() => {
+      makePhotoThumb(path, framing).then((thumb) => updatePhoto(id, { thumb })).catch(() => {});
+    }, 700);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [framingKey]);
+  // Browse → the photo joins "My wallpapers", becomes the background and its
+  // page opens right away to frame it.
+  const addPhoto = async () => {
+    try {
+      // Photos and videos (videos are converted to a background-sized MP4 on import).
+      const selected = await openDialog({ multiple: false, filters: [
+        { name: 'Images & videos', extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif', 'mp4', 'webm', 'mov', 'm4v', 'mkv', 'avi'] },
+        { name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif'] },
+        { name: 'Videos', extensions: ['mp4', 'webm', 'mov', 'm4v', 'mkv', 'avi'] },
+      ] });
+      if (!selected) return;
+      const existing = photos.find((p) => p.path === selected || p.source === selected);
+      if (existing) {
+        pickStatic(existing.path);
+        openBgConfig(`photo:${existing.id}`);
+        return;
+      }
+      const id = newPhotoId();
+      // A copy in the app's own folder (Rust import_wallpaper): readable after
+      // a restart wherever the original is (another drive, USB, network…).
+      // A video is converted first (can take a few seconds for a long or 4K clip).
+      const video = isVideoPath(selected);
+      if (video) showToast?.('wallpaper_video_preparing', 'info');
+      let path = selected;
+      let tiers = [];
+      try { ({ path, tiers = [] } = await invoke('import_wallpaper', { path: selected })); } catch (e) {
+        console.warn('[wallpaper copy]', e);
+        // Rust already falls back to the original for formats the webview plays:
+        // an error here means this video can't be used.
+        if (video) { showToast?.('wallpaper_video_error', 'error'); return; }
+      }
+      let thumb = null;
+      try { thumb = await makePhotoThumb(path); } catch (e) { console.warn('[photo thumb]', e); }
+      saveSettings({ visuals: { ...visuals, customPhotos: [...photos, { id, path, source: selected, ...DEFAULT_FRAMING, thumb, ...(tiers.length ? { tiers } : {}) }] /* newest last: right before the "+" tile */, activeBackground: 'static', bgImage: path } });
+      openBgConfig(`photo:${id}`);
+    } catch (err) { console.error(err); }
+  };
+  // Removing the wallpaper in use goes back to the background used before it
+  // (bgHistory, kept by useSettings), skipping removed photos; none → plain color.
+  const removePhoto = (id) => {
+    const photo = photos.find((p) => p.id === id);
+    const left = photos.filter((p) => p.id !== id);
+    let back = {};
+    if (photo && visuals.activeBackground === 'static' && visuals.bgImage === photo.path) {
+      const stillThere = (h) => h.activeBackground !== 'static' || !h.bgImage || findPreset(h.bgImage) || left.some((p) => p.path === h.bgImage);
+      const prev = (visuals.bgHistory || []).find((h) => h.bgImage !== photo.path && stillThere(h));
+      back = prev ? { activeBackground: prev.activeBackground, bgImage: prev.bgImage ?? null } : { bgImage: null };
+    }
+    const history = (visuals.bgHistory || []).filter((h) => h.bgImage !== photo?.path);
+    saveSettings({ visuals: { ...visuals, customPhotos: left, ...back, bgHistory: history }, keepBgHistory: true });
+    // Its copy in the app's folder goes too (Rust never deletes an original).
+    if (photo?.path) setTimeout(() => invoke('remove_wallpaper', { path: photo.path }).catch(() => {}), 1500);
+    closeBgConfig();
+  };
+
   const updateVisual = (key, value) => {
     saveSettings({ visuals: { ...visuals, [key]: value } });
   };
 
-  const handleSelectBgImage = async () => {
+
+  // Report a problem: copy the diagnostics (repo link, versions, recent console
+  // errors — URLs already redacted) to the clipboard and open a new GitHub
+  // issue, where the user pastes them. Nothing is put in the URL.
+  const reportProblem = async () => {
     try {
-      const selected = await openDialog({
-        multiple: false,
-        filters: [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif'] }]
-      });
-      if (selected) {
-        updateVisual("bgImage", selected);
-      }
-    } catch (err) { console.error(err); }
+      await writeText(await buildDiagnosticsReport({ language: i18n.language, includeConsole: true }));
+      showToast?.("report_copied", "success");
+    } catch (e) {
+      console.error("[Settings] diagnostics", e);
+      showToast?.("diagnostics_error", "error");
+    }
+    openExternal(`${REPO_URL}/issues/new`);
   };
 
   // Saving the setting is enough: App.jsx applies it (incl. "auto" and RTL).
   const handleLanguageChange = (newLang) => {
     saveSettings({ language: newLang });
-    i18n.changeLanguage(resolveLanguage(newLang));
+    changeLanguageScrambled(resolveLanguage(newLang)); // text "decodes" into the new language
   };
 
   const handleQualityChange = (newQuality) => {
@@ -198,7 +498,8 @@ export default function SettingsModal({ onClose, settings, ytdlpUpdater, appUpda
         animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }}
         exit={{ opacity: 0, scale: 0.95, y: 15, filter: "blur(10px)", transition: { duration: 0.2, ease: "easeIn" } }}
         transition={{ type: "spring", stiffness: 300, damping: 25 }}
-        className="relative isolate w-full max-w-2xl h-140 rounded-[36px] shadow-2xl overflow-hidden backdrop-blur-md flex flex-col" /* no CSS border: the glass draws its own rim */
+        // Taller on a background's own page (big preview + options), animated.
+        className={`relative isolate w-full max-w-2xl ${activeTab === 'visual' && bgConfig ? 'h-[min(calc(100vh-48px),860px)]' : 'h-140'} transition-[height] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] rounded-[36px] shadow-2xl overflow-hidden backdrop-blur-md flex flex-col`} /* no CSS border: the glass draws its own rim */
       >
         {/* Liquid glass background (same material family as the search bar).
             Sits behind all the dialog content (negative z inside the dialog). */}
@@ -211,9 +512,9 @@ export default function SettingsModal({ onClose, settings, ytdlpUpdater, appUpda
         />
         <div className="p-6 flex items-center justify-between border-b border-white/5 bg-transparent shrink-0 z-10">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-indigo-500/10 rounded-xl border border-indigo-500/20">
+            <div className="p-2 bg-(--accent-strong)/10 rounded-xl border border-(--accent-strong)/20">
               <motion.div animate={{ rotate: 360 }} transition={{ duration: 8, ease: "linear", repeat: Infinity }}>
-                <Settings size={30} className="text-indigo-400" />
+                <Settings size={30} className="text-(--accent)" />
               </motion.div>
             </div>
             <div>
@@ -225,12 +526,22 @@ export default function SettingsModal({ onClose, settings, ytdlpUpdater, appUpda
               </span>
             </div>
           </div>
-          <button onClick={onClose} data-tooltip={t('tooltips.close', { defaultValue: 'Close' })} className="p-1 text-neutral-500 hover:text-white hover:bg-white/5 rounded-full transition-all cursor-pointer">
+          <button onClick={onClose} aria-label={t('tooltips.close', { defaultValue: 'Close' })} className="p-1 text-neutral-300 hover:text-white hover:bg-white/5 rounded-full transition-all cursor-pointer">
             <X size={20} />
           </button>
         </div>
 
-        <div className="px-6 pt-6 pb-2 shrink-0 bg-transparent z-10">
+        {/* Tabs — hidden on a background's own page (preview + its options only). */}
+        <AnimatePresence initial={false}>
+        {!(activeTab === 'visual' && bgConfig) && (
+        <motion.div
+          key="tabs"
+          className="shrink-0 z-10 overflow-hidden"
+          initial={{ height: 0, opacity: 0 }}
+          animate={{ height: "auto", opacity: 1, transition: { height: { duration: 0.5, ease: [0.22, 1, 0.36, 1] }, opacity: { duration: 0.4, delay: 0.2 } } }}
+          exit={{ height: 0, opacity: 0, transition: { height: { duration: 0.45, ease: [0.22, 1, 0.36, 1] }, opacity: { duration: 0.2 } } }}
+        >
+        <div className="px-6 pt-6 pb-2 bg-transparent">
           <div className="flex bg-zinc-900/50 p-1 h-[44px] rounded-xl border border-white/5 relative">
             {[
               { id: 'general', icon: FileCog, labelKey: 'settings.tabs.general', defaultLabel: 'General' },
@@ -241,8 +552,8 @@ export default function SettingsModal({ onClose, settings, ytdlpUpdater, appUpda
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`relative flex-1 flex items-center justify-center h-full px-2 rounded-lg cursor-pointer outline-none transition-colors z-10 ${isActive ? "text-black font-bold" : "text-neutral-200 hover:text-zinc-300 font-medium"}`}
+                  onClick={() => goToTab(tab.id)}
+                  className={`relative flex-1 flex items-center justify-center h-full px-2 rounded-lg cursor-pointer outline-none transition-colors z-10 ${isActive ? "text-black font-bold" : "text-neutral-200 hover:text-white font-medium"}`}
                 >
                   {isActive && <motion.div layoutId="settingsTabBackground" className="absolute inset-0 bg-white rounded-lg shadow-sm" transition={{ type: "spring", stiffness: 350, damping: 25 }} />}
                   <span className="relative z-20 flex items-center gap-1.5">
@@ -256,11 +567,89 @@ export default function SettingsModal({ onClose, settings, ytdlpUpdater, appUpda
             })}
           </div>
         </div>
+        </motion.div>
+        )}
+        </AnimatePresence>
+
+        {/* A background's own page: big live preview of it, FIXED here above the
+            scroll area (only the options below scroll). The real engine with
+            the current settings, interactive with the mouse. Back = glass chip. */}
+        {/* Opening: the preview area grows while the preview itself rises,
+            scales up and comes into focus; closing does the reverse. */}
+        <AnimatePresence initial={false}>
+          {activeTab === 'visual' && !!bgConfig && (
+            <motion.div
+              key="bg-preview"
+              className="shrink-0 overflow-hidden"
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0, transition: { height: { duration: 0.55, ease: [0.65, 0, 0.35, 1] }, opacity: { duration: 0.4, delay: 0.1 } } }}
+              transition={{ height: { duration: 0.5, ease: [0.22, 1, 0.36, 1] }, opacity: { duration: 0.25 } }}
+            >
+              {/* 12 px from the dialog's edges → radius 24 (36 − 12). */}
+              <div className="px-3 pt-3 pb-1">
+                <motion.div
+                  className="relative rounded-3xl overflow-hidden border border-white/10"
+                  initial={{ scale: 0.9, y: 16, filter: "blur(10px)" }}
+                  animate={{ scale: 1, y: 0, filter: "blur(0px)" }}
+                  exit={{ scale: 0.92, y: -8, filter: "blur(10px)", transition: { duration: 0.45, ease: [0.65, 0, 0.35, 1] } }}
+                  transition={{ type: "spring", stiffness: 260, damping: 28, filter: { duration: 0.35 } }}
+                >
+                  {configPhoto ? (
+                    // The user's photo: the preview IS the framing editor (drag / wheel).
+                    <PhotoPositioner
+                      bare
+                      path={configPhoto.path}
+                      {...framingOf(configPhoto)}
+                      blur={visuals.imageBlur || 0}
+                      darken={visuals.imageDarken || 0}
+                      onChange={(f) => updatePhoto(configPhoto.id, f)}
+                    />
+                  ) : (
+                    <BackgroundPreview kind={bgConfig} visuals={visuals} className="w-full aspect-video" />
+                  )}
+                  <motion.button
+                    onClick={closeBgConfig}
+                    data-tooltip={t('settings.visual.back', { defaultValue: 'Back' })}
+                    initial={{ opacity: 0, scale: 0.6, x: -6 }}
+                    animate={{ opacity: 1, scale: 1, x: 0, transition: { delay: 0.25, type: "spring", stiffness: 400, damping: 22 } }}
+                    exit={{ opacity: 0, scale: 0.7, transition: { duration: 0.2 } }}
+                    className="glass-chip absolute top-3 left-3 w-10 h-10 flex items-center justify-center rounded-full text-white cursor-pointer"
+                  >
+                    <ChevronDown size={18} className="rotate-90" />
+                  </motion.button>
+                  {/* The user's photo: remove it from My wallpapers (bottom-right of the photo) */}
+                  {configPhoto && (
+                    <motion.button
+                      onClick={() => removePhoto(configPhoto.id)}
+                      data-tooltip={t('settings.visual.remove_photo', { defaultValue: 'Remove from My wallpapers' })}
+                      aria-label={t('settings.visual.remove_photo', { defaultValue: 'Remove from My wallpapers' })}
+                      initial={{ opacity: 0, scale: 0.6 }}
+                      animate={{ opacity: 1, scale: 1, transition: { delay: 0.25, type: "spring", stiffness: 400, damping: 22 } }}
+                      exit={{ opacity: 0, scale: 0.7, transition: { duration: 0.2 } }}
+                      className="glass-chip absolute bottom-3 right-3 w-10 h-10 flex items-center justify-center rounded-full text-white hover:text-red-300 cursor-pointer transition-colors"
+                    >
+                      <Trash size={18} />
+                    </motion.button>
+                  )}
+                </motion.div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Scroll area: native scrollbar hidden, custom thumb (ScrollThumb) on top —
             no gutter background, so it matches the translucent card exactly. */}
         <div className={`relative flex flex-col flex-1 min-h-0 ${activeTab === 'visual' ? 'z-0' : 'z-30'}`}>
-        <div ref={scrollRef} onScroll={checkScrollEnd} className="px-6 pb-6 pt-4 flex flex-col flex-1 min-h-0 relative overflow-y-auto no-scrollbar">
+        {/* Top edge: content scrolling up under the tabs dissolves into the glass
+            (mask fade, same as the download queue) instead of being cut off. */}
+        <SmoothScroll
+          ref={scrollRef}
+          onScroll={checkScrollEnd}
+          className="scroll-fade px-6 flex flex-col flex-1 min-h-0 relative overflow-y-auto no-scrollbar"
+          style={{ "--fade-top": atScrollTop ? "0px" : "48px", "--fade-bottom": "0px" }}
+          contentClassName="flex flex-col min-h-full pt-4"
+        >
           <AnimatePresence mode="wait">
             {activeTab === "general" && (
               <motion.div
@@ -269,229 +658,171 @@ export default function SettingsModal({ onClose, settings, ytdlpUpdater, appUpda
                 animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
                 exit={{ opacity: 0, x: 10, filter: "blur(4px)" }}
                 transition={{ duration: 0.25, ease: "easeOut" }}
-                className="space-y-7 w-full"
+                className="space-y-6 w-full"
               >
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-black text-neutral-500 uppercase tracking-widest px-1">
-                    {t('settings.general.path', { defaultValue: 'Default Download Path' })}
-                  </label>
-                  <motion.div
-                    whileHover={{ scale: 1.01 }}
-                    whileTap={{ scale: 0.98 }}
+                {/* Same design as the Shortcuts tab. Ordered by how often people need
+                    each setting: where/how downloads are saved first, then the app
+                    itself, then the advanced, rarely touched options. Settings with
+                    a long text are full-width rows; the small ones are cards, two
+                    per line. */}
+
+                {/* ── Downloads ── */}
+                <SettingGroup label={t('settings.general.group_downloads', { defaultValue: 'Downloads' })}>
+                  <SettingRow
+                    icon={FolderOpen}
                     onClick={changeDefaultPath}
-                    className="flex items-center gap-3 p-1.5 pl-3 h-[44px] bg-zinc-900/50 border border-white/5 rounded-xl hover:border-white/10 transition-colors cursor-pointer group"
+                    title={t('settings.general.path', { defaultValue: 'Default Download Path' })}
+                    description={
+                      <Swap id={defaultPath} className="block truncate font-path">
+                        {defaultPath || t('settings.not_defined', { defaultValue: 'Not defined' })}
+                      </Swap>
+                    }
                   >
-                    <FolderOpen size={20} className="text-neutral-200 group-hover:text-zinc-300 shrink-0" />
-                    <Swap id={defaultPath} className="flex-1 min-w-0 block text-[12.5px] font-bold text-zinc-300 truncate font-path">
-                      {defaultPath || t('settings.not_defined', { defaultValue: 'Not defined' })}
-                    </Swap>
-                    <div className="px-2.5 py-1.5 bg-zinc-800 rounded-md text-[11px] font-bold text-zinc-400 group-hover:text-white shrink-0 uppercase transition-colors">
-                      {t('media_modal.change', { defaultValue: 'Change' })}
-                    </div>
-                  </motion.div>
-                </div>
+                    <RowButton onClick={changeDefaultPath}>{t('media_modal.change', { defaultValue: 'Change' })}</RowButton>
+                  </SettingRow>
 
-                {/* yt-dlp updater */}
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-black text-neutral-500 uppercase tracking-widest px-1">
-                    {t('settings.general.engine', { defaultValue: 'Download Engine (yt-dlp)' })}
-                  </label>
-                  <motion.button
-                    whileHover={{ scale: updatingYtdlp ? 1 : 1.01 }}
-                    whileTap={{ scale: updatingYtdlp ? 1 : 0.98 }}
-                    onClick={() => !updatingYtdlp && checkForUpdate && checkForUpdate()}
-                    disabled={updatingYtdlp}
-                    className="w-full flex items-center gap-3 p-1.5 pl-3 h-[44px] bg-zinc-900/50 border border-white/5 rounded-xl hover:border-white/10 transition-colors cursor-pointer group disabled:cursor-wait"
-                  >
-                    <Swap id={updatingYtdlp} className="shrink-0 flex">
-                      {updatingYtdlp
-                        ? <Loader2 size={20} className="text-indigo-400 animate-spin" />
-                        : <RefreshCw size={20} className="text-neutral-200 group-hover:text-zinc-300" />}
-                    </Swap>
-                    {/* Result of the last check, right on the button (+ installed version) */}
-                    <Swap id={updatingYtdlp ? 'checking' : `${ytdlpStatus}:${ytdlpVersion || ''}`} className="flex-1 min-w-0 flex items-baseline gap-2 text-left">
-                      <span className={`truncate text-[12.5px] font-bold ${!updatingYtdlp && ytdlpStatus === 'error' ? 'text-red-300' : !updatingYtdlp && (ytdlpStatus === 'uptodate' || ytdlpStatus === 'updated') ? 'text-emerald-300' : 'text-zinc-300'}`}>
-                        {updatingYtdlp
-                          ? t('toast.ytdlp_checking', { defaultValue: 'Checking for download engine updates…' })
-                          : ytdlpStatus === 'uptodate'
-                            ? t('settings.general.engine_uptodate', { defaultValue: 'Up to date' })
-                            : ytdlpStatus === 'updated'
-                              ? t('settings.general.engine_updated', { defaultValue: 'Updated' })
-                              : ytdlpStatus === 'error'
-                                ? t('settings.general.engine_error', { defaultValue: "Couldn't update. Try again" })
-                                : t('settings.general.update_engine', { defaultValue: 'Check for updates' })}
-                      </span>
-                      {ytdlpVersion && !updatingYtdlp && (
-                        <span className="shrink-0 text-[11px] font-semibold text-zinc-500 tabular-nums">v{ytdlpVersion}</span>
-                      )}
-                    </Swap>
-                    <div className="px-2.5 py-1.5 bg-zinc-800 rounded-md text-[11px] font-bold text-zinc-400 group-hover:text-white shrink-0 uppercase transition-colors">
-                      {t('settings.general.update_now', { defaultValue: 'UPDATE' })}
-                    </div>
-                  </motion.button>
-                </div>
-
-
-                <div className="space-y-2.5">
-                  <div className="flex items-center gap-2 px-1 relative">
-                    <label className="text-[11px] font-black text-neutral-500 uppercase tracking-widest flex gap-1.5 items-center">
-                      <ListVideo size={18} />
-                      {t('settings.general.limit', { defaultValue: 'Playlist Item Limit' })}
-                    </label>
-
-                    <div
-                      className="group flex items-center justify-center cursor-help"
-                      data-tooltip-variant="text"
-                      data-tooltip-place="top"
-                      data-tooltip={t('settings.general.limit_info', {
-                        n: maxConcurrent || 3,
-                        defaultValue: 'You can increase the limit to scan entire playlists. To avoid slowing down your machine and YouTube server blocks (Error 429), Flow will process downloads intelligently, downloading {{n}} videos at a time.'
-                      })}
+                  <div className="grid grid-cols-2 gap-2">
+                    <SettingTile icon={MonitorCog} title={t('settings.general.quality', { defaultValue: 'Default Quality' })}>
+                      <RowSelect full valueLabel={currentQualityLabel} options={qualityOptions} onSelect={handleQualityChange} />
+                    </SettingTile>
+                    <SettingTile
+                      icon={Layers}
+                      title={t('settings.general.concurrent', { defaultValue: 'Simultaneous downloads' })}
+                      help={t('settings.general.concurrent_info', { defaultValue: 'More at once is faster on good connections, but too many can make sites slow you down (error 429).' })}
                     >
-                      <HelpCircle size={14} className="text-neutral-200 group-hover:text-indigo-400 transition-colors" />
-                    </div>
+                      <Segmented
+                        full
+                        value={maxConcurrent || 5}
+                        options={[1, 2, 3, 4, 5].map((n) => ({ value: n, label: String(n) }))}
+                        onChange={(n) => saveSettings({ maxConcurrent: n })}
+                      />
+                    </SettingTile>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-2">
-                    {[
-                      { value: 10, label: '10' }, { value: 20, label: '20' }, { value: 50, label: '50' },
-                      { value: 100, label: '100' }, { value: 300, label: '300' }, { value: 9999, label: '∞' }
-                    ].map((opt) => {
-                      const isActive = playlistLimit === opt.value;
-                      return (
-                        <motion.button
-                          key={opt.value}
-                          whileHover={{ scale: 1.03 }}
-                          whileTap={{ scale: 0.95 }}
-                          onClick={() => saveSettings({ playlistLimit: opt.value })}
-                          className={`relative flex items-center justify-center h-11 rounded-xl border transition-colors duration-300 cursor-pointer outline-none ${isActive
-                            ? "bg-indigo-500/10 border-indigo-500/50 shadow-inner text-indigo-400 font-bold"
-                            : "bg-zinc-900/40 border-white/5 hover:bg-zinc-900/80 hover:border-white/10 text-neutral-200 hover:text-zinc-300 font-medium"
-                            }`}
-                        >
-                          <span className="text-[12.5px] tracking-wide">{opt.label}</span>
-                          <Pop show={isActive} as="div" className="absolute top-1.5 right-1.5 bg-indigo-500 text-white p-0.5 rounded-full shadow-lg">
-                            <Check size={8} strokeWidth={4} />
-                          </Pop>
-                        </motion.button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* How many downloads run at the same time (1–5) */}
-                <div className="space-y-2.5">
-                  <label className="text-[11px] font-black text-neutral-500 uppercase tracking-widest px-1 flex gap-1.5 items-center">
-                    <Layers size={16} />
-                    {t('settings.general.concurrent', { defaultValue: 'Simultaneous downloads' })}
-                  </label>
-                  <div className="grid grid-cols-5 gap-2">
-                    {[1, 2, 3, 4, 5].map((n) => {
-                      const isActive = (maxConcurrent || 3) === n;
-                      return (
-                        <motion.button
-                          key={n}
-                          whileHover={{ scale: 1.04 }}
-                          whileTap={{ scale: 0.95 }}
-                          onClick={() => saveSettings({ maxConcurrent: n })}
-                          className={`h-10 rounded-xl border text-[12.5px] transition-colors duration-300 cursor-pointer outline-none ${isActive
-                            ? "bg-indigo-500/10 border-indigo-500/50 shadow-inner text-indigo-400 font-bold"
-                            : "bg-zinc-900/40 border-white/5 hover:bg-zinc-900/80 hover:border-white/10 text-neutral-200 font-medium"}`}
-                        >
-                          {n}
-                        </motion.button>
-                      );
-                    })}
-                  </div>
-                  <p className="text-[11px] text-neutral-500 leading-snug px-1">
-                    {t('settings.general.concurrent_info', { defaultValue: 'More at once is faster on good connections, but too many can make sites slow you down (error 429).' })}
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 pt-2">
-                  <CustomSelect
-                    label={t('settings.general.quality', { defaultValue: 'Default Quality' })}
-                    icon={(props) => <FileVideoCamera {...props} size={20} />}
-                    valueLabel={currentQualityLabel}
-                    options={qualityOptions}
-                    onSelect={handleQualityChange}
-                  />
-                  <SearchableSelect
-                    label={t('settings.general.language', { defaultValue: 'Interface Language' })}
-                    icon={(props) => <Languages {...props} size={20} />}
-                    valueLabel={currentLangLabel}
-                    options={languageOptions}
-                    onSelect={handleLanguageChange}
-                    placeholder={t('settings.search_language', { defaultValue: 'Search language...' })}
-                  />
-                </div>
-
-                {/* Auto-paste a link from the clipboard on focus */}
-                <div className="flex items-center justify-between gap-4 p-3 bg-zinc-900/40 border border-white/5 rounded-xl">
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[12.5px] font-bold text-zinc-200">
-                      {t('settings.general.autopaste', { defaultValue: 'Auto-paste links' })}
-                    </div>
-                    <div className="text-[11px] text-neutral-500 mt-0.5 leading-snug">
-                      {t('settings.general.autopaste_info', { defaultValue: 'When you open or focus the app, automatically fill the bar with a link copied to your clipboard.' })}
-                    </div>
-                  </div>
-                  <div className="shrink-0">
-                    <ToggleSwitch active={autoPaste !== false} onClick={() => saveSettings({ autoPaste: !(autoPaste !== false) })} />
-                  </div>
-                </div>
-
-                {/* Browser cookies (works around YouTube's "confirm you're not a robot") */}
-                <div className="pt-2 space-y-1.5">
-                  <CustomSelect
-                    label={t('settings.general.cookies', { defaultValue: 'Browser Cookies (YouTube login)' })}
-                    icon={(props) => <CookieIcon className={props.className} size={20} />}
-                    valueLabel={currentCookieLabel}
-                    options={cookieOptions}
-                    onSelect={handleCookieChange}
-                  />
-                  <p className="text-[11px] text-neutral-500 leading-snug px-1">
-                    {t('settings.general.cookies_info', { defaultValue: "If YouTube asks to 'confirm you're not a bot', pick the browser where you're logged in. Firefox is the most reliable on Windows." })}
-                  </p>
-
-                  {/* cookies.txt file picker — same size/style as the dropdown above */}
-                  <div
-                    onClick={handlePickCookieFile}
-                    className="w-full flex items-center justify-between p-2.5 px-3 h-[44px] rounded-xl border bg-zinc-900/40 border-white/5 hover:bg-zinc-900 hover:border-white/10 transition-all duration-500 ease-in-out cursor-pointer active:scale-95 group"
+                  <SettingRow
+                    icon={ClipboardPaste}
+                    onClick={() => saveSettings({ autoPaste: !(autoPaste !== false) })}
+                    title={t('settings.general.autopaste', { defaultValue: 'Auto-paste links' })}
+                    description={t('settings.general.autopaste_short', { defaultValue: 'Fills the bar with a copied link' })}
+                    help={t('settings.general.autopaste_info', { defaultValue: 'When you open or focus the app, automatically fill the bar with a link copied to your clipboard.' })}
                   >
-                    <div className="flex items-center gap-2 overflow-hidden">
-                      <CookieIcon size={20} className={`shrink-0 transition-colors duration-300 ${cookieFile ? 'text-emerald-400' : 'text-neutral-200'}`} />
-                      <Swap id={cookieFileName} className="block text-[12.5px] font-bold text-zinc-200 truncate">
+                    <ToggleSwitch active={autoPaste !== false} onClick={(e) => { e.stopPropagation(); saveSettings({ autoPaste: !(autoPaste !== false) }); }} />
+                  </SettingRow>
+                </SettingGroup>
+
+                {/* ── App ── */}
+                <SettingGroup label={t('settings.general.group_app', { defaultValue: 'App' })}>
+                  <div className="grid grid-cols-2 gap-2">
+                  <SettingTile icon={Languages} title={t('settings.general.language', { defaultValue: 'Interface Language' })}>
+                    <RowSelect
+                      full
+                      valueLabel={currentLangLabel}
+                      options={languageOptions}
+                      onSelect={handleLanguageChange}
+                      searchPlaceholder={t('settings.search_language', { defaultValue: 'Search language...' })}
+                      emptyLabel={t('settings.no_languages', { defaultValue: 'No languages found' })}
+                    />
+                  </SettingTile>
+
+                  <SettingTile
+                    icon={EngineIcon}
+                    title={t('settings.general.engine', { defaultValue: 'Download Engine (yt-dlp)' })}
+                    description={
+                      <Swap id={updatingYtdlp ? 'checking' : `${ytdlpStatus}:${ytdlpVersion || ''}`} className="flex items-baseline gap-2 min-w-0">
+                        <span className={`truncate ${!updatingYtdlp && ytdlpStatus === 'error' ? 'text-red-300' : !updatingYtdlp && (ytdlpStatus === 'uptodate' || ytdlpStatus === 'updated') ? 'text-emerald-300' : ''}`}>
+                          {updatingYtdlp
+                            ? t('toast.ytdlp_checking', { defaultValue: 'Checking for download engine updates…' })
+                            : ytdlpStatus === 'uptodate'
+                              ? t('settings.general.engine_uptodate', { defaultValue: 'Up to date' })
+                              : ytdlpStatus === 'updated'
+                                ? t('settings.general.engine_updated', { defaultValue: 'Updated' })
+                                : ytdlpStatus === 'error'
+                                  ? t('settings.general.engine_error', { defaultValue: "Couldn't update. Try again" })
+                                  : t('settings.general.engine_installed', { defaultValue: 'Installed' })}
+                        </span>
+                        {ytdlpVersion && !updatingYtdlp && <span className="shrink-0 tabular-nums text-zinc-300">v{ytdlpVersion}</span>}
+                      </Swap>
+                    }
+                  >
+                    <RowButton full onClick={() => !updatingYtdlp && checkForUpdate && checkForUpdate()} disabled={updatingYtdlp}>
+                      <Swap id={updatingYtdlp} className="flex items-center gap-2 min-w-0">
+                        {updatingYtdlp && <Loader2 size={16} className="text-(--accent)" />}
+                        <span className="truncate">{t('settings.general.update_engine', { defaultValue: 'Check for updates' })}</span>
+                      </Swap>
+                    </RowButton>
+                  </SettingTile>
+                  </div>
+
+                  {/* Anonymous usage statistics (utils/analytics.js) */}
+                  <SettingRow
+                    icon={ChartColumnIncreasingIcon}
+                    onClick={() => saveSettings({ analytics: !(analytics !== false) })}
+                    title={t('settings.general.analytics', { defaultValue: 'Anonymous usage statistics' })}
+                    description={t('settings.general.analytics_short', { defaultValue: 'Helps count how many people use the app' })}
+                    help={t('settings.general.analytics_info', { defaultValue: 'Sends only that the app was opened, with the app version, system and country. No personal data, no links, nothing about your downloads.' })}
+                  >
+                    <ToggleSwitch active={analytics !== false} onClick={(e) => { e.stopPropagation(); saveSettings({ analytics: !(analytics !== false) }); }} />
+                  </SettingRow>
+                </SettingGroup>
+
+                {/* ── Advanced ── */}
+                <SettingGroup label={t('settings.general.group_advanced', { defaultValue: 'Advanced' })}>
+                  <div className="grid grid-cols-2 gap-2">
+                  <SettingTile
+                    icon={ListVideo}
+                    title={t('settings.general.limit', { defaultValue: 'Playlist Item Limit' })}
+                    help={t('settings.general.limit_info', {
+                      n: maxConcurrent || 5,
+                      defaultValue: 'You can increase the limit to scan entire playlists. To avoid slowing down your machine and YouTube server blocks (Error 429), Flow will process downloads intelligently, downloading {{n}} videos at a time.'
+                    })}
+                  >
+                    <Segmented
+                      full
+                      value={playlistLimit}
+                      options={[10, 20, 50, 100, 300, 9999].map((v) => ({ value: v, label: v === 9999 ? <span className="inline-block text-[20px] leading-none -translate-y-px">∞</span> : String(v) }))}
+                      onChange={(v) => saveSettings({ playlistLimit: v })}
+                    />
+                  </SettingTile>
+
+                  <SettingTile
+                    icon={CookieIcon}
+                    title={t('settings.general.cookies', { defaultValue: 'Browser Cookies (YouTube login)' })}
+                    help={t('settings.general.cookies_info', { defaultValue: "If YouTube asks to 'confirm you're not a bot', pick the browser where you're logged in. Firefox is the most reliable on Windows." })}
+                  >
+                    <RowSelect full valueLabel={currentCookieLabel} options={cookieOptions} onSelect={handleCookieChange} />
+                  </SettingTile>
+                  </div>
+
+                  <SettingRow
+                    icon={CookieIcon}
+                    onClick={handlePickCookieFile}
+                    title={
+                      <Swap id={cookieFileName} className={`block truncate ${cookieFile ? 'text-(--accent)' : ''}`}>
                         {cookieFileName || t('settings.general.cookies_file_choose', { defaultValue: 'Use a cookies.txt file…' })}
                       </Swap>
-                    </div>
-                    <Pop show={!!cookieFile} className="shrink-0 flex">
+                    }
+                    description={t('settings.general.cookies_file_short', { defaultValue: 'Fixes the “not a bot” error' })}
+                    help={t('settings.general.cookies_file_info', { defaultValue: "Is Flow Downloader showing the 'confirm you're not a bot' error? Use a cookies.txt file: export your YouTube cookies (while logged in) with a browser extension such as 'Get cookies.txt LOCALLY', then select the file here." })}
+                  >
+                    <Pop show={!!cookieFile} className="flex">
                       <button
                         onClick={(e) => { e.stopPropagation(); clearCookieFile(); }}
                         data-tooltip={t('tooltips.remove', { defaultValue: 'Remove' })}
-                        className="p-1 -mr-1 text-zinc-500 hover:text-red-400 rounded transition-colors cursor-pointer"
+                        className="w-9 h-9 flex items-center justify-center rounded-full text-zinc-300 hover:text-red-400 hover:bg-white/5 transition-colors cursor-pointer"
                       >
-                        <X size={14} />
+                        <X size={16} />
                       </button>
                     </Pop>
-                  </div>
-                  <p className="text-[11px] text-neutral-500 leading-snug px-1">
-                    {t('settings.general.cookies_file_info', { defaultValue: "Is Flow Downloader showing the 'confirm you're not a bot' error? Use a cookies.txt file: export your YouTube cookies (while logged in) with a browser extension such as 'Get cookies.txt LOCALLY', then select the file here." })}
-                  </p>
-                </div>
+                    <RowButton onClick={handlePickCookieFile}>
+                      <Swap id={!!cookieFile} className="block">
+                        {cookieFile
+                          ? t('media_modal.change', { defaultValue: 'Change' })
+                          : t('settings.general.cookies_file_select', { defaultValue: 'Select' })}
+                      </Swap>
+                    </RowButton>
+                  </SettingRow>
+                </SettingGroup>
 
-                {/* About: small footer — app version, repository, license */}
-                <div className="pt-4 border-t border-white/5 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[11px] text-neutral-500">
-                  <span className="font-bold text-neutral-400">Flow Downloader{appUpdater?.version ? ` v${appUpdater.version}` : ''}</span>
-                  <span aria-hidden="true">·</span>
-                  <button onClick={() => openExternal(REPO_URL)} data-tooltip={REPO_URL.replace('https://', '')} className="font-semibold hover:text-zinc-200 underline-offset-2 hover:underline cursor-pointer transition-colors">
-                    GitHub
-                  </button>
-                  <span aria-hidden="true">·</span>
-                  <button onClick={() => openExternal(`${REPO_URL}/blob/HEAD/LICENSE`)} className="font-semibold hover:text-zinc-200 underline-offset-2 hover:underline cursor-pointer transition-colors">
-                    {t('settings.general.license', { defaultValue: 'MIT License' })}
-                  </button>
-                </div>
               </motion.div>
             )}
 
@@ -502,249 +833,323 @@ export default function SettingsModal({ onClose, settings, ytdlpUpdater, appUpda
                 animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
                 exit={{ opacity: 0, x: -10, filter: "blur(4px)" }}
                 transition={{ duration: 0.25, ease: "easeOut" }}
-                className="space-y-8 w-full pb-6"
+                className="space-y-6 w-full"
               >
-                {/* Film grain intensity (0 = off) — applied live while dragging */}
-                <div className="p-3 bg-zinc-900/40 border border-white/5 rounded-xl space-y-2">
-                  <SliderControl
-                    label={t('settings.visual.film_grain', { defaultValue: 'Film grain' })}
-                    value={grainIntensity(visuals.filmGrain)}
-                    min={0} max={100} step={1}
-                    onChange={(v) => updateVisual("filmGrain", v)}
-                  />
-                  <p className="text-[11px] text-neutral-500 leading-snug">
-                    {t('settings.visual.film_grain_info', { defaultValue: 'Cinematic grain with a light color fringe over the whole app. 0 turns it off.' })}
-                  </p>
-                </div>
-
-                <div className="space-y-2.5">
-                  <label className="text-[11px] font-black text-neutral-500 uppercase tracking-widest px-1 flex gap-1.5 items-center">
-                    <Layers size={12} className="text-indigo-400 shrink-0" />
-                    {t('settings.visual.style', { defaultValue: 'Background Graphics Engine' })}
-                  </label>
-                  <div className="grid grid-cols-3 gap-3">
-                    {[
-                      { id: 'floatingLines', label: t('settings.visual.styles.lines', { defaultValue: 'Animated Lines' }), img: imgLines },
-                      { id: 'colorBends', label: t('settings.visual.styles.liquid', { defaultValue: 'Black Hole' }), img: imgLiquid },
-                      { id: 'static', label: t('settings.visual.styles.static', { defaultValue: 'Custom' }), img: imgStatic },
-                    ].map((bg) => {
-                      const isActive = visuals.activeBackground === bg.id;
-                      return (
-                        <motion.button
-                          key={bg.id}
-                          whileHover={{ scale: 1.03, y: -2 }}
-                          whileTap={{ scale: 0.97 }}
-                          onClick={() => updateVisual("activeBackground", bg.id)}
-                          className={`relative flex flex-col items-center justify-center p-4 rounded-2xl border transition-colors duration-300 cursor-pointer outline-none group ${isActive
-                            ? "bg-indigo-500/10 border-indigo-500/50 shadow-inner"
-                            : "bg-zinc-900/40 border-white/5 hover:bg-zinc-900/80 hover:border-white/10"
-                            }`}
-                        >
-                          <div className={`w-14 h-14 rounded-full mb-3 flex items-center justify-center overflow-hidden border transition-colors ${isActive ? "bg-indigo-500/20 border-indigo-500/50" : "bg-zinc-950 border-white/10"
-                            }`}>
-                            {bg.img ? (
-                              <img src={bg.img} alt={bg.label} className={`w-full h-full object-cover transition-opacity duration-300 ${isActive ? 'opacity-100' : 'opacity-60 group-hover:opacity-100'}`} />
-                            ) : (
-                              <ImageIcon size={20} className={isActive ? "text-indigo-400" : "text-neutral-500"} />
-                            )}
-                          </div>
-                          <span className={`text-[11px] font-bold uppercase tracking-wider transition-colors ${isActive ? "text-indigo-400" : "text-neutral-200 group-hover:text-zinc-300"
-                            }`}>
-                            {bg.label}
-                          </span>
-                          <Pop show={isActive} as="div" className="absolute top-2 right-2 bg-indigo-500 text-white p-0.5 rounded-full shadow-lg">
-                            <Check size={10} strokeWidth={4} />
-                          </Pop>
-                        </motion.button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <AnimatePresence mode="wait">
-                  {visuals.activeBackground === 'floatingLines' && (
+                <AnimatePresence mode="wait" initial={false}>
+                  {bgConfig ? (
+                    // Options of one interactive background, on their own page
+                    // (opened from the gear on its card). Saved like everything else.
                     <motion.div
-                      key="opt-floatingLines"
-                      initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }}
-                      className="space-y-6 pt-2 border-t border-white/5"
+                      key="bg-config"
+                      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, y: 16, filter: "blur(4px)", transition: { duration: 0.3, ease: [0.4, 0, 1, 1] } }}
+                      transition={{ duration: 0.2 }}
+                      className="space-y-6"
                     >
-                      <div className="flex flex-col bg-zinc-900/30 rounded-[28px] border border-white/5 overflow-hidden transition-all duration-300">
-                        <div className="flex items-center justify-between p-4 h-[52px]">
-                          <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-widest">
-                            {t('settings.visual.custom_colors', { defaultValue: 'Custom Colors' })}
-                          </span>
+                      <div className="space-y-2 stagger-in">
+                    {bgConfig === 'static' && staticFilterRows(true)}
+                    {configPhoto && (
+                      <>
+                        {/* The wallpaper's name (shown on its card); empty = the file name */}
+                        <SettingRow icon={Pencil} title={t('settings.visual.photo_name', { defaultValue: 'Name' })}>
+                          <input
+                            type="text"
+                            value={configPhoto.name ?? ''}
+                            placeholder={fileStem(configPhoto.source || configPhoto.path)}
+                            maxLength={60}
+                            spellCheck={false}
+                            onChange={(e) => updatePhoto(configPhoto.id, { name: e.target.value })}
+                            onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+                            className="h-10 w-[220px] px-3 rounded-lg bg-zinc-950/60 border border-white/10 hover:border-white/25 focus:border-(--accent) text-[13px] font-semibold text-white placeholder:text-zinc-400 outline-none transition-colors"
+                          />
+                        </SettingRow>
+                        <p className="text-[12px] text-zinc-300 px-1">
+                          {t('settings.visual.position_hint', { defaultValue: 'Drag to position · scroll to zoom' })}
+                        </p>
+                        <SettingRow icon={SlidersHorizontal} title={t('settings.visual.zoom', { defaultValue: 'Zoom' })}>
+                          <RowSlider value={configPhoto.zoom ?? 1} min={1} max={3} step={0.05} format={(v) => `${Number(v).toFixed(2)}×`} onChange={(v) => updatePhoto(configPhoto.id, { zoom: v })} />
+                          <RowButton onClick={() => updatePhoto(configPhoto.id, { ...DEFAULT_FRAMING })}>
+                            {t('settings.visual.reset_position', { defaultValue: 'Center' })}
+                          </RowButton>
+                        </SettingRow>
+                        {staticFilterRows(true)}
+                      </>
+                    )}
+                    {bgConfig === 'floatingLines' && (
+                      <>
+                        <SettingRow icon={Palette} title={t('settings.visual.custom_colors', { defaultValue: 'Custom Colors' })}>
+                          <Pop show={!!visuals.showColors} className="flex">
+                            <SwatchGroup
+                              colors={[1, 2, 3, 4].map((n) => visuals[`lineColor${n}`] || LINE_FALLBACK[n - 1])}
+                              onChange={(i, c) => updateVisual(`lineColor${i + 1}`, c)}
+                            />
+                          </Pop>
                           <ToggleSwitch
                             active={visuals.showColors}
-                            onClick={() => {
-                              const isEnabling = !visuals.showColors;
-                              saveSettings({
-                                visuals: {
-                                  ...visuals, showColors: isEnabling,
-                                  lineColor1: visuals.lineColor1 || '#4f46e5', lineColor2: visuals.lineColor2 || '#ec4899',
-                                  lineColor3: visuals.lineColor3 || '#06b6d4', lineColor4: visuals.lineColor4 || '#14b8a6',
-                                }
-                              });
-                            }}
+                            onClick={() => saveSettings({ visuals: {
+                              ...visuals, showColors: !visuals.showColors,
+                              lineColor1: visuals.lineColor1 || LINE_FALLBACK[0], lineColor2: visuals.lineColor2 || LINE_FALLBACK[1],
+                              lineColor3: visuals.lineColor3 || LINE_FALLBACK[2], lineColor4: visuals.lineColor4 || LINE_FALLBACK[3],
+                            } })}
                           />
-                        </div>
-                        <AnimatePresence>
-                          {visuals.showColors && (
-                            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="grid grid-cols-2 gap-3 px-4 pb-4 pt-1 border-t border-white/5">
-                              {[1, 2, 3, 4].map((num) => (
-                                <SmartColorPickerBox key={num} num={num} visuals={visuals} updateVisual={updateVisual} t={t} prefix="lineColor" />
-                              ))}
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </div>
-                      <SliderControl label={t('settings.visual.quantity', { defaultValue: 'Line Quantity' })} value={visuals.lineCount} min={1} max={20} step={1} onChange={(v) => updateVisual("lineCount", v)} />
-                      <SliderControl label={t('settings.visual.distance', { defaultValue: 'Spacing' })} value={visuals.lineDistance} min={1} max={50} step={1} onChange={(v) => updateVisual("lineDistance", v)} />
-                      <SliderControl label={t('settings.visual.radius', { defaultValue: 'Interaction (Mouse)' })} value={visuals.bendRadius} min={0} max={10} step={0.1} onChange={(v) => updateVisual("bendRadius", v)} />
-                    </motion.div>
-                  )}
+                        </SettingRow>
+                        <SettingRow icon={Layers} title={t('settings.visual.quantity', { defaultValue: 'Line Quantity' })}>
+                          <RowSlider value={visuals.lineCount} min={1} max={20} step={1} onChange={(v) => updateVisual("lineCount", v)} />
+                        </SettingRow>
+                        <SettingRow icon={SlidersHorizontal} title={t('settings.visual.distance', { defaultValue: 'Spacing' })}>
+                          <RowSlider value={visuals.lineDistance} min={1} max={50} step={1} onChange={(v) => updateVisual("lineDistance", v)} />
+                        </SettingRow>
+                        <SettingRow icon={MousePointer} title={t('settings.visual.radius', { defaultValue: 'Interaction (Mouse)' })}>
+                          <RowSlider value={visuals.bendRadius} min={0} max={10} step={0.1} onChange={(v) => updateVisual("bendRadius", v)} />
+                        </SettingRow>
+                      </>
+                    )}
 
-                  {/* Color Bends: only the colors are configurable */}
-                  {visuals.activeBackground === 'colorBends' && (
-                    <motion.div
-                      key="opt-colorBends"
-                      initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }}
-                      className="space-y-6 pt-2 border-t border-white/5"
-                    >
-                      <div className="flex flex-col bg-zinc-900/30 rounded-[28px] border border-white/5 overflow-hidden transition-all duration-300">
-                        <div className="flex items-center justify-between p-4 h-[52px]">
-                          <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-widest">
-                            {t('settings.visual.custom_colors', { defaultValue: 'Custom Colors' })}
-                          </span>
-                          <ToggleSwitch
-                            active={visuals.cb_showColors}
-                            onClick={() => {
-                              const isEnabling = !visuals.cb_showColors;
-                              saveSettings({
-                                visuals: {
-                                  ...visuals, cb_showColors: isEnabling,
-                                  cb_color1: visuals.cb_color1 || '#4f46e5', cb_color2: visuals.cb_color2 || '#ec4899',
-                                  cb_color3: visuals.cb_color3 || '#06b6d4', cb_color4: visuals.cb_color4 || '#14b8a6',
-                                }
-                              });
-                            }}
-                          />
-                        </div>
-                        <AnimatePresence>
-                          {visuals.cb_showColors && (
-                            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="grid grid-cols-2 gap-3 px-4 pb-4 pt-1 border-t border-white/5">
-                              {[1, 2, 3, 4].map((num) => (
-                                <SmartColorPickerBox key={num} num={num} visuals={visuals} updateVisual={updateVisual} t={t} prefix="cb_color" />
-                              ))}
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </div>
-                    </motion.div>
-                  )}
-
-                  {visuals.activeBackground === 'static' && (
-                    <motion.div
-                      key="opt-static"
-                      initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }}
-                      className="space-y-8 pt-2 border-t border-white/5"
-                    >
-                      {/* Built-in wallpaper galleries (loaded from src/assets/backgrounds/{GIFs,JPGs,by Nipp}) */}
-                      <PresetGallery
-                        title={t('settings.visual.animated', { defaultValue: 'Animated (GIF)' })}
-                        presets={ANIMATED_PRESETS}
-                        randomKey="randomGif"
-                        visuals={visuals}
-                        updateVisual={updateVisual}
-                        t={t}
-                      />
-                      <div className="border-t border-white/10" />
-                      <PresetGallery
-                        title={t('settings.visual.still', { defaultValue: 'Static (Image)' })}
-                        presets={STATIC_PRESETS}
-                        randomKey="randomJpg"
-                        visuals={visuals}
-                        updateVisual={updateVisual}
-                        t={t}
-                      />
-                      {(ANIMATED_PRESETS.length > 0 || STATIC_PRESETS.length > 0) && (
-                        <p className="text-[11.5px] text-white/70 px-1 -mt-2">
-                          {t('settings.visual.wallpaper_credit', { defaultValue: 'Wallpapers from wallpaperaccess.com' })}
-                        </p>
-                      )}
-
-                      <div className="border-t border-white/10" />
-                      {/* Nipp (guest artist) — same name in every language */}
-                      <PresetGallery
-                        title="Nipp"
-                        presets={NIPP_PRESETS}
-                        randomKey="randomNipp"
-                        visuals={visuals}
-                        updateVisual={updateVisual}
-                        t={t}
-                      />
-                      <div className="border-t border-white/10" />
-
-                      <div className="space-y-2.5">
-                        <label className="flex items-center gap-2 text-[11px] font-black text-neutral-500 uppercase tracking-widest px-1">
-                          <Paintbrush size={13} className="text-indigo-400 shrink-0" />
-                          {t('settings.visual.static_or_image', { defaultValue: 'Static Color or Custom Image' })}
-                        </label>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-1.5">
-                            <label className="text-[11px] font-black text-neutral-500 uppercase tracking-widest px-1">
-                              {t('settings.visual.image', { defaultValue: 'Custom Wallpaper' })}
-                            </label>
-                            <Swap id={!!visuals.bgImage} as="div" className="block">
-                              {visuals.bgImage ? (
-                                <div className="flex items-center justify-between px-3 bg-zinc-900/50 h-[44px] rounded-xl border border-indigo-500/30">
-                                  <span className="text-[11px] font-bold text-indigo-400 uppercase tracking-widest truncate">
-                                    {t('settings.visual.image_defined', { defaultValue: 'Current Image' })}
-                                  </span>
-                                  <button onClick={() => updateVisual("bgImage", null)} data-tooltip={t('tooltips.remove', { defaultValue: 'Remove' })} className="p-1.5 bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white rounded-md transition-colors"><Trash2 size={14} /></button>
-                                </div>
-                              ) : (
-                                <button onClick={handleSelectBgImage} className="w-full h-[44px] border border-dashed border-white/10 rounded-xl hover:border-white/30 hover:bg-white/5 transition-colors flex items-center justify-center gap-2 text-zinc-400 text-[11px] font-bold uppercase tracking-widest">
-                                  <ImageIcon size={14} />
-                                  {t('settings.visual.choose_image', { defaultValue: 'Browse Image' })}
-                                </button>
-                              )}
-                            </Swap>
-                          </div>
-                          <div className="space-y-1.5">
-                            <label className="text-[11px] font-black text-neutral-500 uppercase tracking-widest px-1">
-                              {t('settings.visual.static_color', { defaultValue: 'Static Color' })}
-                            </label>
-                            <div className="flex items-center gap-3 bg-zinc-900/50 p-2 h-[44px] rounded-xl border border-white/5 relative">
-                              <div className="relative w-7 h-7 rounded border border-white/10 overflow-hidden shadow-inner shrink-0 cursor-pointer ring-1 ring-white/5">
-                                <SmartColorPickerRaw colorKey="staticColor" defaultColor="#000000" visuals={visuals} updateVisual={updateVisual} />
-                              </div>
-                              <div className="text-[11px] font-bold text-zinc-300 uppercase tracking-widest">{visuals.staticColor || '#000000'}</div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="space-y-5 bg-zinc-900/20 p-4 rounded-[28px] border border-white/5">
-                        <div className="flex items-center gap-2 mb-4 border-b border-white/5 pb-3">
-                          <Wand2 size={14} className="text-indigo-400" />
-                          <span className="text-[11px] font-black text-zinc-400 uppercase tracking-widest">
-                            {t('settings.visual.effects', { defaultValue: 'Post-Processing Filters' })}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between bg-zinc-950/50 px-3 h-[44px] rounded-xl border border-white/5">
-                          <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest">
-                            {t('settings.visual.gradient', { defaultValue: 'Top Vignette' })}
-                          </span>
-                          <div className="flex items-center gap-3">
-                            <Pop show={!!visuals.staticGradientEnabled} as="div" className="relative w-6 h-6 rounded-full border border-white/20 overflow-hidden shadow-inner cursor-pointer">
-                              <SmartColorPickerRaw colorKey="staticGradientColor" defaultColor="#000000" visuals={visuals} updateVisual={updateVisual} />
+                    {findEngine(bgConfig) && engineOptionRows(findEngine(bgConfig))}
+                    {bgConfig === 'gradientWaves' && (() => {
+                      const gw = gradientWavesProps(visuals);
+                      const custom = !!(visuals.gw_horizon || visuals.gw_wave || visuals.gw_crest);
+                      const slider = (icon, key, field, saveKey, min, max, step, format) => (
+                        <SettingRow icon={icon} title={t(`settings.visual.gw.${key}`, { defaultValue: key })}>
+                          <RowSlider value={gw[field]} min={min} max={max} step={step} format={format} onChange={(v) => updateVisual(saveKey, v)} />
+                        </SettingRow>
+                      );
+                      return (
+                        <>
+                          <SettingRow icon={Palette} title={t('settings.visual.gw.colors', { defaultValue: 'Colors' })} description={t('settings.visual.gw.colors_info', { defaultValue: 'Horizon · waves · crests' })}>
+                            <Pop show={custom} className="flex">
+                              <button
+                                onClick={() => saveSettings({ visuals: { ...visuals, gw_horizon: null, gw_wave: null, gw_crest: null } })}
+                                data-tooltip={t('settings.visual.reset_colors', { defaultValue: 'Restore original colors' })}
+                                className="w-10 h-10 flex items-center justify-center rounded-lg border bg-zinc-950/60 border-white/10 hover:border-white/25 text-zinc-300 hover:text-white transition-colors cursor-pointer"
+                              >
+                                <RotateCcw size={16} />
+                              </button>
                             </Pop>
-                            <ToggleSwitch active={visuals.staticGradientEnabled} onClick={() => updateVisual("staticGradientEnabled", !visuals.staticGradientEnabled)} />
-                          </div>
-                        </div>
-                        <SliderControl label={t('settings.visual.darken', { defaultValue: 'Darken' })} value={visuals.imageDarken} min={0} max={0.9} step={0.05} onChange={(v) => updateVisual("imageDarken", v)} />
-                        <SliderControl label={t('settings.visual.blur', { defaultValue: 'Blur' })} value={visuals.imageBlur} min={0} max={20} step={1} onChange={(v) => updateVisual("imageBlur", v)} />
+                            <SwatchGroup
+                              colors={[gw.horizonColor, gw.waveColor, gw.crestColor]}
+                              onChange={(i, c) => updateVisual(['gw_horizon', 'gw_wave', 'gw_crest'][i], c)}
+                            />
+                          </SettingRow>
+                          {slider(Hourglass, 'speed', 'speed', 'gw_speed', 0, 2, 0.05, (v) => `${v.toFixed(2)}×`)}
+                          {slider(Droplet, 'amplitude', 'amplitude', 'gw_amplitude', 0, 6, 0.1, (v) => v.toFixed(1))}
+                          {slider(SlidersHorizontal, 'wave_scale', 'waveScale', 'gw_scale', 0.2, 2, 0.02, (v) => v.toFixed(2))}
+                          {slider(Layers, 'height', 'height', 'gw_height', 2, 10, 0.1, (v) => v.toFixed(1))}
+                          {slider(SunDim, 'relief', 'relief', 'gw_relief', 0, 1, 0.05, (v) => `${Math.round(v * 100)}%`)}
+                          {slider(SunDim, 'light_angle', 'lightAngle', 'gw_light', 0, 360, 1, (v) => `${Math.round(v)}°`)}
+                          {slider(Sparkles, 'sheen', 'sheen', 'gw_sheen', 0, 1, 0.02, (v) => `${Math.round(v * 100)}%`)}
+                          <SettingRow icon={Layers} title={t('settings.visual.gw.quality', { defaultValue: 'Quality' })} help={t('settings.visual.gw.quality_info', { defaultValue: 'Higher quality draws the waves more precisely, but uses more of the graphics card.' })}>
+                            <Segmented
+                              value={gw.quality}
+                              options={['low', 'medium', 'high'].map((v) => ({ value: v, label: t(`settings.visual.gw.qualities.${v}`, { defaultValue: v }) }))}
+                              onChange={(v) => updateVisual('gw_quality', v)}
+                            />
+                          </SettingRow>
+                          <SettingRow icon={MousePointer} title={t('settings.visual.gw.mouse', { defaultValue: 'Mouse interaction' })} onClick={() => updateVisual('gw_mouse', !gw.mouseInteraction)}>
+                            <ToggleSwitch active={gw.mouseInteraction} onClick={() => updateVisual('gw_mouse', !gw.mouseInteraction)} />
+                          </SettingRow>
+                          <SettingRow icon={Wand2} title={t('settings.visual.gw.swell', { defaultValue: 'Swell on click' })} onClick={() => updateVisual('gw_swell', !gw.swellOnClick)}>
+                            <ToggleSwitch active={gw.swellOnClick} onClick={() => updateVisual('gw_swell', !gw.swellOnClick)} />
+                          </SettingRow>
+                        </>
+                      );
+                    })()}
+                    {bgConfig === 'ghostFibers' && (() => {
+                      const gf = ghostFibersProps(visuals);
+                      const seg = (key, values, field, saveKey) => (
+                        <Segmented
+                          value={gf[field]}
+                          options={values.map((v) => ({ value: v, label: key ? t(`settings.visual.gf.${key}.${v}`, { defaultValue: String(v) }) : String(v) }))}
+                          onChange={(v) => updateVisual(saveKey, v)}
+                        />
+                      );
+                      return (
+                        <>
+                          <SettingRow icon={Palette} title={t('settings.visual.gf.color', { defaultValue: 'Color' })}>
+                            <Pop show={!!visuals.gf_color} className="flex">
+                              <button
+                                onClick={() => updateVisual('gf_color', null)}
+                                data-tooltip={t('settings.visual.reset_colors', { defaultValue: 'Restore original colors' })}
+                                className="w-10 h-10 flex items-center justify-center rounded-lg border bg-zinc-950/60 border-white/10 hover:border-white/25 text-zinc-300 hover:text-white transition-colors cursor-pointer"
+                              >
+                                <RotateCcw size={16} />
+                              </button>
+                            </Pop>
+                            <SwatchGroup colors={[gf.glowColor]} onChange={(_, c) => updateVisual('gf_color', c)} />
+                          </SettingRow>
+                          <SettingRow icon={Layers} title={t('settings.visual.gf.layers', { defaultValue: 'Ribbons' })}>
+                            {seg(null, [1, 2, 3], 'layers', 'gf_layers')}
+                          </SettingRow>
+                          <SettingRow icon={SlidersHorizontal} title={t('settings.visual.gf.style', { defaultValue: 'Fiber style' })}>
+                            {seg('styles', ['dots', 'dashes', 'lines'], 'fiberStyle', 'gf_style')}
+                          </SettingRow>
+                          <SettingRow icon={Layers} title={t('settings.visual.gf.threads', { defaultValue: 'Threads' })}>
+                            <RowSlider value={gf.threads} min={12} max={180} step={1} onChange={(v) => updateVisual('gf_threads', v)} />
+                          </SettingRow>
+                          <SettingRow icon={RotateCcw} title={t('settings.visual.gf.twist', { defaultValue: 'Twist' })}>
+                            <RowSlider value={gf.twist} min={0} max={3} step={0.05} format={(v) => v.toFixed(2)} onChange={(v) => updateVisual('gf_twist', v)} />
+                          </SettingRow>
+                          <SettingRow icon={Droplet} title={t('settings.visual.gf.dof', { defaultValue: 'Depth of field' })}>
+                            <RowSlider value={gf.depthOfField} min={0} max={2} step={0.05} format={(v) => v.toFixed(2)} onChange={(v) => updateVisual('gf_dof', v)} />
+                          </SettingRow>
+                          <SettingRow icon={Sparkles} title={t('settings.visual.gf.glow', { defaultValue: 'Glow' })}>
+                            <RowSlider value={gf.glow} min={0} max={2} step={0.05} format={(v) => v.toFixed(2)} onChange={(v) => updateVisual('gf_glow', v)} />
+                          </SettingRow>
+                          <SettingRow icon={Sparkles} title={t('settings.visual.gf.particles', { defaultValue: 'Particles' })}>
+                            <RowSlider value={gf.particles} min={0} max={2} step={0.05} format={(v) => v.toFixed(2)} onChange={(v) => updateVisual('gf_particles', v)} />
+                          </SettingRow>
+                          <SettingRow icon={Hourglass} title={t('settings.visual.gf.speed', { defaultValue: 'Speed' })}>
+                            <RowSlider value={gf.speed} min={0} max={2} step={0.05} format={(v) => `${v.toFixed(2)}×`} onChange={(v) => updateVisual('gf_speed', v)} />
+                          </SettingRow>
+                          <SettingRow icon={MousePointer} title={t('settings.visual.gf.mouse', { defaultValue: 'Mouse interaction' })} onClick={() => updateVisual('gf_mouse', !gf.mouseInteraction)}>
+                            <ToggleSwitch active={gf.mouseInteraction} onClick={() => updateVisual('gf_mouse', !gf.mouseInteraction)} />
+                          </SettingRow>
+                          <SettingRow icon={Wand2} title={t('settings.visual.gf.hover', { defaultValue: 'Hover effect' })}>
+                            {seg('hovers', ['focus', 'part', 'none'], 'hoverEffect', 'gf_hover')}
+                          </SettingRow>
+                          <SettingRow icon={Wand2} title={t('settings.visual.gf.pulse', { defaultValue: 'Pulse on click' })} onClick={() => updateVisual('gf_pulse', !gf.pulseOnClick)}>
+                            <ToggleSwitch active={gf.pulseOnClick} onClick={() => updateVisual('gf_pulse', !gf.pulseOnClick)} />
+                          </SettingRow>
+                        </>
+                      );
+                    })()}
                       </div>
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="bg-main"
+                      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, y: -10, transition: { duration: 0.2 } }}
+                      transition={{ duration: 0.45, delay: 0.1 }}
+                      className="space-y-6 stagger-in stagger-slow"
+                    >
+                    {/* Background: 3 kinds. The tabs only switch what is shown here;
+                        the background changes when something is picked. */}
+                    <SettingGroup label={t('settings.visual.group_background', { defaultValue: 'Background' })}>
+                      <BigTabs
+                        value={bgCategory}
+                        onChange={switchCategory}
+                        options={[
+                          { value: 'animated', icon: RunIcon, label: t('settings.visual.cat_animated', { defaultValue: 'Animated' }) },
+                          { value: 'images', icon: ImageIcon, label: t('settings.visual.cat_images', { defaultValue: 'Images' }) },
+                          { value: 'custom', icon: Palette, label: t('settings.visual.styles.static', { defaultValue: 'Custom' }) },
+                        ]}
+                      />
+
+                      {/* Switching kind: the content slides toward the side of the
+                          tab you picked (like pages), with a soft blur, and its
+                          sections arrive in a short cascade. */}
+                      <AnimatePresence mode="wait" initial={false} custom={catDir}>
+                        <motion.div
+                          key={bgCategory}
+                          custom={catDir}
+                          variants={{
+                            enter: (d) => ({ opacity: 0, x: d * 28, filter: "blur(6px)" }),
+                            center: { opacity: 1, x: 0, filter: "blur(0px)", transition: { duration: 0.38, ease: [0.22, 1, 0.36, 1] } },
+                            exit: (d) => ({ opacity: 0, x: d * -20, filter: "blur(6px)", transition: { duration: 0.16, ease: [0.4, 0, 1, 1] } }),
+                          }}
+                          initial="enter" animate="center" exit="exit"
+                          className="space-y-2 stagger-in"
+                        >
+                          {/* 1) Animated: interactive React backgrounds (+ the options of
+                              the active one) and the animated GIF wallpapers */}
+                          {bgCategory === 'animated' && (
+                            <>
+                              <label className="block px-1 pt-2 text-[12px] font-black text-neutral-300 uppercase tracking-widest">
+                                {t('settings.visual.interactive', { defaultValue: 'Interactive' })}
+                              </label>
+                              <CardGallery
+                                bare
+                                items={INTERACTIVE_BACKGROUNDS.map((b) => ({
+                                  ...b,
+                                  name: t(b.labelKey, { defaultValue: b.defaultLabel }),
+                                  // Engines without a still image: a low-res photo of the
+                                  // real engine, taken once (and again only when its
+                                  // settings change) — see SnapshotThumb.
+                                  snapshot: b.snapshot ? { key: `${b.id}|${JSON.stringify(b.snapshot.props(visuals))}`, render: () => b.snapshot.render(visuals) } : null,
+                                }))}
+                                activeId={visuals.activeBackground}
+                                onSelect={(id) => updateVisual("activeBackground", id)}
+                                onConfigure={openBgConfig}
+                                configureLabel={t('settings.visual.configure', { defaultValue: 'Configure' })}
+                              />
+
+                              <div className="pt-2">
+                                <PresetGallery
+                                  title={t('settings.visual.animated', { defaultValue: 'Animated' })}
+                                  presets={ANIMATED_PRESETS}
+                                  randomKey="randomGif"
+                                  visuals={visuals}
+                                  updateVisual={(k, v) => k === 'bgImage' ? pickStatic(v) : updateVisual(k, v)}
+                                  t={t}
+                                  onConfigure={() => openBgConfig('static')}
+                                />
+                              </div>
+                              <WallpaperPackButton category="GIFs" t={t} showToast={showToast} />
+                            </>
+                          )}
+
+                          {/* 2) Image wallpapers (+ guest artist) */}
+                          {bgCategory === 'images' && (
+                            <>
+                              {[
+                                { title: t('settings.visual.still', { defaultValue: 'Static (Image)' }), presets: STATIC_PRESETS, randomKey: "randomJpg" },
+                              ].filter((g) => g.presets.length > 0).map((g) => (
+                                <div key={g.randomKey} className="pt-2">
+                                  <PresetGallery title={g.title} presets={g.presets} randomKey={g.randomKey} visuals={visuals}
+                                    updateVisual={(k, v) => k === 'bgImage' ? pickStatic(v) : updateVisual(k, v)} t={t}
+                                    onConfigure={() => openBgConfig('static')} />
+                                </div>
+                              ))}
+                              <WallpaperPackButton category="JPGs" t={t} showToast={showToast} />
+                              {/* Credit: on the side of the home screen (App.jsx), like React Bits. */}
+                            </>
+                          )}
+
+                          {/* 3) Custom: the user's own wallpapers (added with Browse, each
+                              with its own page to frame it) and a solid color. */}
+                          {bgCategory === 'custom' && (
+                            <>
+                              {/* My wallpapers: the "+" tile adds one (and opens its page).
+                                  pt-2 like every gallery title; pb-4: room before the color row. */}
+                              <div className="pt-2 pb-4">
+                                <PresetGallery
+                                  title={t('settings.visual.my_wallpapers', { defaultValue: 'My wallpapers' })}
+                                  items={photos.map((p) => ({ id: p.id, name: photoName(p), thumb: p.thumb }))}
+                                  activeId={visuals.activeBackground === 'static' ? photos.find((p) => p.path === visuals.bgImage)?.id : null}
+                                  onSelect={(id) => pickStatic(photos.find((p) => p.id === id)?.path || null)}
+                                  randomKey="randomCustom"
+                                  visuals={visuals}
+                                  updateVisual={updateVisual}
+                                  t={t}
+                                  onConfigure={(id) => openBgConfig(`photo:${id}`)}
+                                  onAdd={addPhoto}
+                                  addLabel={t('settings.visual.add_image', { defaultValue: 'Add your own image' })}
+                                />
+                              </div>
+
+                              <SettingRow icon={Paintbrush} title={t('settings.visual.static_color', { defaultValue: 'Static Color' })}>
+                                <SwatchGroup colors={[visuals.staticColor || '#09090b']} onChange={(_, c) => saveSettings({ visuals: { ...visuals, staticColor: c, activeBackground: 'static', bgImage: null } })} />
+                                <Pop show={!colorActive} className="flex">
+                                  <RowButton onClick={() => pickStatic(null)}>{t('settings.visual.use_color', { defaultValue: 'Use' })}</RowButton>
+                                </Pop>
+                              </SettingRow>
+                              {/* The color's own filter (the photos' filters are on their pages) */}
+                              {staticFilterRows(false)}
+                            </>
+                          )}
+                        </motion.div>
+                      </AnimatePresence>
+                    </SettingGroup>
+
+                    {/* Film grain last: an effect on top of whatever background is chosen. */}
+                    <SettingGroup label={t('settings.visual.group_effects', { defaultValue: 'Effects' })}>
+                      <SettingRow
+                        icon={Sparkles}
+                        title={t('settings.visual.film_grain', { defaultValue: 'Film grain' })}
+                        help={t('settings.visual.film_grain_info', { defaultValue: 'Cinematic grain with a light color fringe over the whole app. 0 turns it off.' })}
+                      >
+                        <RowSlider value={grainIntensity(visuals.filmGrain)} min={0} max={100} step={1} onChange={(v) => updateVisual("filmGrain", v)} />
+                      </SettingRow>
+                    </SettingGroup>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -764,7 +1169,26 @@ export default function SettingsModal({ onClose, settings, ytdlpUpdater, appUpda
               </motion.div>
             )}
           </AnimatePresence>
-        </div>
+            {/* About footer (every tab): app version, repository, license. mt-auto
+                keeps it at the bottom when a tab is shorter than the window. */}
+            <div className="mt-auto pt-6 pb-6 shrink-0">
+            <div className="pt-4 border-t border-white/5 flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-[14px] text-neutral-300">
+              <span className="font-bold text-neutral-300">Flow Downloader{appUpdater?.version ? ` v${appUpdater.version}` : ''}</span>
+              <span aria-hidden="true">·</span>
+              <button onClick={() => openExternal(REPO_URL)} data-tooltip={REPO_URL.replace('https://', '')} className="font-semibold hover:text-zinc-200 underline-offset-2 hover:underline cursor-pointer transition-colors">
+                GitHub
+              </button>
+              <span aria-hidden="true">·</span>
+              <button onClick={reportProblem} className="font-semibold hover:text-zinc-200 underline-offset-2 hover:underline cursor-pointer transition-colors">
+                {t('settings.general.report_problem', { defaultValue: 'Report a problem' })}
+              </button>
+              <span aria-hidden="true">·</span>
+              <button onClick={() => openExternal(`${REPO_URL}/blob/HEAD/LICENSE`)} className="font-semibold hover:text-zinc-200 underline-offset-2 hover:underline cursor-pointer transition-colors">
+                {t('settings.general.license', { defaultValue: 'MIT License' })}
+              </button>
+            </div>
+            </div>
+        </SmoothScroll>
         <ScrollThumb scrollRef={scrollRef} className="z-50" />
         </div>
 
@@ -843,72 +1267,128 @@ function ShortcutsTab({ keybinds, saveSettings, t }) {
     }
     saveSettings({ keybinds: { ...keybinds, [id]: def } });
   };
-  const resetAll = () => { setError(''); setRecording(null); saveSettings({ keybinds: { ...DEFAULT_KEYBINDS } }); };
+  // "Restore all defaults" gives visible feedback: the button turns green with a
+  // tick and "Restored", and every shortcut row flashes green once.
+  const [restored, setRestored] = useState(false);
+  useEffect(() => {
+    if (!restored) return;
+    const timer = setTimeout(() => setRestored(false), 1800);
+    return () => clearTimeout(timer);
+  }, [restored]);
+  const resetAll = () => {
+    setError(''); setRecording(null);
+    saveSettings({ keybinds: { ...DEFAULT_KEYBINDS } });
+    setRestored(false);
+    requestAnimationFrame(() => setRestored(true)); // restart the feedback on repeated clicks
+    playAllRowIcons();
+  };
+
+  // Plays every action icon's animation at once. The animated icons start on
+  // their control's mouseenter and settle on mouseleave (AnimatedIcons.jsx), so
+  // each row gets a synthetic enter, then a leave once the animation is done.
+  const tabRef = useRef(null);
+  const playAllRowIcons = () => {
+    const rows = tabRef.current?.querySelectorAll('[data-shortcut-row]') || [];
+    rows.forEach((row) => row.dispatchEvent(new MouseEvent('mouseenter')));
+    setTimeout(() => {
+      rows.forEach((row) => { if (!row.matches(':hover')) row.dispatchEvent(new MouseEvent('mouseleave')); });
+    }, 900);
+  };
 
   const groups = [
     { id: 'main', label: t('settings.shortcuts.main_group', { defaultValue: 'Main window' }) },
     { id: 'modal', label: t('settings.shortcuts.modal_group', { defaultValue: 'Download window' }) },
   ];
 
+  // Icon shown next to each action.
+  const ACTION_ICONS = { search: Search, paste: ClipboardPaste, selectBar: LinkIcon, openSettings: Settings, download: Download, closeModal: X };
+
+  // Geometry: row 56 px tall, 8 px padding around a 40 px icon tile and a 40 px
+  // key button (radius 8) → row radius 8 + 8 = 16 (concentric). The key button
+  // hugs its keycaps: 32 px keys (radius 4) with 4 px around → 4 + 4 = 8.
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <p className="text-[11.5px] text-neutral-400 leading-snug px-1 flex-1">
+    <div ref={tabRef} className="space-y-6">
+      <div className="flex items-center justify-between gap-4">
+        <p className="text-[13px] text-neutral-300 leading-snug px-1 flex-1">
           {t('settings.shortcuts.info', { defaultValue: 'Click a shortcut, then press the new key combination. Press Esc to cancel.' })}
         </p>
-        <button
+        <motion.button
           onClick={resetAll}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-900/60 border border-white/5 hover:border-white/15 text-[11px] font-bold text-zinc-300 hover:text-white transition-colors cursor-pointer shrink-0"
+          whileTap={{ scale: 0.98, transition: TAP }}
+          animate={restored ? { scale: [1, 1.05, 1] } : { scale: 1 }}
+          transition={{ duration: 0.35 }}
+          className={`flex items-center gap-2 h-10 px-3.5 rounded-xl border text-[12.5px] font-bold transition-colors duration-300 cursor-pointer shrink-0 ${restored
+            ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'
+            : 'bg-zinc-900/60 border-white/5 hover:border-white/15 text-zinc-300 hover:text-white'}`}
         >
-          <RotateCcw size={13} />
-          {t('settings.shortcuts.reset_all', { defaultValue: 'Restore all defaults' })}
-        </button>
+          {/* Both labels share one grid cell, so the button is always as wide as
+              the longer one: switching label never changes its size, and the text
+              next to it never jumps. They crossfade. */}
+          <span className="grid">
+            <span className={`[grid-area:1/1] flex items-center justify-center gap-2 transition-all duration-300 ${restored ? 'opacity-0 -translate-y-1' : 'opacity-100 translate-y-0'}`} aria-hidden={restored}>
+              <RotateCcw size={16} />
+              {t('settings.shortcuts.reset_all', { defaultValue: 'Restore all defaults' })}
+            </span>
+            <span className={`[grid-area:1/1] flex items-center justify-center gap-2 transition-all duration-300 ${restored ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-1'}`} aria-hidden={!restored}>
+              <Check size={16} strokeWidth={3} />
+              {t('settings.shortcuts.restored', { defaultValue: 'Defaults restored' })}
+            </span>
+          </span>
+        </motion.button>
       </div>
 
       {/* gap = space-y-6 (24px) of this container */}
       <Collapse show={!!error} gap={24}>
-        <div className="px-3 py-2 rounded-xl bg-red-500/10 border border-red-500/30 text-[11.5px] text-red-300">
+        <div className="px-3.5 py-2.5 rounded-xl bg-red-500/10 border border-red-500/30 text-[12.5px] text-red-300">
           {error}
         </div>
       </Collapse>
 
       {groups.map((g) => (
-        <div key={g.id} className="space-y-2">
-          <label className="flex items-center gap-2 text-[11px] font-black text-neutral-500 uppercase tracking-widest px-1">
-            <Keyboard size={13} className="text-indigo-400 shrink-0" />
+        <div key={g.id} className="space-y-2.5">
+          <label className="block text-[12px] font-black text-neutral-300 uppercase tracking-widest px-1">
             {g.label}
           </label>
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             {KEYBIND_ACTIONS.filter((a) => a.group === g.id).map((a) => {
               const isRecording = recording === a.id;
               const combo = keybinds[a.id];
               const isDefault = combo === DEFAULT_KEYBINDS[a.id];
+              const ActionIcon = ACTION_ICONS[a.id] || Keyboard;
               return (
-                <div key={a.id} className="flex items-center gap-3 pl-3 pr-1.5 h-[48px] bg-zinc-900/40 border border-white/5 rounded-xl">
-                  <span className="flex-1 min-w-0 truncate text-[12.5px] font-bold text-zinc-200">{actionLabel(a.id)}</span>
+                <div
+                  key={a.id}
+                  data-shortcut-row
+                  className={`group flex items-center gap-3 p-2 h-14 rounded-2xl border transition-colors duration-500 ${isRecording ? 'bg-(--accent-strong)/10 border-(--accent-strong)/40' : restored ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-zinc-900/40 border-white/5 hover:border-white/10'}`}
+                >
+                  <div className="w-10 h-10 shrink-0 rounded-lg flex items-center justify-center bg-white/5 border border-white/10 text-(--accent)">
+                    <ActionIcon size={20} />
+                  </div>
+                  <span className="flex-1 min-w-0 truncate text-[14px] font-semibold text-zinc-100">{actionLabel(a.id)}</span>
                   <Pop show={!isDefault} className="flex">
                     <button
                       onClick={() => resetOne(a.id)}
                       data-tooltip={t('settings.shortcuts.reset', { defaultValue: 'Restore default' })}
-                      className="p-1.5 rounded-md text-zinc-500 hover:text-amber-300 hover:bg-white/5 transition-colors cursor-pointer"
+                      className="w-9 h-9 flex items-center justify-center rounded-full text-zinc-300 hover:text-amber-300 hover:bg-white/5 transition-colors cursor-pointer"
                     >
-                      <RotateCcw size={13} />
+                      <RotateCcw size={16} />
                     </button>
                   </Pop>
                   <button
                     onClick={() => { setError(''); setRecording(isRecording ? null : a.id); }}
-                    className={`min-w-[120px] h-9 flex items-center justify-center px-2.5 rounded-md border transition-colors duration-300 cursor-pointer ${isRecording
-                      ? 'bg-indigo-500/15 border-indigo-500/60 text-indigo-300 animate-pulse'
-                      : 'bg-zinc-950/60 border-white/10 hover:border-white/25 text-zinc-200'}`}
+                    className={`h-10 flex items-center justify-center ${isRecording ? 'px-3' : 'px-1'} rounded-lg border transition-colors duration-300 cursor-pointer ${isRecording
+                      ? 'bg-(--accent-strong)/15 border-(--accent-strong)/60 text-(--accent) animate-pulse'
+                      : 'bg-zinc-950/60 border-white/10 hover:border-white/25 text-zinc-100'}`}
                   >
-                    <Swap id={isRecording ? 'recording' : combo} className="flex items-center gap-1">
+                    <Swap id={isRecording ? 'recording' : combo} className="flex items-center gap-1.5">
                       {isRecording ? (
-                        <span className="text-[11px] font-bold">{t('settings.shortcuts.press_key', { defaultValue: 'Press a key…' })}</span>
+                        <span className="text-[12.5px] font-bold">{t('settings.shortcuts.press_key', { defaultValue: 'Press a key…' })}</span>
                       ) : (
                         comboParts(combo).map((part, i) => (
-                          <span key={i} className="flex items-center gap-1">
-                            {i > 0 && !IS_MAC && <span className="text-zinc-600 text-[10px]">+</span>}
-                            <kbd className="px-1.5 py-0.5 rounded bg-white/10 border border-white/10 text-[10.5px] font-mono font-bold">{part}</kbd>
+                          <span key={i} className="flex items-center gap-1.5">
+                            {i > 0 && !IS_MAC && <span className="text-zinc-300 text-[12px]">+</span>}
+                            {/* keycap: a slightly deeper bottom edge, like a real key */}
+                            <kbd className="min-w-8 h-8 px-2 inline-flex items-center justify-center rounded bg-white/10 border border-white/15 border-b-[3px] border-b-white/20 text-[12.5px] font-mono font-bold leading-none">{part}</kbd>
                           </span>
                         ))
                       )}
@@ -924,58 +1404,694 @@ function ShortcutsTab({ keybinds, saveSettings, t }) {
   );
 }
 
-function SmartColorPickerBox({ num, visuals, updateVisual, t, prefix = "lineColor" }) {
-  const colorKey = `${prefix}${num}`;
-  const fallbackColor = num === 1 ? '#4f46e5' : num === 2 ? '#ec4899' : num === 3 ? '#06b6d4' : '#14b8a6';
-  const [localColor, setLocalColor] = useState(visuals[colorKey] || fallbackColor);
 
-  useEffect(() => { setLocalColor(visuals[colorKey] || fallbackColor); }, [visuals[colorKey], fallbackColor]);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (localColor !== (visuals[colorKey] || fallbackColor)) {
-        updateVisual(colorKey, localColor);
-      }
-    }, 200);
-    return () => clearTimeout(timer);
-  }, [localColor, colorKey, visuals, fallbackColor]);
 
+// Every on/off switch in Settings: the app's switch (components/ui/Switch.jsx),
+// same look as Auto Download.
+function ToggleSwitch(props) {
+  return <Switch {...props} />;
+}
+
+// ---------------------------------------------------------------------------
+// Row building blocks for the General tab (same look as the Shortcuts tab).
+// Geometry: 8 px row padding around a 40 px icon tile and 40 px controls
+// (radius 8) → row radius 8 + 8 = 16 (concentric). Segmented controls: 4 px
+// padding around 32 px segments (radius 4) → 4 + 4 = 8.
+// ---------------------------------------------------------------------------
+
+function SettingGroup({ label, children }) {
   return (
-    <div className="flex items-center gap-3 bg-zinc-950 p-2 h-[44px] rounded-xl border border-white/5 relative group hover:border-white/10 transition-colors">
-      <div className="relative w-6 h-6 rounded overflow-hidden shadow-inner shrink-0 cursor-pointer ring-1 ring-white/10">
-        <input type="color" value={localColor} onChange={(e) => setLocalColor(e.target.value)} className="absolute -top-2 -left-2 w-10 h-10 p-0 border-0 cursor-pointer" />
-      </div>
-      <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest group-hover:text-zinc-200 transition-colors">
-        {t('settings.visual.color', { defaultValue: 'Color' })} {num}
-      </span>
+    <div className="space-y-2.5">
+      <label className="block text-[12px] font-black text-neutral-300 uppercase tracking-widest px-1">{label}</label>
+      <div className="space-y-2">{children}</div>
     </div>
   );
 }
 
-function SmartColorPickerRaw({ colorKey, defaultColor, visuals, updateVisual }) {
-  const [localColor, setLocalColor] = useState(visuals[colorKey] || defaultColor);
-  useEffect(() => { setLocalColor(visuals[colorKey] || defaultColor); }, [visuals[colorKey], defaultColor]);
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (localColor !== (visuals[colorKey] || defaultColor)) updateVisual(colorKey, localColor);
-    }, 200);
-    return () => clearTimeout(timer);
-  }, [localColor]);
-  return <input type="color" value={localColor} onChange={(e) => setLocalColor(e.target.value)} className="absolute -top-2 -left-2 w-12 h-12 p-0 border-0 cursor-pointer" />;
+// 40 px icon tile = title + one-line description (20 + 2 + 18), so it sits
+// flush with the text. Radius 8 = row radius 16 − row padding 8.
+function IconTile({ icon: Icon }) {
+  return (
+    <div className="w-10 h-10 shrink-0 self-center rounded-lg flex items-center justify-center bg-white/5 border border-white/10 text-(--accent)">
+      <Icon size={20} />
+    </div>
+  );
 }
 
-// Slider that applies its value LIVE while dragging (so the background updates
-// as you move it), throttled: some settings rebuild the WebGL background, so
-// at most one update every ~60 ms, plus a final one when released.
-const SLIDER_LIVE_MS = 60;
+// title / description / help (tooltip "?") on the left, controls on the right.
+// `onClick` makes the whole row act on click (controls stop propagation).
+function SettingRow({ icon: Icon, title, description, help, onClick, children }) {
+  return (
+    <div
+      {...(onClick ? pressable : {})}
+      onClick={onClick}
+      className={`group flex items-center gap-3 p-2 min-h-14 rounded-2xl border bg-zinc-900/40 border-white/5 hover:border-white/10 transition-colors duration-300 ${onClick ? 'cursor-pointer' : ''}`}
+    >
+      <IconTile icon={Icon} />
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1.5 min-w-0 min-h-10 has-[+div]:min-h-0">
+          <span className="min-w-0 truncate text-[14px] font-semibold text-zinc-100">{title}</span>
+          {help && (
+            <span data-tooltip={help} data-tooltip-variant="text" data-tooltip-place="top" className="shrink-0 flex cursor-help text-neutral-300 hover:text-(--accent) transition-colors">
+              <HelpCircle size={15} />
+            </span>
+          )}
+        </div>
+        {description && <div className="mt-0.5 text-[13px] text-zinc-300 leading-[18px] min-w-0 truncate">{description}</div>}
+      </div>
+      {children && <div className="shrink-0 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>{children}</div>}
+    </div>
+  );
+}
 
-function SliderControl({ label, value, min, max, step, onChange }) {
-  const [localVal, setLocalVal] = useState(value);
+// Compact card for the smaller settings, laid out two per line: icon + title
+// (+ description) on top, the control spanning the card's width below.
+// Same 8 px padding / 40 px tile / radius 16 as the rows.
+function SettingTile({ icon: Icon, title, description, help, corner, children }) {
+  return (
+    <div className="group flex flex-col gap-2 p-2 rounded-2xl border bg-zinc-900/40 border-white/5 hover:border-white/10 transition-colors duration-300">
+      <div className="flex items-start gap-3">
+        <IconTile icon={Icon} />
+        <div className="flex-1 min-w-0 min-h-10 flex flex-col justify-center">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="min-w-0 truncate text-[14px] font-semibold text-zinc-100">{title}</span>
+            {help && (
+              <span data-tooltip={help} data-tooltip-variant="text" data-tooltip-place="top" className="shrink-0 flex cursor-help text-neutral-300 hover:text-(--accent) transition-colors">
+                <HelpCircle size={15} />
+              </span>
+            )}
+          </div>
+          {description && <div className="mt-0.5 text-[13px] text-zinc-300 leading-[18px] min-w-0 truncate">{description}</div>}
+        </div>
+        {corner && <div className="shrink-0 self-center">{corner}</div>}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function RowButton({ onClick, disabled, full = false, children }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={`${full ? 'w-full' : ''} h-10 px-3.5 flex items-center justify-center rounded-lg border bg-zinc-950/60 border-white/10 hover:border-white/25 text-[12.5px] font-bold text-zinc-200 hover:text-white uppercase tracking-wide transition-colors cursor-pointer disabled:cursor-wait disabled:opacity-80`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function Segmented({ value, options, onChange, full = false }) {
+  return (
+    <div className={`${full ? 'w-full' : ''} flex items-center gap-1 h-10 p-1 rounded-lg bg-zinc-950/60 border border-white/10`}>
+      {options.map((opt) => {
+        const active = value === opt.value;
+        return (
+          <button
+            key={opt.value}
+            onClick={() => onChange(opt.value)}
+            className={`relative ${full ? 'flex-1' : ''} h-8 min-w-8 px-2 rounded text-[12.5px] font-bold tabular-nums transition-colors duration-300 cursor-pointer ${active ? 'text-white' : 'text-zinc-300 hover:text-zinc-100'}`}
+          >
+            {active && <motion.span layoutId={`seg-${options.map((o) => o.value).join('-')}`} className="absolute inset-0 rounded bg-(--accent-strong)/80" transition={{ type: "spring", stiffness: 420, damping: 32 }} />}
+            <span className="relative">{opt.label}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// Compact dropdown for a row (optionally searchable). Opens below, or above
+// when there's no room below inside the scrolling area.
+function RowSelect({ valueLabel, options, onSelect, searchPlaceholder, emptyLabel, full = false }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [openUp, setOpenUp] = useState(false);
+  const [term, setTerm] = useState("");
+  const [pos, setPos] = useState(null);
+  const btnRef = useRef(null);
+  const menuRef = useRef(null);
+  const inputRef = useRef(null);
+  const list = searchPlaceholder ? options.filter((o) => o.label.toLowerCase().includes(term.toLowerCase())) : options;
+  const toggle = () => {
+    if (!isOpen && btnRef.current) {
+      const r = btnRef.current.getBoundingClientRect();
+      const area = btnRef.current.closest('.overflow-y-auto')?.getBoundingClientRect();
+      const roomBelow = (area ? area.bottom : window.innerHeight) - r.bottom;
+      const roomAbove = r.top - (area ? area.top : 0);
+      const need = searchPlaceholder ? 310 : 260; // menu height (+ search box)
+      // Open where it fits; if it fits nowhere, the side with more room.
+      setOpenUp(roomBelow < need && roomAbove > roomBelow);
+    }
+    setIsOpen((o) => !o);
+    setTerm("");
+  };
+  const close = () => { setIsOpen(false); setTerm(""); };
+  useEffect(() => { if (!isOpen) setPos(null); }, [isOpen]);
+
+  // The menu is rendered in a portal (document.body), so it sits above the
+  // Settings bottom blur instead of being covered by it (the scroller's mask
+  // and the tab animation create stacking contexts it can't escape). It's
+  // fixed-positioned against the button and follows it while the scroller
+  // glides / scrolls or the window resizes.
+  useLayoutEffect(() => {
+    if (!isOpen) return;
+    const place = () => {
+      const b = btnRef.current?.getBoundingClientRect();
+      if (!b) return;
+      const width = full ? b.width : 240;
+      setPos({
+        left: full ? b.left : b.right - width,
+        width,
+        ...(openUp ? { bottom: window.innerHeight - b.top + 4 } : { top: b.bottom + 4 }),
+      });
+    };
+    place();
+    const scroller = btnRef.current?.closest('.overflow-y-auto');
+    let raf = 0;
+    const onMove = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(place); };
+    scroller?.addEventListener('scroll', onMove, { passive: true });
+    window.addEventListener('resize', onMove);
+    return () => {
+      cancelAnimationFrame(raf);
+      scroller?.removeEventListener('scroll', onMove);
+      window.removeEventListener('resize', onMove);
+    };
+  }, [isOpen, openUp, full]);
+
+  // Once open: if part of the menu is outside the Settings scroller, glide the
+  // scroller just enough to show it (Lenis, eased) — never a jump. The search
+  // box is focused with preventScroll, because a plain focus() makes the
+  // browser snap the scroller to it instantly (that was the abrupt jump).
+  useEffect(() => {
+    if (!isOpen) return;
+    const raf = requestAnimationFrame(() => {
+      inputRef.current?.focus({ preventScroll: true });
+      const scroller = btnRef.current?.closest('.overflow-y-auto');
+      const menu = menuRef.current;
+      if (!scroller || !menu) return;
+      const area = scroller.getBoundingClientRect();
+      const m = menu.getBoundingClientRect();
+      const MARGIN = 16;
+      let delta = 0;
+      if (m.bottom + MARGIN > area.bottom) delta = m.bottom + MARGIN - area.bottom;
+      else if (m.top - MARGIN < area.top) delta = m.top - MARGIN - area.top;
+      if (!delta) return;
+      const target = scroller.scrollTop + delta;
+      if (scroller.lenis) scroller.lenis.scrollTo(target, { duration: 0.6, easing: (t) => 1 - Math.pow(1 - t, 3) });
+      else scroller.scrollTo({ top: target, behavior: 'smooth' });
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [isOpen]);
+
+  return (
+    <div className={`relative ${full ? 'w-full' : ''}`}>
+      <button
+        ref={btnRef}
+        onClick={toggle}
+        className={`h-10 ${full ? 'w-full' : 'min-w-[180px] max-w-[220px]'} flex items-center justify-between gap-2 px-3 rounded-lg border transition-colors duration-300 cursor-pointer ${isOpen ? 'bg-zinc-800 border-white/20' : 'bg-zinc-950/60 border-white/10 hover:border-white/25'}`}
+      >
+        <Swap id={valueLabel} className="block min-w-0 truncate text-[13px] font-bold text-zinc-100">{valueLabel}</Swap>
+        <ChevronDown size={16} className={`shrink-0 text-zinc-300 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+      {createPortal(
+      <AnimatePresence>
+        {isOpen && pos && (
+          <>
+            <div className="fixed inset-0 z-[9000]" onClick={(e) => { e.stopPropagation(); close(); }} />
+            <motion.div
+              ref={menuRef}
+              style={pos}
+              initial={{ opacity: 0, y: openUp ? 8 : -8, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: openUp ? 8 : -8, scale: 0.97 }}
+              transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+              className={`fixed ${openUp ? 'origin-bottom' : 'origin-top'} z-[9001] bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col`}
+            >
+              {searchPlaceholder && (
+                <div className="p-2 border-b border-zinc-800 shrink-0">
+                  <div className="flex items-center gap-2 bg-zinc-950 border border-zinc-800 rounded-lg px-2.5 h-9 focus-within:border-(--accent-strong)/50 transition-colors">
+                    <Search size={14} className="text-neutral-300 shrink-0" />
+                    <input ref={inputRef} value={term} onChange={(e) => setTerm(e.target.value)} placeholder={searchPlaceholder} className="w-full bg-transparent text-[12.5px] font-medium text-white outline-none placeholder:text-neutral-500" />
+                  </div>
+                </div>
+              )}
+              <SmoothScroll nested className="max-h-60 overflow-y-auto custom-scrollbar" contentClassName="p-1">
+                {list.length > 0 ? list.map((opt) => (
+                  <button
+                    key={opt.value}
+                    onClick={() => { onSelect(opt.value); close(); }}
+                    className={`w-full flex items-center justify-between gap-2 text-left px-3 h-9 rounded-xl text-[13px] font-semibold transition-colors hover:bg-zinc-800 ${valueLabel === opt.label ? 'text-(--accent) bg-zinc-800/60' : 'text-zinc-300'}`}
+                  >
+                    <span className="truncate">{opt.label}</span>
+                    {valueLabel === opt.label && <Check size={14} className="shrink-0" />}
+                  </button>
+                )) : (
+                  <div className="px-3 py-5 text-center text-[12px] text-neutral-300 font-bold uppercase tracking-widest">{emptyLabel}</div>
+                )}
+              </SmoothScroll>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>,
+      document.body
+      )}
+    </div>
+  );
+}
+
+// Icons of the shared engine options (settings.visual.opt.*); others get sliders.
+const OPTION_ICONS = {
+  speed: Hourglass, mouse: MousePointer, hover: MousePointer, influence: MousePointer, parallax: MousePointer,
+  click: Wand2, click_pulse: Wand2, glow: Sparkles, twinkle: Sparkles, brightness: SunDim,
+  intensity: SunDim, haze: Droplet, fog: Droplet, dof: Droplet, softness: Droplet, count: Layers,
+  cells: Layers, depth: Layers, elevation: Layers, height: Layers, connections: LinkIcon, points: Sparkles,
+  auto_scan: RotateCcw, scan_duration: Hourglass, scan_delay: Hourglass, animation: RotateCcw,
+};
+
+// Fallback colors for the Floating Lines "custom colors".
+const LINE_FALLBACK = ['#4f46e5', '#ec4899', '#06b6d4', '#14b8a6'];
+
+// The interactive (React) backgrounds. To add one: render it in App.jsx's
+// background system under its id, then list it here with a thumbnail.
+const INTERACTIVE_BACKGROUNDS = [
+  // No still image files: `snapshot` renders the engine once, off-screen, and
+  // the card keeps a small photo of it (SnapshotThumb), so the picture follows
+  // the user's settings. props = what the picture depends on, render = the
+  // engine paused.
+  {
+    id: 'floatingLines', labelKey: 'settings.visual.styles.lines', defaultLabel: 'Animated Lines',
+    snapshot: {
+      props: (v) => floatingLinesProps(v),
+      render: (v) => <FloatingLines {...floatingLinesProps(v)} interactive={false} paused />,
+    },
+  },
+  {
+    id: 'ghostFibers', labelKey: 'settings.visual.styles.fibers', defaultLabel: 'Ghost Fibers',
+    snapshot: {
+      props: (v) => ghostFibersProps(v),
+      render: (v) => <GhostFibers {...ghostFibersProps(v)} intro={false} dpr={1} mouseInteraction={false} paused />,
+    },
+  },
+  {
+    id: 'gradientWaves', labelKey: 'settings.visual.styles.gradient_waves', defaultLabel: 'Gradient Waves',
+    snapshot: {
+      props: (v) => gradientWavesProps(v),
+      render: (v) => <GradientWaves {...gradientWavesProps(v)} intro={false} dpr={1} mouseInteraction={false} swellOnClick={false} paused />,
+    },
+  },
+  // Engines from the registry: snapshot thumbnails, options built from their schema.
+  ...ENGINES.map((engine) => ({
+    id: engine.id, labelKey: `settings.visual.styles.${engine.id}`, defaultLabel: engine.name, engine,
+    snapshot: {
+      props: (v) => engineProps(engine, v),
+      render: (v) => <engine.component {...engineProps(engine, v)} intro={false} paused />,
+    },
+  })),
+];
+
+// Cards with a preview + name. Card: 6 px padding, radius 16 → preview
+// radius 10 (outer = inner + padding).
+// `bare`: just the picture (no card background, no name) — wallpaper galleries;
+// the name is in a tooltip. Radius 16 with a ring when selected.
+function CardGallery({ items, activeId, onSelect, onConfigure, configureLabel, bare = false, onAdd, addLabel }) {
+  return (
+    <div className="grid grid-cols-3 gap-2">
+      {items.map((bg) => {
+        const active = activeId === bg.id;
+        return (
+          <div
+            key={bg.id}
+            role="button"
+            tabIndex={0}
+            onClick={() => onSelect(bg.id)}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(bg.id); } }}
+            data-tooltip={bare ? bg.name : undefined}
+            className={bare
+              ? 'group relative rounded-2xl cursor-pointer outline-none'
+              : `group relative flex flex-col gap-1.5 p-1.5 rounded-2xl border text-left cursor-pointer outline-none transition-colors duration-300 ${active
+                ? 'bg-(--accent-strong)/10 border-(--accent-strong)/50'
+                : 'bg-zinc-900/40 border-white/5 hover:border-white/15 hover:bg-zinc-900/70'}`}
+          >
+            <div className={`relative aspect-video overflow-hidden bg-zinc-950 ${bare
+              ? `rounded-2xl ring-2 transition-shadow duration-300 ${active ? 'ring-(--accent-strong)' : 'ring-transparent group-hover:ring-white/25'}`
+              : 'rounded-[10px]'}`}>
+              {bg.snapshot
+                ? <SnapshotThumb cacheKey={bg.snapshot.key} id={bg.id} render={bg.snapshot.render} />
+                : <img src={bg.thumb} alt="" loading="lazy" decoding="async" fetchPriority="low" className="absolute inset-0 w-full h-full object-cover pointer-events-none" />}
+              {bg.preview && <HoverPreview src={bg.preview} />}
+              <Pop show={active} as="div" className="absolute top-1.5 right-1.5 bg-(--accent-strong) text-white p-0.5 rounded-full shadow-lg">
+                <Check size={10} strokeWidth={4} />
+              </Pop>
+              {/* Selected card: hover → gear to configure this background. */}
+              {active && onConfigure && (
+                // No opacity fade on this wrapper: an ancestor with opacity < 1
+                // stops the chip's backdrop blur from rendering until the fade
+                // ends, so the glass "popped in" late. The dim is a background
+                // color transition; only the chip itself fades/scales.
+                <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/35 group-focus-within:bg-black/35 transition-colors duration-300">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onConfigure(bg.id); }}
+                    className="glass-chip w-11 h-11 flex items-center justify-center rounded-full text-white cursor-pointer opacity-0 scale-75 pointer-events-none group-hover:opacity-100 group-hover:scale-100 group-hover:pointer-events-auto group-focus-within:opacity-100 group-focus-within:scale-100 group-focus-within:pointer-events-auto"
+                    style={{ transition: "opacity 0.25s ease, transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), background-color 0.2s ease" }}
+                  >
+                    <Settings size={20} />
+                  </button>
+                </div>
+              )}
+            </div>
+            {!bare && <span className={`block px-1 pb-0.5 text-[13px] truncate transition-colors duration-300 ${active ? 'text-white font-semibold' : 'text-zinc-300 group-hover:text-zinc-100'}`}>
+              {bg.name}
+            </span>}
+          </div>
+        );
+      })}
+      {/* "+" tile: add an item (the user's own wallpapers) — same shape as the cards, always after them */}
+      {onAdd && (
+        <button
+          type="button"
+          onClick={onAdd}
+          data-tooltip={addLabel}
+          aria-label={addLabel}
+          className="group relative aspect-video rounded-2xl border-2 border-dashed border-white/15 hover:border-white/35 bg-white/[0.02] hover:bg-white/[0.05] flex items-center justify-center text-zinc-300 hover:text-white cursor-pointer transition-colors duration-300"
+        >
+          <PlusIcon size={26} strokeWidth={2} />
+        </button>
+      )}
+    </div>
+  );
+}
+
+// Card thumbnail for an engine without a still image: the engine is rendered
+// ONCE, off-screen at card size (320×180, paused), one frame is copied into a
+// small WebP and the engine is unmounted. The photo is kept in memory and in
+// localStorage (one entry per background, replaced when its settings change),
+// so normally the gallery shows a plain image and runs no WebGL at all.
+// When a photo has to be made: only for cards actually on screen (scrolled
+// into view), and ONE at a time (a queue) — never a dozen WebGL engines
+// starting together.
+const SNAP_W = 320, SNAP_H = 180;
+const snapshotMemory = new Map();
+const readSnapshot = (id, key) => {
+  if (snapshotMemory.get(id)?.key === key) return snapshotMemory.get(id).url;
+  try {
+    const saved = JSON.parse(localStorage.getItem(`fd-thumb:${id}`) || 'null');
+    if (saved?.key === key && saved.url) { snapshotMemory.set(id, saved); return saved.url; }
+  } catch { /* storage unavailable */ }
+  return null;
+};
+const writeSnapshot = (id, key, url) => {
+  snapshotMemory.set(id, { key, url });
+  try { localStorage.setItem(`fd-thumb:${id}`, JSON.stringify({ key, url })); } catch { /* full / unavailable */ }
+};
+// One capture at a time: each job gets its turn, then releases the next.
+let snapshotQueue = Promise.resolve();
+const queueSnapshot = (job) => {
+  const run = snapshotQueue.then(() => new Promise((done) => job(done)));
+  snapshotQueue = run.catch(() => {});
+  return run;
+};
+
+function SnapshotThumb({ id, cacheKey, render }) {
+  const [src, setSrc] = useState(() => readSnapshot(id, cacheKey));
+  const [turn, setTurn] = useState(false); // this card's engine is being rendered now
+  const box = useRef(null);
+  const holder = useRef(null);
+  const release = useRef(null);
+  useEffect(() => { setSrc(readSnapshot(id, cacheKey)); }, [id, cacheKey]);
+  const capturing = !src;
+
+  // Wait until the card is (nearly) on screen, then wait for its turn.
+  useEffect(() => {
+    if (!capturing || !box.current) return undefined;
+    let cancelled = false;
+    const io = new IntersectionObserver((entries) => {
+      if (!entries.some((e) => e.isIntersecting)) return;
+      io.disconnect();
+      queueSnapshot((done) => {
+        if (cancelled) { done(); return; }
+        release.current = done;
+        setTurn(true);
+        setTimeout(done, 4000); // never hold the queue for long
+      });
+    }, { rootMargin: '120px' });
+    io.observe(box.current);
+    return () => { cancelled = true; io.disconnect(); release.current?.(); release.current = null; };
+  }, [capturing, id, cacheKey]);
+
+  // Its turn: a few frames so the engine has drawn, then copy one.
+  useEffect(() => {
+    if (!turn) return undefined;
+    let raf = 0, frames = 0;
+    const finish = () => { setTurn(false); release.current?.(); release.current = null; };
+    const capture = () => {
+      const source = holder.current?.querySelector('canvas');
+      if (source && source.width) {
+        const out = document.createElement('canvas');
+        out.width = SNAP_W;
+        out.height = SNAP_H;
+        out.getContext('2d').drawImage(source, 0, 0, SNAP_W, SNAP_H);
+        const url = out.toDataURL('image/webp', 0.8);
+        writeSnapshot(id, cacheKey, url);
+        setSrc(url);
+      }
+      finish();
+    };
+    const wait = () => { if (++frames < 6) { raf = requestAnimationFrame(wait); return; } capture(); };
+    raf = requestAnimationFrame(wait);
+    return () => cancelAnimationFrame(raf);
+  }, [turn, id, cacheKey]);
+
+  return (
+    <>
+      <span ref={box} className="absolute inset-0 pointer-events-none" aria-hidden="true" />
+      {src && <img src={src} alt="" decoding="async" className="absolute inset-0 w-full h-full object-cover pointer-events-none" />}
+      {turn && capturing && createPortal(
+        // In the window but invisible: some engines don't draw while their
+        // IntersectionObserver says they're off-screen.
+        <div ref={holder} aria-hidden="true" style={{ position: 'fixed', left: 0, top: 0, width: SNAP_W, height: SNAP_H, opacity: 0, pointerEvents: 'none', zIndex: -1 }}>
+          {render()}
+        </div>,
+        document.body
+      )}
+    </>
+  );
+}
+
+// Animated preview over a card's still thumbnail: only loaded once the card is
+// hovered (small 320x180 animated WebP), fades in when ready, and is removed
+// on leave so it doesn't keep animating off-screen.
+// "Download all wallpapers" under the built-in galleries: the wallpaper pack
+// (Rust wallpaper_pack.rs) — the built-in wallpapers that don't ship inside
+// the app. Once downloaded they show up in the galleries above, ready to use,
+// and the button goes away.
+const packMb = (bytes) => `${Math.round(bytes / 1048576)} MB`;
+// One download for every place the button is shown (both galleries, Settings reopened).
+let packProgress = null;
+const packListeners = new Set();
+const setPackProgress = (p) => { packProgress = p; packListeners.forEach((fn) => fn(p)); };
+listen('wallpaper-pack-progress', (e) => { if (packProgress) setPackProgress({ ...e.payload, category: packProgress.category }); }).catch(() => {});
+
+// Each gallery downloads only its own part of the pack: "GIFs" (animated) or
+// "JPGs" (images). One download at a time; the progress card shows in the
+// gallery that started it.
+function WallpaperPackButton({ category, t, showToast }) {
+  useWallpaperPresets();
+  const [all, setProgress] = useState(packProgress);
+  useEffect(() => { packListeners.add(setProgress); return () => packListeners.delete(setProgress); }, []);
+  const progress = all?.category === category ? all : null;
+  const otherBusy = !!all && !progress; // the other gallery is downloading
+  if (hasWallpaperPack(category) && !progress) return null;
+
+  // Dev aid (only in `tauri dev`): Shift+click plays a fake download (no
+  // network), to see the progress card before the pack is published.
+  const simulate = () => {
+    const total = 226 * 1048576;
+    let done = 0;
+    setPackProgress({ category, done, total });
+    const timer = setInterval(() => {
+      done = Math.min(total, done + total / 40);
+      setPackProgress({ category, done, total });
+      if (done >= total) { clearInterval(timer); setTimeout(() => setPackProgress(null), 600); }
+    }, 150);
+  };
+
+  const start = async (e) => {
+    if (otherBusy) return;
+    if (import.meta.env.DEV && e?.shiftKey) { simulate(); return; }
+    setPackProgress({ category, done: 0, total: 0 });
+    try {
+      await addWallpaperPack(await invoke('download_wallpaper_pack', { category }));
+      showToast?.('wallpaper_pack_done', 'success');
+    } catch (err) {
+      if (String(err) !== 'canceled') { console.error('[wallpaper pack]', err); showToast?.('wallpaper_pack_error', 'error'); }
+    } finally {
+      setPackProgress(null);
+    }
+  };
+  const percent = progress?.total ? Math.floor((progress.done * 100) / progress.total) : 0;
+
+  return (
+    <div className="pt-4">
+      {progress ? (
+        <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 space-y-2">
+          <div className="flex items-center justify-between gap-3 text-[13px]">
+            <span className="font-semibold text-zinc-100">
+              {t('settings.visual.pack_downloading', { defaultValue: 'Downloading wallpapers… {{percent}}%', percent })}
+            </span>
+            <button
+              type="button"
+              onClick={() => invoke('cancel_wallpaper_pack')}
+              className="text-zinc-400 hover:text-white transition-colors cursor-pointer"
+            >
+              {t('settings.visual.pack_cancel', { defaultValue: 'Cancel' })}
+            </button>
+          </div>
+          <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
+            <div className="h-full rounded-full bg-(--accent) transition-[width] duration-300" style={{ width: `${percent}%` }} />
+          </div>
+          {progress.total > 0 && (
+            <div className="text-[12px] text-zinc-400 tabular-nums">{packMb(progress.done)} / {packMb(progress.total)}</div>
+          )}
+        </div>
+      ) : (
+        <motion.button
+          type="button"
+          whileTap={{ scale: 0.98, transition: TAP }}
+          onClick={start}
+          disabled={otherBusy}
+          className={`w-full flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-[13px] font-semibold text-zinc-100 transition-colors ${otherBusy ? "opacity-50 cursor-not-allowed" : "hover:bg-white/10 hover:border-white/20 cursor-pointer"}`}
+        >
+          <Download size={16} />
+          {t('settings.visual.pack_download', { defaultValue: 'Download an extension with lots of new wallpapers' })}
+        </motion.button>
+      )}
+    </div>
+  );
+}
+
+function HoverPreview({ src }) {
+  const ref = useRef(null);
+  const [hover, setHover] = useState(false);
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    const card = ref.current?.closest('[role="button"]');
+    if (!card) return;
+    const on = () => setHover(true);
+    const off = () => { setHover(false); setReady(false); };
+    card.addEventListener('mouseenter', on);
+    card.addEventListener('mouseleave', off);
+    return () => { card.removeEventListener('mouseenter', on); card.removeEventListener('mouseleave', off); };
+  }, []);
+  return (
+    <span ref={ref} className="absolute inset-0 pointer-events-none">
+      {hover && (/\.mp4($|[?#])/i.test(src)
+        ? (
+          // Video wallpapers: the wallpaper itself plays as the preview.
+          <video
+            src={src}
+            autoPlay
+            muted
+            loop
+            playsInline
+            onLoadedData={() => setReady(true)}
+            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${ready ? 'opacity-100' : 'opacity-0'}`}
+          />
+        ) : (
+          <img
+            src={src}
+            alt=""
+            decoding="async"
+            onLoad={() => setReady(true)}
+            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${ready ? 'opacity-100' : 'opacity-0'}`}
+          />
+        ))}
+    </span>
+  );
+}
+
+// Big 3-way switch (icon + label), same look as the Settings tabs: 56 px tall,
+// 4 px inset, radius 16 outside → 12 inside.
+function BigTabs({ value, options, onChange }) {
+  return (
+    <div className="flex gap-1 p-1 rounded-2xl bg-zinc-950/60 border border-white/10">
+      {options.map(({ value: v, icon: Icon, label }) => {
+        const active = value === v;
+        return (
+          <button
+            key={v}
+            onClick={() => onChange(v)}
+            className={`group relative flex-1 h-12 flex items-center justify-center gap-2 px-3 rounded-xl text-[13.5px] font-semibold cursor-pointer outline-none transition-colors duration-300 ${active ? 'text-zinc-900' : 'text-zinc-300 hover:text-zinc-100'}`}
+          >
+            {active && <motion.span layoutId="bg-category" className="absolute inset-0 rounded-xl bg-white shadow-sm" /* same white pill as the General / Appearance / Shortcuts tabs */ transition={{ type: "spring", stiffness: 420, damping: 32 }} />}
+            <span className="relative flex items-center gap-2 min-w-0">
+              <Icon size={18} className="shrink-0" />
+              <span className="truncate">{label}</span>
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// Color swatches in a 40 px well (like Segmented: 4 px inset, radius 8 → 4).
+// Each swatch opens the system color picker; the change is applied live
+// (throttled) so the background follows while you pick.
+function SwatchGroup({ colors, onChange }) {
+  return (
+    <div className="flex items-center gap-1 h-10 p-1 rounded-lg bg-zinc-950/60 border border-white/10" onClick={(e) => e.stopPropagation()}>
+      {colors.map((c, i) => <Swatch key={i} value={c} onChange={(v) => onChange(i, v)} />)}
+    </div>
+  );
+}
+
+// One color square; click → the app's own color picker (ColorPicker.jsx).
+// Picks are applied LIVE while dragging, throttled (the background may rebuild
+// on each change), plus a final one when the drag pauses.
+const SWATCH_LIVE_MS = 70;
+function Swatch({ value, onChange }) {
+  const [local, setLocal] = useState(value);
+  const [open, setOpen] = useState(false);
+  const btn = useRef(null);
+  const last = useRef(0);
+  const timer = useRef(null);
+  useEffect(() => { setLocal(value); }, [value]);
+  useEffect(() => () => clearTimeout(timer.current), []);
+  const pick = (v) => {
+    setLocal(v);
+    clearTimeout(timer.current);
+    const wait = SWATCH_LIVE_MS - (Date.now() - last.current);
+    const send = () => { last.current = Date.now(); onChange(v); };
+    if (wait <= 0) send(); else timer.current = setTimeout(send, wait);
+  };
+  return (
+    <>
+      <button
+        ref={btn}
+        onClick={() => setOpen((o) => !o)}
+        className={`w-8 h-8 rounded cursor-pointer ring-1 ring-inset transition-shadow ${open ? 'ring-white' : 'ring-white/15 hover:ring-white/40'}`}
+        style={{ backgroundColor: local }}
+        data-tooltip={open ? undefined : local.toUpperCase()}
+      />
+      <AnimatePresence>
+        {open && <ColorPicker anchor={btn.current} value={local} onChange={pick} onClose={() => setOpen(false)} />}
+      </AnimatePresence>
+    </>
+  );
+}
+
+// Slider for a row: track + value. Applies its value LIVE while dragging
+// (throttled to one update every ~60 ms — some settings rebuild the WebGL
+// background), plus a final one on release.
+const SLIDER_LIVE_MS = 60;
+function RowSlider({ value, min, max, step, onChange, format = (v) => v }) {
+  const [local, setLocal] = useState(value);
   const lastSent = useRef({ at: 0, value });
   const pending = useRef(null);
-  useEffect(() => { setLocalVal(value); }, [value]);
+  useEffect(() => { setLocal(value); }, [value]);
   useEffect(() => () => clearTimeout(pending.current), []);
-
   const send = (v) => {
     clearTimeout(pending.current);
     pending.current = null;
@@ -983,114 +2099,26 @@ function SliderControl({ label, value, min, max, step, onChange }) {
     lastSent.current = { at: Date.now(), value: v };
     onChange(v);
   };
-  const handleChange = (e) => {
+  const handle = (e) => {
     const v = parseFloat(e.target.value);
-    setLocalVal(v);
+    setLocal(v);
     const wait = SLIDER_LIVE_MS - (Date.now() - lastSent.current.at);
     clearTimeout(pending.current);
     if (wait <= 0) send(v);
-    else pending.current = setTimeout(() => send(v), wait); // trailing update
+    else pending.current = setTimeout(() => send(v), wait);
   };
-
+  const pct = ((local - min) / (max - min || 1)) * 100;
   return (
-    <div className="space-y-3">
-      <div className="flex justify-between items-center">
-        <label className="text-[11px] font-black text-neutral-200 uppercase tracking-widest">{label}</label>
-        <span className="text-[11px] font-black text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded">{localVal}</span>
-      </div>
-      <input type="range" min={min} max={max} step={step} value={localVal} onChange={handleChange} onPointerUp={() => send(localVal)} onKeyUp={() => send(localVal)} className="w-full h-1.5 bg-zinc-800 rounded-full appearance-none cursor-pointer accent-indigo-500 hover:accent-indigo-400 transition-all" />
-    </div>
-  );
-}
-
-function ToggleSwitch({ active, onClick }) {
-  return (
-    <button onClick={onClick} className={`w-10 h-5 rounded-full relative transition-colors duration-300 ease-in-out border cursor-pointer ${active ? "bg-indigo-500 border-indigo-400" : "bg-zinc-800 border-white/10"}`}>
-      {/* Knob slides with a spring (and squishes slightly while pressed). */}
-      <motion.div
-        initial={false}
-        animate={{ x: active ? 20 : 0 }}
-        whileTap={{ scaleX: 1.25 }}
-        transition={SPRING}
-        className="w-3.5 h-3.5 rounded-full bg-white absolute top-[2px] left-[2px] shadow-sm"
+    <div className="flex items-center gap-3 h-10 pl-3 pr-1 rounded-lg bg-zinc-950/60 border border-white/10" onClick={(e) => e.stopPropagation()}>
+      <input
+        type="range" min={min} max={max} step={step} value={local}
+        onChange={handle} onPointerUp={() => send(local)} onKeyUp={() => send(local)}
+        className="row-range w-40 h-1.5 rounded-full cursor-pointer"
+        style={{ background: `linear-gradient(to right, rgb(99 102 241 / 0.9) ${pct}%, rgb(39 39 42) ${pct}%)` }}
       />
-    </button>
-  );
-}
-
-function CustomSelect({ label, icon: Icon, valueLabel, options, onSelect }) {
-  const [isOpen, setIsOpen] = useState(false);
-  return (
-    <div className="flex flex-col">
-      <label className="text-[11px] font-black text-neutral-500 uppercase tracking-widest px-1 mb-1.5">{label}</label>
-      <div className="relative">
-        <button onClick={() => setIsOpen(!isOpen)} className={`w-full flex items-center justify-between p-2.5 px-3 rounded-xl border transition-all duration-500 ease-in-out h-[44px] ${isOpen ? "bg-zinc-800 border-white/20 shadow-inner" : "bg-zinc-900/40 border-white/5 hover:bg-zinc-900 hover:border-white/10 cursor-pointer active:scale-95"}`}>
-          <div className="flex items-center gap-2 overflow-hidden">
-            <Icon size={14} className="text-neutral-200 shrink-0" />
-            <Swap id={valueLabel} className="block min-w-0 text-[12.5px] font-bold text-zinc-200 truncate">{valueLabel}</Swap>
-          </div>
-          <ChevronDown size={12} className={`text-neutral-200 transition-transform duration-300 shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
-        </button>
-        <AnimatePresence>
-          {isOpen && (
-            <>
-              <div className="fixed inset-0 z-30" onClick={(e) => { e.stopPropagation(); setIsOpen(false); }} />
-              <motion.div initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.95 }} transition={{ duration: 0.15 }} className="absolute bottom-full left-0 right-0 mb-1 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl z-40 overflow-hidden flex flex-col max-h-48 py-1 origin-bottom">
-                <div className="overflow-y-auto custom-scrollbar flex-1">
-                  {options.map((opt, i) => (
-                    <button key={i} onClick={() => { onSelect(opt.value); setIsOpen(false); }} className={`w-full text-left px-3 py-2.5 text-[11px] font-bold transition-colors hover:bg-zinc-800 ${valueLabel === opt.label ? 'text-indigo-400 bg-zinc-800/50' : 'text-zinc-400'}`}>{opt.label}</button>
-                  ))}
-                </div>
-              </motion.div>
-            </>
-          )}
-        </AnimatePresence>
-      </div>
-    </div>
-  );
-}
-
-function SearchableSelect({ label, icon: Icon, valueLabel, options, onSelect, placeholder }) {
-  const { t } = useTranslation();
-  const [isOpen, setIsOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
-  const filteredOptions = options.filter(opt => opt.label.toLowerCase().includes(searchTerm.toLowerCase()));
-  return (
-    <div className="flex flex-col">
-      <label className="text-[11px] font-black text-neutral-500 uppercase tracking-widest px-1 mb-1.5">{label}</label>
-      <div className="relative">
-        <button onClick={() => setIsOpen(!isOpen)} className={`w-full flex items-center justify-between p-2.5 px-3 rounded-xl border transition-all duration-500 ease-in-out h-[44px] ${isOpen ? "bg-zinc-800 border-white/20 shadow-inner" : "bg-zinc-900/40 border-white/5 hover:bg-zinc-900 hover:border-white/10 cursor-pointer active:scale-95"}`}>
-          <div className="flex items-center gap-2 overflow-hidden">
-            <Icon size={14} className="text-neutral-200 shrink-0" />
-            <Swap id={valueLabel} className="block min-w-0 text-[12.5px] font-bold text-zinc-200 truncate">{valueLabel}</Swap>
-          </div>
-          <ChevronDown size={12} className={`text-neutral-200 transition-transform duration-300 shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
-        </button>
-        <AnimatePresence>
-          {isOpen && (
-            <>
-              <div className="fixed inset-0 z-30" onClick={(e) => { e.stopPropagation(); setIsOpen(false); setSearchTerm(""); }} />
-              <motion.div initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.95 }} transition={{ duration: 0.15 }} className="absolute bottom-full left-0 right-0 mb-1 bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl z-40 overflow-hidden flex flex-col max-h-60 origin-bottom">
-                <div className="p-2 border-b border-zinc-800 shrink-0" onClick={e => e.stopPropagation()}>
-                  <div className="flex items-center gap-2 bg-zinc-950 border border-zinc-800 rounded-lg px-2.5 py-2 focus-within:border-indigo-500/50 transition-colors">
-                    <Search size={12} className="text-neutral-200 shrink-0" />
-                    <input type="text" autoFocus placeholder={placeholder} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full bg-transparent text-[11px] font-medium text-white outline-none placeholder:text-neutral-500" />
-                  </div>
-                </div>
-                <div className="overflow-y-auto custom-scrollbar flex-1 py-1">
-                  {filteredOptions.length > 0 ? (
-                    filteredOptions.map((opt, i) => (
-                      <button key={i} onClick={() => { onSelect(opt.value); setIsOpen(false); setSearchTerm(""); }} className={`w-full text-left px-3 py-2.5 text-[11px] font-bold transition-colors hover:bg-zinc-800 ${valueLabel === opt.label ? 'text-indigo-400 bg-zinc-800/50' : 'text-zinc-400'}`}>{opt.label}</button>
-                    ))
-                  ) : (
-                    <div className="px-3 py-5 text-center text-[11px] text-neutral-500 font-bold uppercase tracking-widest">{t('settings.no_languages', { defaultValue: 'No languages found' })}</div>
-                  )}
-                </div>
-              </motion.div>
-            </>
-          )}
-        </AnimatePresence>
-      </div>
+      <span className="min-w-12 h-8 px-2 flex items-center justify-center rounded bg-white/5 text-[12.5px] font-bold tabular-nums text-zinc-100">
+        {format(local)}
+      </span>
     </div>
   );
 }

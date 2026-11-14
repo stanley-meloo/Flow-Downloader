@@ -4,6 +4,8 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { readText } from "@tauri-apps/plugin-clipboard-manager";
 import { addSearchHistory, setLastDownloadFolder } from "../utils/recent";
+import { flushPendingSettings } from "./useSettings";
+import { initialQuality, qualitiesOf } from "../components/modals/downloadOptions"; // Auto Download: same quality rule as the card
 import {
   sanitizeTitle, isYouTubeExtractor, isYouTubeUrl, youtubeThumb, youtubeWatchUrl
 } from "../utils/media";
@@ -86,6 +88,40 @@ const maxHeightOf = (formats) => {
   return max || null;
 };
 
+// --- Size estimate (for the free-space check) ---
+// From yt-dlp's format list: the largest video stream at each height and the
+// largest audio stream, in bytes (filesize, or filesize_approx when exact
+// isn't known), plus the duration. Missing numbers → that part counts as 0.
+function sizeInfoOf(formats, duration) {
+  const video = {};
+  let audio = 0;
+  for (const f of Array.isArray(formats) ? formats : []) {
+    const bytes = Number(f?.filesize || f?.filesize_approx) || 0;
+    if (!bytes) continue;
+    const hasVideo = f.vcodec && f.vcodec !== "none";
+    const hasAudio = f.acodec && f.acodec !== "none";
+    if (hasVideo && f.height) video[f.height] = Math.max(video[f.height] || 0, bytes);
+    else if (hasAudio && !hasVideo) audio = Math.max(audio, bytes);
+  }
+  return { video, audio, duration: Number(duration) || 0 };
+}
+
+// Approximate bytes one video will take with the chosen options (0 = unknown).
+function estimateBytes(info, config, formatType) {
+  if (!info) return 0;
+  const kbps = parseInt(String(config?.audio || "160").replace("kb", ""), 10) || 160;
+  const audio = info.audio || (info.duration ? info.duration * kbps * 125 : 0);
+  if (formatType === "audio") return info.duration ? info.duration * kbps * 125 : info.audio;
+  const target = parseInt(String(config?.res || ""), 10) || Infinity;
+  const heights = Object.keys(info.video).map(Number).filter((h) => h <= target).sort((a, b) => b - a);
+  const video = heights.length ? info.video[heights[0]] : 0;
+  if (!video) return 0;
+  return video + (formatType === "video_only" ? 0 : audio);
+}
+
+const LOW_SPACE_MARGIN = 1024 ** 3; // warn when less than 1 GB would be left
+const formatGB = (bytes) => `${(bytes / 1024 ** 3).toFixed(bytes < 10 * 1024 ** 3 ? 1 : 0)} GB`;
+
 const QUALITY_LADDER = [4320, 2160, 1440, 1080, 720, 480, 360, 240, 144];
 
 // Queue statuses that mean "a download is running right now".
@@ -109,7 +145,7 @@ async function analyzeRemote(url, settings, single) {
   const out = await invoke('ytdlp_analyze', {
     url,
     single,
-    playlistLimit: Number(settings.playlistLimit) || 25,
+    playlistLimit: Number(settings.playlistLimit) || 10,
     cookies: cookiesOf(settings),
   });
   const stderr = out.stderr || '';
@@ -126,12 +162,34 @@ async function analyzeRemote(url, settings, single) {
   return data;
 }
 
+// Load (and decode) an image before the card opens, so the thumbnail is
+// already there when the card appears instead of popping in afterwards.
+// Never blocks for long: resolves on error, and after `timeout` ms at most.
+// localStorage key of the downloads left unfinished (resume after closing).
+const PENDING_KEY = "fd-pending-downloads";
+
+function preloadImage(src, timeout = 8000) {
+  if (!src) return Promise.resolve();
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.referrerPolicy = "no-referrer"; // same as the <img> in the cards
+    const timer = setTimeout(resolve, timeout);
+    const done = () => { clearTimeout(timer); resolve(); };
+    img.onload = () => (img.decode ? img.decode().catch(() => {}).then(done) : done());
+    img.onerror = done;
+    img.src = src;
+  });
+}
+
 export default function useDownloader(settings, showToast) {
   const [url, setUrl] = useState("");
   const [analyzing, setAnalyzing] = useState(false);
   const [queue, setQueue] = useState([]);
   const [mediaData, setMediaData] = useState(null);
   const [downloadPath, setDownloadPath] = useState("");
+  // Counts videos sent straight to the queue by Auto Download (no card): the
+  // search bar plays its "renewed" animation on each one, as when a card closes.
+  const [autoAdded, setAutoAdded] = useState(0);
 
   // itemId -> runId of the download running for it (one run per attempt, so a
   // retried item never inherits an old cancellation).
@@ -141,6 +199,22 @@ export default function useDownloader(settings, showToast) {
   // runId -> promise that settles when that yt-dlp process has exited.
   const runPromises = useRef({});
   const lastStartRef = useRef({ signature: '', at: 0 }); // duplicate-submit guard
+  // Output files in use this session (folder + name, lower-case): runId → key
+  // for running downloads, plus the ones already finished. Two downloads must
+  // never write the same file — on Windows names that differ only in
+  // upper/lower case ARE the same file, and two yt-dlp runs on it both fail
+  // ("file is being used by another process").
+  const runningOutputs = useRef({});
+  const finishedOutputs = useRef(new Set());
+
+  // Settings → default folder changed during the session: the card follows it.
+  const prevDefaultPath = useRef(settings.defaultPath);
+  useEffect(() => {
+    if (prevDefaultPath.current && settings.defaultPath && settings.defaultPath !== prevDefaultPath.current) {
+      setDownloadPath(settings.defaultPath);
+    }
+    prevDefaultPath.current = settings.defaultPath;
+  }, [settings.defaultPath]);
   // Bumped whenever a run ends, so the queue processor re-checks free slots
   // even if that run's end didn't change the queue (e.g. a cancelled run).
   const [runTick, setRunTick] = useState(0);
@@ -227,8 +301,33 @@ export default function useDownloader(settings, showToast) {
     if (!cleanUrl) return;
     setAnalyzing(true);
     try {
+      // Folder for this download (the card can still change it).
+      // (this session's choice → the card's remembered folder → Settings default)
+      const dir = downloadPath || settings.lastDownloadPreset?.directory || settings.defaultPath || await downloadDir();
+      if (!downloadPath) setDownloadPath(dir);
+
+      // Show the result: the download card, or — with Auto Download on and a
+      // saved preset, single videos only — straight to the queue with the last
+      // card's options.
+      const present = async (thumb, media, folder) => {
+        // Playlists always open their card (to pick the videos).
+        const saved = settings.lastDownloadPreset;
+        const preset = settings.autoDownload && !media.isPlaylist && saved?.formatType ? saved : null;
+        if (preset) {
+          const config = {
+            res: initialQuality(qualitiesOf(media), preset.res), // same height, or the closest lower
+            ext: preset.exts?.[preset.formatType === 'audio' ? 'audio' : 'video'] || preset.ext || (preset.formatType === 'audio' ? 'mp3' : 'mp4'),
+            audio: preset.audio,
+          };
+          startDownload(config, preset.formatType, media, { directory: folder, auto: true });
+          return;
+        }
+        await preloadImage(thumb); // the card opens with its thumbnail ready
+        setMediaData(media);
+      };
+
       const data = await analyzeRemote(cleanUrl, settings, false);
-      const playlistLimit = Number(settings.playlistLimit) || 25;
+      const playlistLimit = Number(settings.playlistLimit) || 10;
       const isPlaylist = data._type === 'playlist' && Array.isArray(data.entries);
       const isYouTube = isYouTubeExtractor(data.extractor_key) || isYouTubeUrl(cleanUrl);
 
@@ -252,6 +351,7 @@ export default function useDownloader(settings, showToast) {
         }));
 
         let dynamicQualities = buildQualities(0);
+        let sizeInfo = null; // first video's sizes, used as the per-video estimate
         let h264MaxHeight = 0;
         let highResCodec = '';
 
@@ -261,6 +361,7 @@ export default function useDownloader(settings, showToast) {
         if (firstUrl) {
           try {
             const firstData = await analyzeRemote(firstUrl, settings, true);
+            sizeInfo = sizeInfoOf(firstData.formats, firstData.duration);
             dynamicQualities = buildQualities(maxHeightOf(firstData.formats) || 1080);
             ({ h264MaxHeight, highResCodec } = analyzeCodecs(firstData.formats));
           } catch (firstErr) {
@@ -268,7 +369,13 @@ export default function useDownloader(settings, showToast) {
           }
         }
 
-        setMediaData({
+        // The cover the card shows (same choice as PlaylistModal).
+        const first = validEntries[0];
+        const cover = first?.thumbnails?.length > 0
+          ? first.thumbnails[first.thumbnails.length - 1].url
+          : (isYouTube && first?.id ? youtubeThumb(first.id, 'maxresdefault') : (data.thumbnails ? data.thumbnails[0]?.url : null));
+
+        await present(cover, {
           id: data.id,
           title: `[Playlist] ${data.title}`,
           thumbnail: data.thumbnails ? data.thumbnails[0]?.url : (validEntries[0]?.thumbnails?.[0]?.url || null),
@@ -279,9 +386,10 @@ export default function useDownloader(settings, showToast) {
           uploader: data.uploader || data.channel || data.extractor_key,
           extractor_key: data.extractor_key,
           availableQualities: dynamicQualities,
+          sizeInfo,
           h264MaxHeight,
           highResCodec
-        });
+        }, dir);
         addSearchHistory(cleanUrl, `[Playlist] ${data.title}`);
 
       } else {
@@ -297,8 +405,7 @@ export default function useDownloader(settings, showToast) {
         }
 
         const { h264MaxHeight, highResCodec } = analyzeCodecs(data.formats);
-
-        setMediaData({
+        await present(data.thumbnail, {
           id: data.id,
           title: data.title,
           thumbnail: data.thumbnail,
@@ -308,14 +415,11 @@ export default function useDownloader(settings, showToast) {
           duration: data.duration,
           extractor_key: data.extractor_key,
           availableQualities: buildQualities(maxHeightOf(data.formats) || 1080),
+          sizeInfo: sizeInfoOf(data.formats, data.duration),
           h264MaxHeight,
           highResCodec
-        });
+        }, dir);
         addSearchHistory(cleanUrl, data.title);
-      }
-
-      if (!downloadPath) {
-        setDownloadPath(settings.defaultPath || await downloadDir());
       }
     } catch (err) {
       console.error(err);
@@ -326,9 +430,33 @@ export default function useDownloader(settings, showToast) {
   }
 
   // --- 2. INITIALIZE DOWNLOAD ITEMS ---
-  function startDownload(config, formatType, customData) {
+  // opts.directory: folder (default: the current one); opts.auto: started by
+  // Auto Download (no card) — otherwise the card's options become the preset.
+  // Free-space check first: refuses when the download clearly won't fit on the
+  // drive, warns when less than ~1 GB would be left. Unknown sizes / errors
+  // never block a download.
+  async function startDownload(config, formatType, customData, opts = {}) {
+    const data = customData || mediaData;
+    if (!data) return false;
+    const directory = opts.directory || downloadPath;
+    const count = data.isPlaylist ? (data.entries?.length || 0) : 1;
+    const needed = estimateBytes(data.sizeInfo, config, formatType || "video") * count;
+    try {
+      const free = await invoke("disk_free", { directory });
+      if (needed > 0 && needed > free) {
+        showToast("disk_no_space", "error", { needed: formatGB(needed), free: formatGB(free) });
+        return false; // the card stays open
+      }
+      if (free - needed < LOW_SPACE_MARGIN) showToast("disk_low", "info", { free: formatGB(Math.max(0, free - needed)) });
+    } catch { /* folder missing or check unavailable: yt-dlp reports real errors */ }
+    addDownload(config, formatType, customData, opts);
+    return true;
+  }
+
+  function addDownload(config, formatType, customData, opts = {}) {
     const dataToDownload = customData || mediaData;
     if (!dataToDownload) return;
+    const directory = opts.directory || downloadPath;
 
     // Guard against accidental double submits (double-click, held Enter, ...):
     // an identical request within a short window is ignored, so the same video
@@ -358,7 +486,7 @@ export default function useDownloader(settings, showToast) {
       speed: "0 KB/s",
       eta: "--:--",
       totalTime: null,
-      directory: downloadPath,
+      directory,
       ...downloadSettings
     });
 
@@ -388,17 +516,86 @@ export default function useDownloader(settings, showToast) {
     }
 
     setQueue(prev => [...prev, ...newItems]);
-    setLastDownloadFolder(downloadPath); // right-click menu: "open last download folder"
+    setLastDownloadFolder(directory); // right-click menu: "open last download folder"
+    // Remember the card's choices for Auto Download.
+    if (!opts.auto) {
+      settings.saveSettings?.({
+        lastDownloadPreset: {
+          formatType: downloadSettings.formatType, res: config?.res ?? 'best', ext: downloadSettings.ext, audio: downloadSettings.targetAudio,
+          exts: { ...(settings.lastDownloadPreset?.exts || {}), [downloadSettings.formatType === 'audio' ? 'audio' : 'video']: downloadSettings.ext },
+          directory,
+        },
+      });
+    }
     setMediaData(null);
     setUrl("");
 
-    showToast("success_added", "success");
+    if (opts.auto) setAutoAdded((n) => n + 1);
+    showToast(opts.auto ? "auto_added" : "success_added", "success");
   }
+
+  // --- Resume after closing ---
+  // Downloads still waiting / running are remembered (localStorage), so if the
+  // app is closed — or crashes — with work left, the next launch offers to
+  // start them again (from scratch: partial files are deleted on close).
+  const [resumable, setResumable] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(PENDING_KEY) || "[]");
+      return Array.isArray(saved) ? saved.filter((p) => p && typeof p.url === "string" && /^https?:\/\//i.test(p.url)) : [];
+    } catch { return []; }
+  });
+  const freezePending = useRef(false); // while closing: keep the list as it was
+  useEffect(() => {
+    if (freezePending.current) return;
+    const timer = setTimeout(() => {
+      savePending(queue);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [queue, resumable]);
+  function savePending(list) {
+    const pending = list
+      .filter((i) => ["Waiting", "Downloading", "Processing...", "Conflict"].includes(i.status))
+      .map(({ title, url, thumbnail, videoId, playlistIndex, directory, targetRes, targetAudio, ext, formatType }) =>
+        ({ title, url, thumbnail, videoId, playlistIndex, directory, targetRes, targetAudio, ext, formatType }));
+    // Until the user answers, what's offered is kept too.
+    const keep = [...resumable, ...pending];
+    try {
+      if (keep.length) localStorage.setItem(PENDING_KEY, JSON.stringify(keep.slice(0, 500)));
+      else localStorage.removeItem(PENDING_KEY);
+    } catch { /* storage unavailable */ }
+  }
+  const resumeDownloads = () => {
+    const items = resumable.map((p) => ({
+      ...p, id: crypto.randomUUID(), status: "Waiting", progress: 0, speed: "0 KB/s", eta: "--:--", totalTime: null,
+    }));
+    setResumable([]);
+    if (items.length) setQueue((prev) => [...prev, ...items]);
+  };
+  const dismissResume = () => setResumable([]);
+
+  // --- Taskbar (Windows) / Dock (macOS) progress ---
+  // Overall progress of what's running or waiting, on the app's icon, so it
+  // can be followed with the window minimized. Only sent when it changes.
+  const taskbarRef = useRef("");
+  useEffect(() => {
+    const pending = queue.filter((i) => i.status === "Downloading" || i.status === "Processing..." || i.status === "Waiting");
+    const progress = pending.length
+      ? Math.round(pending.reduce((sum, i) => sum + (i.status === "Processing..." ? 100 : Number(i.progress) || 0), 0) / pending.length)
+      : 0;
+    const key = pending.length ? `on:${progress}` : "off";
+    if (key === taskbarRef.current) return;
+    taskbarRef.current = key;
+    import("@tauri-apps/api/window").then(({ getCurrentWindow, ProgressBarStatus }) =>
+      getCurrentWindow().setProgressBar(pending.length
+        ? { status: ProgressBarStatus.Normal, progress: Math.max(1, progress) } // ≥1 so it shows right away
+        : { status: ProgressBarStatus.None })
+    ).catch(() => {});
+  }, [queue]);
 
   // --- 3A. QUEUE PROCESSOR ---
   useEffect(() => {
     if (closingRef.current) return; // app is closing: don't start anything new
-    const maxConcurrent = settings.maxConcurrent || 3;
+    const maxConcurrent = settings.maxConcurrent || 5;
     const activeCount = Object.keys(activeRuns.current).length;
     if (activeCount >= maxConcurrent) return;
 
@@ -420,7 +617,36 @@ export default function useDownloader(settings, showToast) {
 
     let stem = sanitizeTitle(item.title);
     if (item.playlistIndex) stem = `${String(item.playlistIndex).padStart(2, '0')}_${stem}`;
+    // Same output as another download (running or done this session)? Use
+    // "name_(2)", "name_(3)"… instead.
+    const outputKey = (s) => `${String(item.directory || '').replace(/\\/g, '/').replace(/\/+$/, '')}/${s}`.toLowerCase();
+    const taken = new Set([...Object.values(runningOutputs.current), ...finishedOutputs.current]);
+    const baseStem = stem;
+    for (let n = 2; taken.has(outputKey(stem)); n++) stem = `${baseStem}_(${n})`;
+    runningOutputs.current[runId] = outputKey(stem);
     const height = parseInt(item.targetRes, 10);
+
+    // A file with this name already in the folder (e.g. downloaded on another
+    // day)? Don't overwrite it silently: the card asks — Replace / Keep both /
+    // Skip (resolveConflict). "Keep both" picks the next free "name_(n)".
+    const ext = item.ext || 'mp4';
+    const existsOnDisk = async (s) => {
+      try {
+        const found = await invoke('find_media_file', { directory: item.directory, names: [`${s}.${ext}`] });
+        return !!found?.file;
+      } catch { return false; }
+    };
+    if (item.conflictChoice === 'keep') {
+      for (let n = 2; taken.has(outputKey(stem)) || await existsOnDisk(stem); n++) stem = `${baseStem}_(${n})`;
+      runningOutputs.current[runId] = outputKey(stem);
+    } else if (item.conflictChoice !== 'replace' && await existsOnDisk(stem)) {
+      delete activeRuns.current[itemId];
+      delete runToItem.current[runId];
+      delete runningOutputs.current[runId];
+      setQueue(prev => prev.map(i => i.id === itemId && i.status === "Waiting" ? { ...i, status: "Conflict", conflictName: `${stem}.${ext}` } : i));
+      setRunTick((t) => t + 1);
+      return;
+    }
 
     setQueue(prev => prev.map(i =>
       i.id === itemId && i.status === "Waiting" ? { ...i, status: "Downloading" } : i
@@ -436,6 +662,7 @@ export default function useDownloader(settings, showToast) {
         ext: item.ext || 'mp4',
         height: Number.isNaN(height) ? null : height,
         audioKbps: parseInt(item.targetAudio, 10) || 160,
+        overwrite: item.conflictChoice === 'replace',
         cookies: cookiesOf(settings),
       },
     });
@@ -451,6 +678,8 @@ export default function useDownloader(settings, showToast) {
     } finally {
       delete runPromises.current[runId];
       delete runToItem.current[runId];
+      if (result && result.code === 0 && !result.cancelled) finishedOutputs.current.add(runningOutputs.current[runId]);
+      delete runningOutputs.current[runId];
       if (activeRuns.current[itemId] === runId) delete activeRuns.current[itemId];
       setRunTick((t) => t + 1);
     }
@@ -496,6 +725,7 @@ export default function useDownloader(settings, showToast) {
   // If downloads are running or queued, a confirmation dialog is shown instead
   // (rendered by App.jsx from `closePrompt`). Otherwise the app closes at once.
   const destroyWindow = async () => {
+    try { await flushPendingSettings(); } catch { /* never block closing */ }
     const { getCurrentWindow } = await import('@tauri-apps/api/window');
     await getCurrentWindow().destroy();
   };
@@ -529,6 +759,8 @@ export default function useDownloader(settings, showToast) {
   const confirmClose = async () => {
     if (closingRef.current) return;
     closingRef.current = true;
+    savePending(queueRef.current); // the downloads cancelled now are offered again next time
+    freezePending.current = true;
     setClosing(true);
     setQueue(prev => prev.map(i =>
       ACTIVE_STATUSES.includes(i.status) || i.status === "Waiting" ? { ...i, status: "Canceled" } : i
@@ -597,6 +829,16 @@ export default function useDownloader(settings, showToast) {
     ));
   };
 
+  // A file with the same name was already in the folder: the user's choice.
+  //   replace → download again over it · keep → save as "name_(2)" · skip → leave it.
+  const resolveConflict = (id, choice) => {
+    setQueue(prev => prev.map(item => {
+      if (item.id !== id || item.status !== "Conflict") return item;
+      if (choice === 'skip') return { ...item, status: "Canceled", errorKey: 'skipped_exists' };
+      return { ...item, status: "Waiting", progress: 0, conflictChoice: choice };
+    }));
+  };
+
   const removeItem = (id) => {
     if (activeRuns.current[id]) cancelDownload(id);
     setQueue(prev => prev.filter(item => item.id !== id));
@@ -627,6 +869,9 @@ export default function useDownloader(settings, showToast) {
     downloadPath, setDownloadPath,
     cancelDownload,
     retryDownload,
+    resolveConflict,
+    resumable, resumeDownloads, dismissResume,
+    autoAdded,
     removeItem,
     clearFinished,
     cancelAll

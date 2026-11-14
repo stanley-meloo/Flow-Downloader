@@ -2,10 +2,11 @@
 // playlist: PlaylistModal): quality / audio / format options, the editor
 // warning rule, duration formatting and the dropdown control.
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDownIcon as ChevronDown } from "../ui/AnimatedIcons";
 import { Swap } from "../ui/Motion";
+import SmoothScroll from "../ui/SmoothScroll";
 
 // Used when yt-dlp didn't report the available heights.
 const FALLBACK_QUALITIES = [2160, 1440, 1080, 720, 480, 360, 240, 144];
@@ -49,6 +50,60 @@ export const needsEditorWarning = (selectedFormat, quality) => {
   return selectedFormat !== "audio" && !Number.isNaN(height) && height > 1080;
 };
 
+// The card's options, remembered between sessions (settings.lastDownloadPreset):
+// quality, audio bitrate and the format of each type (audio / video), so e.g.
+// someone who only downloads MP3s never has to pick it again. Starts from the
+// saved preset (quality: same height or the closest lower one; falls back to
+// Settings → default quality) and saves every change right away via
+// `remember(partial)`. The type and the folder are remembered by App.jsx.
+const extGroup = (type) => (type === "audio" ? "audio" : "video");
+export function useRememberedOptions({ availableQualities, defaultQuality, selectedFormat, preset, remember }) {
+  const p = preset || {};
+  const extFor = (type) => {
+    const saved = p.exts?.[extGroup(type)];
+    const valid = formatOptionsOf(type).some((o) => o.value === `.${saved}`);
+    return valid ? `.${saved}` : type === "audio" ? ".mp3" : ".mp4";
+  };
+  const [quality, setQuality] = useState(() => initialQuality(availableQualities, p.res ?? defaultQuality));
+  const [audioKbps, setAudioKbps] = useState(() => (["160", "128", "96"].includes(String(p.audio)) ? `${p.audio}kb` : "160kb"));
+  const [formatExt, setFormatExt] = useState(() => extFor(selectedFormat));
+
+  // Switching the type: that type's remembered format (not on the first render).
+  const mounted = useRef(false);
+  useEffect(() => {
+    if (!mounted.current) { mounted.current = true; return; }
+    setFormatExt(extFor(selectedFormat));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedFormat]);
+
+  return {
+    quality,
+    audioKbps,
+    formatExt,
+    setQuality: (v) => { setQuality(v); remember?.({ res: String(v) }); },
+    setAudioKbps: (v) => { setAudioKbps(v); remember?.({ audio: String(v).replace("kb", "") }); },
+    setFormatExt: (v) => {
+      setFormatExt(v);
+      const ext = String(v).replace(".", "");
+      remember?.({ ext, exts: { ...(p.exts || {}), [extGroup(selectedFormat)]: ext } });
+    },
+  };
+}
+
+// Opening animation of both download cards: the whole card appears at once —
+// a blur fade with a slight travel up (Apple-like: no bounce, long soft
+// ease-out). Exit: a short, quiet fade.
+const CARD_EASE = [0.16, 1, 0.3, 1];
+export const CARD_IN = {
+  hidden: { opacity: 0, y: 18, scale: 0.985, filter: "blur(12px)" },
+  shown: {
+    opacity: 1, y: 0, scale: 1, filter: "blur(0px)",
+    transition: { duration: 0.6, ease: CARD_EASE, opacity: { duration: 0.4, ease: "easeOut" } },
+    transitionEnd: { filter: "none" },
+  },
+  exit: { opacity: 0, y: 8, scale: 0.99, filter: "blur(6px)", transition: { duration: 0.18, ease: [0.4, 0, 1, 1] } },
+};
+
 // 3:07 / 1:02:45 ("" when unknown).
 export function formatDuration(seconds) {
   const s = Number(seconds);
@@ -65,7 +120,7 @@ export function DropdownConfigBox({ label, icon: Icon, valueLabel, options, acti
   const [isOpen, setIsOpen] = useState(false);
   return (
     <div className="flex flex-col">
-      <label className="text-[12px] font-black text-zinc-600 uppercase tracking-widest px-1 mb-1.5">{label}</label>
+      <label className="text-[13px] font-black text-zinc-300 uppercase tracking-widest px-1 mb-1.5">{label}</label>
       <div className="relative">
         <button
           onClick={() => active && setIsOpen(!isOpen)}
@@ -77,10 +132,10 @@ export function DropdownConfigBox({ label, icon: Icon, valueLabel, options, acti
           }`}
         >
           <div className="flex items-center gap-2 overflow-hidden">
-            <Icon size={14} className="text-zinc-500 shrink-0" />
-            <Swap id={valueLabel} className="block min-w-0 text-[11.5px] font-bold text-zinc-200 truncate">{valueLabel}</Swap>
+            <Icon size={18} className="text-zinc-300 shrink-0" />
+            <Swap id={valueLabel} className="block min-w-0 text-[12.5px] font-bold text-zinc-200 truncate">{valueLabel}</Swap>
           </div>
-          {active && <ChevronDown size={12} className={`text-zinc-500 transition-transform duration-300 shrink-0 ${isOpen ? "rotate-180" : ""}`} />}
+          {active && <ChevronDown size={16} className={`text-zinc-300 transition-transform duration-300 shrink-0 ${isOpen ? "rotate-180" : ""}`} />}
         </button>
 
         <AnimatePresence>
@@ -92,17 +147,19 @@ export function DropdownConfigBox({ label, icon: Icon, valueLabel, options, acti
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 10, scale: 0.95 }}
                 transition={{ duration: 0.15 }}
-                className="absolute bottom-full left-0 right-0 mb-1 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl z-40 overflow-hidden py-1 max-h-48 overflow-y-auto custom-scrollbar ring-1 ring-black/50 origin-bottom"
+                className="absolute bottom-full left-0 right-0 mb-1 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl z-40 overflow-hidden ring-1 ring-black/50 origin-bottom"
               >
+                <SmoothScroll className="max-h-48 overflow-y-auto custom-scrollbar" contentClassName="py-1">
                 {options.map((opt) => (
                   <button
                     key={opt.value}
                     onClick={() => { onSelect(opt.value); setIsOpen(false); }}
-                    className={`w-full text-left px-3 py-2.5 text-[12px] font-bold transition-colors hover:bg-zinc-800 ${valueLabel === opt.label ? "text-white bg-zinc-800/50" : "text-zinc-400"}`}
+                    className={`w-full text-left px-3 py-2.5 text-[13px] font-bold transition-colors hover:bg-zinc-800 ${valueLabel === opt.label ? "text-white bg-zinc-800/50" : "text-zinc-300"}`}
                   >
                     {opt.label}
                   </button>
                 ))}
+                </SmoothScroll>
               </motion.div>
             </>
           )}

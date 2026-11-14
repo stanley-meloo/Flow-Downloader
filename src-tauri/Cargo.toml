@@ -21,20 +21,28 @@ tauri-build = { version = "2", features = [] }
 tauri = { version = "2", features = [] }
 tauri-plugin-opener = "2"
 serde = { version = "1", features = ["derive"] }
-# Not used by our own code, but required: tauri::generate_context!() expands to serde_json calls.
+# Needed by tauri::generate_context!() and by the wallpaper pack (wallpaper_pack.rs).
 serde_json = "1"
-tauri-plugin-shell = "2"
 tauri-plugin-dialog = "2"
 tauri-plugin-fs = "2"
 tauri-plugin-clipboard-manager = "2"
-# Only its bundled HTTP client (reqwest) is used, by the Rust thumbnail saver.
+# Only its bundled HTTP client (reqwest) is used: thumbnails, "copy image", wallpaper pack.
 tauri-plugin-http = "2"
 tauri-plugin-updater = "2"
 tauri-plugin-process = "2"
 # Right-click menu "Print": captures only the app window (src/screenshot.rs).
 xcap = "0.9"
 image = { version = "0.25", default-features = false, features = ["png", "jpeg", "webp", "gif"] }
+# Anonymous usage statistics (how many people use the app, from which countries) —
+# Aptabase: no personal data, no device identifiers. The user can turn it off in Settings.
+tauri-plugin-aptabase = { version = "1.3", default-features = false, features = ["rustls-tls"] }
+# Checks the wallpaper pack files (wallpaper_pack.rs).
+sha2 = "0.10"
 chrono = { version = "0.4", default-features = false, features = ["clock"] }
+
+# Windows / macOS: drag a finished download out of the window (actions.rs).
+[target.'cfg(any(windows, target_os = "macos"))'.dependencies]
+drag = "2.1"
 
 # Windows only: native folder dialog (IFileOpenDialog) that also shows files.
 # Its HWND is rebuilt from Tauri's raw handle, so this doesn't have to match the
@@ -45,4 +53,16 @@ windows = { version = "0.61", features = [
   "Win32_System_Com",
   "Win32_UI_Shell",
   "Win32_UI_Shell_Common",
+  "Win32_Graphics_Dwm", # rounded window corners (window_corners.rs)
+  "Win32_Storage_FileSystem", # free disk space (actions.rs)
+  "Win32_UI_WindowsAndMessaging", # cursor position (eyedropper, actions.rs)
+  "Win32_Graphics_Gdi", # screen pixel color (eyedropper, actions.rs)
 ] }
+
+# macOS / Linux: free disk space (statvfs) in actions.rs.
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
+
+# macOS only: rounded window corners (window_corners.rs) — same objc2 Tauri uses.
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = "0.6"
