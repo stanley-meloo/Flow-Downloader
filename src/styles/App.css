@@ -746,7 +746,10 @@ input[data-contrast][data-on-light="true"]::placeholder {
 .glass-chip > * { filter: drop-shadow(0 1px 2px rgb(0 0 0 / 0.45)); }
 
 /* Rows that arrive one after another (a background's options page). */
-.stagger-in > * { animation: stagger-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+/* fill-mode "backwards" (not "both"): holds the start state during the delay,
+   then lets go — a finished CSS animation that kept "transform: none" would
+   override the inline transforms framer-motion uses for layout moves. */
+.stagger-in > * { animation: stagger-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) backwards; }
 .stagger-in > *:nth-child(1) { animation-delay: 0.12s; }
 .stagger-in > *:nth-child(2) { animation-delay: 0.17s; }
 .stagger-in > *:nth-child(3) { animation-delay: 0.22s; }

@@ -109,6 +109,9 @@
       "group_app": "Aplicación",
       "group_advanced": "Avanzado",
       "autopaste_short": "Rellena la barra con el enlace copiado",
+      "notifications": "Notificaciones",
+      "notifications_short": "Desactivado: solo errores y avisos",
+      "notifications_info": "Desactívalo para ocultar las confirmaciones habituales (añadido a la cola, enlace pegado, copiado…). Los errores y avisos importantes siempre se muestran.",
       "analytics": "Estadísticas de uso anónimas",
       "analytics_short": "Ayuda a contar cuántas personas usan la app",
       "analytics_info": "Solo envía que la app se abrió, con la versión, el sistema y el país. Sin datos personales, sin enlaces, nada sobre tus descargas.",
@@ -292,7 +295,7 @@
       "my_wallpapers": "Mis fondos",
       "remove_photo": "Quitar de Mis fondos",
       "photo_name": "Nombre",
-      "pack_download": "Descarga una extensión con muchos fondos nuevos",
+      "pack_download": "Descarga una extensión con muchos Fondos Nuevos",
       "pack_downloading": "Descargando fondos… {{percent}}%",
       "pack_cancel": "Cancelar"
     },

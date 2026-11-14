@@ -600,6 +600,22 @@ export function PinIcon(props) {
   );
 }
 
+// --- Bell: rings (swings) on hover ----------------------------------------------
+const BELL = {
+  normal: { rotate: 0 },
+  animate: { rotate: [0, -14, 12, -8, 5, 0], transition: { duration: 0.6, ease: "easeInOut" } },
+};
+export function BellIcon(props) {
+  const [controls, ref] = useSimpleControls();
+  return (
+    <IconFrame {...props} iconRef={ref} Svg={motion.svg}
+      svgProps={{ animate: controls, initial: "normal", variants: BELL, style: { overflow: "visible", display: "block", transformOrigin: "12px 3px" } }}>
+      <path d="M10.268 21a2 2 0 0 0 3.464 0" />
+      <path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326" />
+    </IconFrame>
+  );
+}
+
 // --- Delete (trash): the lid lifts, the can and its lines sink a little ------
 // From lucide-animated "delete".
 const DELETE_SPRING = { type: "spring", stiffness: 500, damping: 30 };

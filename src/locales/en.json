@@ -109,6 +109,9 @@
       "group_app": "App",
       "group_advanced": "Advanced",
       "autopaste_short": "Fills the bar with a copied link",
+      "notifications": "Notifications",
+      "notifications_short": "Off: only errors and warnings",
+      "notifications_info": "Turn off to hide routine confirmations (added to the queue, link pasted, copied…). Errors and important warnings are always shown.",
       "analytics": "Anonymous usage statistics",
       "analytics_short": "Helps count how many people use the app",
       "analytics_info": "Sends only that the app was opened, with the app version, system and country. No personal data, no links, nothing about your downloads.",
@@ -292,7 +295,7 @@
       "my_wallpapers": "My wallpapers",
       "remove_photo": "Remove from My wallpapers",
       "photo_name": "Name",
-      "pack_download": "Download an extension with lots of new wallpapers",
+      "pack_download": "Download an extension with lots of New Wallpapers",
       "pack_downloading": "Downloading wallpapers… {{percent}}%",
       "pack_cancel": "Cancel"
     },

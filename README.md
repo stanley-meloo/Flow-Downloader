@@ -30,7 +30,7 @@
 | 🪟 **Windows** 10 / 11 | [FlowDownloader-Windows.exe](https://github.com/stanley-meloo/Flow-Downloader/releases/latest/download/FlowDownloader-Windows.exe) |
 | 🍎 **Mac** with Apple chip (M1, M2, M3, M4…) — macOS 12+ | [FlowDownloader-macOS-AppleSilicon.dmg](https://github.com/stanley-meloo/Flow-Downloader/releases/latest/download/FlowDownloader-macOS-AppleSilicon.dmg) |
 | 🍎 **Mac** with Intel chip — macOS 12+ | [FlowDownloader-macOS-Intel.dmg](https://github.com/stanley-meloo/Flow-Downloader/releases/latest/download/FlowDownloader-macOS-Intel.dmg) |
-| 🐧 **Linux** (any distro) | [FlowDownloader-Linux.AppImage](https://github.com/stanley-meloo/Flow-Downloader/releases/latest/download/FlowDownloader-Linux.AppImage) |
+| 🐧 **Linux** (any distro from 2024 on) | [FlowDownloader-Linux.AppImage](https://github.com/stanley-meloo/Flow-Downloader/releases/latest/download/FlowDownloader-Linux.AppImage) |
 | 🐧 **Linux** — Ubuntu / Debian | [FlowDownloader-Linux.deb](https://github.com/stanley-meloo/Flow-Downloader/releases/latest/download/FlowDownloader-Linux.deb) |
 | 🐧 **Linux** — Fedora / openSUSE | [FlowDownloader-Linux.rpm](https://github.com/stanley-meloo/Flow-Downloader/releases/latest/download/FlowDownloader-Linux.rpm) |
 

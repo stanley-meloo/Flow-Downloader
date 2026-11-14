@@ -13,6 +13,7 @@ import GradientWaves from "./GradientWaves";
 import { findEngine, engineProps } from "../backgrounds/engines";
 import { floatingLinesProps, ghostFibersProps, gradientWavesProps } from "../../utils/backgroundProps";
 import { findPreset } from "../../utils/backgrounds";
+import { streamSrc } from "../../utils/mediaSrc";
 
 export default function BackgroundPreview({ kind, visuals, className = "" }) {
   const ref = useRef(null);
@@ -28,7 +29,8 @@ export default function BackgroundPreview({ kind, visuals, className = "" }) {
   }, []);
 
   const preset = kind === "static" ? findPreset(visuals.bgImage) : null;
-  const img = preset?.url || null;
+  // A pack wallpaper has no bundled URL: its file is streamed (utils/mediaSrc.js).
+  const img = preset?.url || (preset?.file ? streamSrc(preset.file) : null);
   const isVideo = !!preset?.video; // MP4 wallpaper: a <video>, not an <img>
 
   return (
@@ -53,6 +55,7 @@ export default function BackgroundPreview({ kind, visuals, className = "" }) {
               loop
               playsInline
               disablePictureInPicture
+              crossOrigin="anonymous"
               className="absolute inset-0 w-full h-full object-cover transition-[filter] duration-300"
               style={{ filter: `blur(${(visuals.imageBlur || 0) * scale}px)`, transform: visuals.imageBlur ? "scale(1.04)" : undefined }}
             />

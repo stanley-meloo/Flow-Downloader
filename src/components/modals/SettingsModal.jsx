@@ -4,11 +4,13 @@ import { useBackLayer, clearForward } from "../../utils/mouseNavigation";
 import { REPO_URL, buildDiagnosticsReport } from "../../utils/diagnostics";
 import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 import { openUrl as openExternal } from "@tauri-apps/plugin-opener"; // opens links in the default browser
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
 import { PaletteIcon as Palette, PlusIcon, TrashIcon as Trash, PencilIcon as Pencil, RunIcon, HourglassIcon as Hourglass, SunDimIcon as SunDim, DropletIcon as Droplet, MousePointerIcon as MousePointer, SlidersHorizontalIcon as SlidersHorizontal, SparklesIcon as Sparkles, PaintbrushIcon as Paintbrush, ImageIcon as ImageIcon, WandSparklesIcon as Wand2, ListVideoIcon as ListVideo, LoaderCircleIcon as Loader2, XIcon as X } from "../ui/AnimatedIcons"; // animated
-import { EngineIcon, CookieIcon, MonitorCogIcon as MonitorCog, ClipboardPasteIcon as ClipboardPaste, LinkIcon, DownloadIcon as Download, FolderOpenIcon as FolderOpen, SettingsIcon as Settings, LanguagesIcon as Languages, KeyboardIcon as Keyboard, RotateCcwIcon as RotateCcw, FileCogIcon as FileCog, LayersIcon as Layers, ChevronDownIcon as ChevronDown, SearchIcon as Search, CheckIcon as Check, CircleHelpIcon as HelpCircle, ChartColumnIncreasingIcon } from "../ui/AnimatedIcons"; // animated (lucide-animated)
+import { EngineIcon, CookieIcon, MonitorCogIcon as MonitorCog, ClipboardPasteIcon as ClipboardPaste, LinkIcon, DownloadIcon as Download, FolderOpenIcon as FolderOpen, SettingsIcon as Settings, LanguagesIcon as Languages, KeyboardIcon as Keyboard, RotateCcwIcon as RotateCcw, FileCogIcon as FileCog, LayersIcon as Layers, ChevronDownIcon as ChevronDown, SearchIcon as Search, CheckIcon as Check, CircleHelpIcon as HelpCircle, ChartColumnIncreasingIcon, BellIcon } from "../ui/AnimatedIcons"; // animated (lucide-animated)
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
+import { readFile } from "@tauri-apps/plugin-fs";
+import { streamSrc, canStream } from "../../utils/mediaSrc";
 import { useTranslation } from "react-i18next";
 import { createPortal } from "react-dom";
 import { changeLanguageScrambled } from "../../utils/scrambleLanguage";
@@ -28,7 +30,7 @@ import { LANGUAGES, resolveLanguage } from "../../locales/languages";
 import FloatingLines from "../features/FloatingLines";
 import PhotoPositioner from "../features/PhotoPositioner";
 import { DEFAULT_FRAMING } from "../../utils/coverBox";
-import { newPhotoId, makePhotoThumb, framingOf, isVideoPath } from "../../utils/customPhotos";
+import { newPhotoId, makePhotoThumb, framingOf, isVideoPath, mediaBlob } from "../../utils/customPhotos";
 import BackgroundPreview from "../features/BackgroundPreview";
 import GhostFibers from "../features/GhostFibers";
 import GradientWaves from "../features/GradientWaves";
@@ -39,7 +41,7 @@ import ColorPicker from "../ui/ColorPicker";
 // Built-in wallpapers loaded from src/assets/backgrounds/{GIFs,JPGs}.
 // The selected one is stored in bgImage with a "@preset:" prefix to distinguish
 // it from a user-imported image (which is stored as a local file path).
-import { ANIMATED_PRESETS, STATIC_PRESETS, presetValue, findPreset, useWallpaperPresets, addWallpaperPack, hasWallpaperPack } from "../../utils/backgrounds";
+import { ANIMATED_PRESETS, STATIC_PRESETS, presetValue, findPreset, useWallpaperPresets, addWallpaperPack, wallpaperPackComplete } from "../../utils/backgrounds";
 import { listen } from "@tauri-apps/api/event";
 
 // One category's wallpaper gallery: a labeled grid of thumbnails plus a
@@ -49,7 +51,7 @@ import { listen } from "@tauri-apps/api/event";
 // Also used for "My wallpapers" (the user's photos): then `items`, `activeId`
 // and `onSelect` are given instead of `presets`.
 function PresetGallery({ title, presets, items, activeId: activeIdProp, onSelect, randomKey, visuals, updateVisual, t, onConfigure, onAdd, addLabel }) {
-  const cards = items || (presets || []).map((p) => ({ id: p.id, name: p.name, thumb: p.thumb, preview: p.preview }));
+  const cards = items || (presets || []).map((p) => ({ id: p.id, name: p.name, thumb: p.thumb, preview: p.preview, previewFile: p.previewFile }));
   if (cards.length === 0 && !onAdd) return null;
   // Only counts as selected while a wallpaper is the background: bgImage is
   // kept when switching to an interactive background (so it comes back).
@@ -60,10 +62,10 @@ function PresetGallery({ title, presets, items, activeId: activeIdProp, onSelect
     // Title row as tall as the title alone (the switch overhangs it, -my), so
     // the gap down to the cards is the same as under "Interactive" (8 px).
     <div className="space-y-2">
-      <div className="flex items-center justify-between px-1 gap-3 h-4">
-        <label className="text-[12px] font-black text-neutral-300 uppercase tracking-widest shrink-0">{title}</label>
+      <div className="flex items-center justify-between px-1 gap-3 h-3">
+        <label className="text-[12px] font-black text-neutral-300 uppercase tracking-widest leading-none shrink-0">{title}</label>
         {/* Randomize on startup: label + "?" + switch (no box of its own). */}
-        <div className={`flex items-center gap-2 h-9 -my-2.5 shrink-0 ${cards.length === 0 ? 'invisible' : ''}`}>
+        <div className={`flex items-center gap-2 h-9 -my-3 shrink-0 ${cards.length === 0 ? 'invisible' : ''}`}>
           <span className="text-[13px] font-medium text-zinc-200">
             {t('settings.visual.randomize', { defaultValue: 'Randomize on startup' })}
           </span>
@@ -109,7 +111,7 @@ function PresetGallery({ title, presets, items, activeId: activeIdProp, onSelect
 
 export default function SettingsModal({ onClose, settings, ytdlpUpdater, appUpdater, showToast }) {
   useWallpaperPresets(); // re-render when the wallpaper pack's wallpapers are added
-  const { defaultPath, playlistLimit, maxConcurrent, defaultQuality, language, visuals, cookieBrowser, cookieFile, autoPaste, analytics, keybinds, saveSettings, changeDefaultPath } = settings;
+  const { defaultPath, playlistLimit, maxConcurrent, defaultQuality, language, visuals, cookieBrowser, cookieFile, autoPaste, analytics, notifications, keybinds, saveSettings, changeDefaultPath } = settings;
   const { updating: updatingYtdlp = false, checkForUpdate, version: ytdlpVersion, status: ytdlpStatus = 'idle' } = ytdlpUpdater || {};
 
   const [activeTab, setActiveTab] = useState("general");
@@ -658,7 +660,7 @@ export default function SettingsModal({ onClose, settings, ytdlpUpdater, appUpda
                 animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
                 exit={{ opacity: 0, x: 10, filter: "blur(4px)" }}
                 transition={{ duration: 0.25, ease: "easeOut" }}
-                className="space-y-6 w-full"
+                className="space-y-8 w-full"
               >
                 {/* Same design as the Shortcuts tab. Ordered by how often people need
                     each setting: where/how downloads are saved first, then the app
@@ -752,6 +754,17 @@ export default function SettingsModal({ onClose, settings, ytdlpUpdater, appUpda
                     </RowButton>
                   </SettingTile>
                   </div>
+
+                  {/* Notifications: off = only the important ones (App.jsx IMPORTANT_TOASTS) */}
+                  <SettingRow
+                    icon={BellIcon}
+                    onClick={() => saveSettings({ notifications: !(notifications !== false) })}
+                    title={t('settings.general.notifications', { defaultValue: 'Notifications' })}
+                    description={t('settings.general.notifications_short', { defaultValue: 'Off: only errors and warnings' })}
+                    help={t('settings.general.notifications_info', { defaultValue: 'Turn off to hide routine confirmations (added to the queue, link pasted, copied…). Errors and important warnings are always shown.' })}
+                  >
+                    <ToggleSwitch active={notifications !== false} onClick={(e) => { e.stopPropagation(); saveSettings({ notifications: !(notifications !== false) }); }} />
+                  </SettingRow>
 
                   {/* Anonymous usage statistics (utils/analytics.js) */}
                   <SettingRow
@@ -1019,8 +1032,11 @@ export default function SettingsModal({ onClose, settings, ytdlpUpdater, appUpda
                       key="bg-main"
                       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, y: -10, transition: { duration: 0.2 } }}
                       transition={{ duration: 0.45, delay: 0.1 }}
-                      className="space-y-6 stagger-in stagger-slow"
+                      className="space-y-8 stagger-in stagger-slow"
                     >
+                    {/* LayoutGroup: when the galleries grow (pack wallpapers arriving),
+                        the sections below re-measure too and glide down. */}
+                    <LayoutGroup>
                     {/* Background: 3 kinds. The tabs only switch what is shown here;
                         the background changes when something is picked. */}
                     <SettingGroup label={t('settings.visual.group_background', { defaultValue: 'Background' })}>
@@ -1053,7 +1069,7 @@ export default function SettingsModal({ onClose, settings, ytdlpUpdater, appUpda
                               the active one) and the animated GIF wallpapers */}
                           {bgCategory === 'animated' && (
                             <>
-                              <label className="block px-1 pt-2 text-[12px] font-black text-neutral-300 uppercase tracking-widest">
+                              <label className="block px-1 pt-4 text-[12px] font-black text-neutral-300 uppercase tracking-widest leading-none">
                                 {t('settings.visual.interactive', { defaultValue: 'Interactive' })}
                               </label>
                               <CardGallery
@@ -1072,7 +1088,7 @@ export default function SettingsModal({ onClose, settings, ytdlpUpdater, appUpda
                                 configureLabel={t('settings.visual.configure', { defaultValue: 'Configure' })}
                               />
 
-                              <div className="pt-2">
+                              <div className="pt-4">
                                 <PresetGallery
                                   title={t('settings.visual.animated', { defaultValue: 'Animated' })}
                                   presets={ANIMATED_PRESETS}
@@ -1093,7 +1109,7 @@ export default function SettingsModal({ onClose, settings, ytdlpUpdater, appUpda
                               {[
                                 { title: t('settings.visual.still', { defaultValue: 'Static (Image)' }), presets: STATIC_PRESETS, randomKey: "randomJpg" },
                               ].filter((g) => g.presets.length > 0).map((g) => (
-                                <div key={g.randomKey} className="pt-2">
+                                <div key={g.randomKey} className="pt-4">
                                   <PresetGallery title={g.title} presets={g.presets} randomKey={g.randomKey} visuals={visuals}
                                     updateVisual={(k, v) => k === 'bgImage' ? pickStatic(v) : updateVisual(k, v)} t={t}
                                     onConfigure={() => openBgConfig('static')} />
@@ -1109,8 +1125,8 @@ export default function SettingsModal({ onClose, settings, ytdlpUpdater, appUpda
                           {bgCategory === 'custom' && (
                             <>
                               {/* My wallpapers: the "+" tile adds one (and opens its page).
-                                  pt-2 like every gallery title; pb-4: room before the color row. */}
-                              <div className="pt-2 pb-4">
+                                  pt-4 like every gallery title; pb-4: room before the color row. */}
+                              <div className="pt-4 pb-4">
                                 <PresetGallery
                                   title={t('settings.visual.my_wallpapers', { defaultValue: 'My wallpapers' })}
                                   items={photos.map((p) => ({ id: p.id, name: photoName(p), thumb: p.thumb }))}
@@ -1140,7 +1156,9 @@ export default function SettingsModal({ onClose, settings, ytdlpUpdater, appUpda
                       </AnimatePresence>
                     </SettingGroup>
 
-                    {/* Film grain last: an effect on top of whatever background is chosen. */}
+                    {/* Film grain last: an effect on top of whatever background is chosen.
+                        layout: pushed down smoothly when the galleries above grow. */}
+                    <motion.div layout="position" transition={{ layout: { type: 'spring', stiffness: 300, damping: 32 } }}>
                     <SettingGroup label={t('settings.visual.group_effects', { defaultValue: 'Effects' })}>
                       <SettingRow
                         icon={Sparkles}
@@ -1150,6 +1168,8 @@ export default function SettingsModal({ onClose, settings, ytdlpUpdater, appUpda
                         <RowSlider value={grainIntensity(visuals.filmGrain)} min={0} max={100} step={1} onChange={(v) => updateVisual("filmGrain", v)} />
                       </SettingRow>
                     </SettingGroup>
+                    </motion.div>
+                    </LayoutGroup>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -1172,7 +1192,7 @@ export default function SettingsModal({ onClose, settings, ytdlpUpdater, appUpda
             {/* About footer (every tab): app version, repository, license. mt-auto
                 keeps it at the bottom when a tab is shorter than the window. */}
             <div className="mt-auto pt-6 pb-6 shrink-0">
-            <div className="pt-4 border-t border-white/5 flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-[14px] text-neutral-300">
+            <div className="pt-6 border-t border-white/5 flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-[14px] text-neutral-300">
               <span className="font-bold text-neutral-300">Flow Downloader{appUpdater?.version ? ` v${appUpdater.version}` : ''}</span>
               <span aria-hidden="true">·</span>
               <button onClick={() => openExternal(REPO_URL)} data-tooltip={REPO_URL.replace('https://', '')} className="font-semibold hover:text-zinc-200 underline-offset-2 hover:underline cursor-pointer transition-colors">
@@ -1189,7 +1209,9 @@ export default function SettingsModal({ onClose, settings, ytdlpUpdater, appUpda
             </div>
             </div>
         </SmoothScroll>
-        <ScrollThumb scrollRef={scrollRef} className="z-50" />
+        {/* Ends 32 px above the dialog's bottom edge (radius 36): clear of the
+            rounded corner, like the top end is clear of the tabs. */}
+        <ScrollThumb scrollRef={scrollRef} className="z-50" insetTop={8} insetBottom={32} right={6} />
         </div>
 
         {/* Bottom blur: hints there's more below; fades out once the end is reached.
@@ -1307,7 +1329,7 @@ function ShortcutsTab({ keybinds, saveSettings, t }) {
   // key button (radius 8) → row radius 8 + 8 = 16 (concentric). The key button
   // hugs its keycaps: 32 px keys (radius 4) with 4 px around → 4 + 4 = 8.
   return (
-    <div ref={tabRef} className="space-y-6">
+    <div ref={tabRef} className="space-y-8">
       <div className="flex items-center justify-between gap-4">
         <p className="text-[13px] text-neutral-300 leading-snug px-1 flex-1">
           {t('settings.shortcuts.info', { defaultValue: 'Click a shortcut, then press the new key combination. Press Esc to cancel.' })}
@@ -1345,8 +1367,8 @@ function ShortcutsTab({ keybinds, saveSettings, t }) {
       </Collapse>
 
       {groups.map((g) => (
-        <div key={g.id} className="space-y-2.5">
-          <label className="block text-[12px] font-black text-neutral-300 uppercase tracking-widest px-1">
+        <div key={g.id} className="space-y-2">
+          <label className="block text-[12px] font-black text-neutral-300 uppercase tracking-widest leading-none px-1">
             {g.label}
           </label>
           <div className="space-y-2">
@@ -1420,10 +1442,16 @@ function ToggleSwitch(props) {
 // padding around 32 px segments (radius 4) → 4 + 4 = 8.
 // ---------------------------------------------------------------------------
 
+// Spacing scale used everywhere in Settings (8 px grid):
+//   8  between items of a list (rows, cards)
+//   8  from a section title to its content (title is leading-none)
+//   24 between sub-sections inside a section (Interactive / Animated…)
+//   32 between sections (Downloads / App / Advanced…)
+//   24 above and below the footer divider (symmetric)
 function SettingGroup({ label, children }) {
   return (
-    <div className="space-y-2.5">
-      <label className="block text-[12px] font-black text-neutral-300 uppercase tracking-widest px-1">{label}</label>
+    <div className="space-y-2">
+      <label className="block text-[12px] font-black text-neutral-300 uppercase tracking-widest leading-none px-1">{label}</label>
       <div className="space-y-2">{children}</div>
     </div>
   );
@@ -1716,13 +1744,35 @@ const INTERACTIVE_BACKGROUNDS = [
 // `bare`: just the picture (no card background, no name) — wallpaper galleries;
 // the name is in a tooltip. Radius 16 with a ring when selected.
 function CardGallery({ items, activeId, onSelect, onConfigure, configureLabel, bare = false, onAdd, addLabel }) {
+  // Cards that arrive after the gallery is already on screen (pack wallpapers
+  // as each one finishes downloading, a photo added) fade/rise in, one after
+  // another when several come at once; the others glide to their new place. Cards present on
+  // the first render show instantly (opening Settings doesn't animate them).
+  const seen = useRef(null);
+  const entry = useRef({}); // id -> delay (s), fixed once so re-renders don't restart it
+  if (seen.current) {
+    let n = 0;
+    items.forEach((bg) => {
+      if (!seen.current.has(bg.id) && entry.current[bg.id] === undefined) {
+        entry.current[bg.id] = 0.04 + Math.min(n++, 14) * 0.06;
+      }
+    });
+  }
+  useEffect(() => { seen.current = new Set(items.map((bg) => bg.id)); });
   return (
     <div className="grid grid-cols-3 gap-2">
       {items.map((bg) => {
         const active = activeId === bg.id;
+        const delay = entry.current[bg.id];
         return (
-          <div
+          <motion.div
             key={bg.id}
+            layout="position"
+            initial={delay === undefined ? false : { opacity: 0, y: 14, scale: 0.94, filter: 'blur(8px)' }}
+            // filter back to 'none' at the end: a leftover blur(0px) would stop
+            // the gear chip's backdrop blur from rendering.
+            animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)', transitionEnd: { filter: 'none' } }}
+            transition={{ delay: delay || 0, duration: 0.45, ease: [0.22, 1, 0.36, 1], layout: { type: 'spring', stiffness: 380, damping: 34 } }}
             role="button"
             tabIndex={0}
             onClick={() => onSelect(bg.id)}
@@ -1740,7 +1790,7 @@ function CardGallery({ items, activeId, onSelect, onConfigure, configureLabel, b
               {bg.snapshot
                 ? <SnapshotThumb cacheKey={bg.snapshot.key} id={bg.id} render={bg.snapshot.render} />
                 : <img src={bg.thumb} alt="" loading="lazy" decoding="async" fetchPriority="low" className="absolute inset-0 w-full h-full object-cover pointer-events-none" />}
-              {bg.preview && <HoverPreview src={bg.preview} />}
+              {(bg.preview || bg.previewFile) && <HoverPreview src={bg.preview} file={bg.previewFile} />}
               <Pop show={active} as="div" className="absolute top-1.5 right-1.5 bg-(--accent-strong) text-white p-0.5 rounded-full shadow-lg">
                 <Check size={10} strokeWidth={4} />
               </Pop>
@@ -1764,7 +1814,7 @@ function CardGallery({ items, activeId, onSelect, onConfigure, configureLabel, b
             {!bare && <span className={`block px-1 pb-0.5 text-[13px] truncate transition-colors duration-300 ${active ? 'text-white font-semibold' : 'text-zinc-300 group-hover:text-zinc-100'}`}>
               {bg.name}
             </span>}
-          </div>
+          </motion.div>
         );
       })}
       {/* "+" tile: add an item (the user's own wallpapers) — same shape as the cards, always after them */}
@@ -1891,7 +1941,7 @@ const packMb = (bytes) => `${Math.round(bytes / 1048576)} MB`;
 let packProgress = null;
 const packListeners = new Set();
 const setPackProgress = (p) => { packProgress = p; packListeners.forEach((fn) => fn(p)); };
-listen('wallpaper-pack-progress', (e) => { if (packProgress) setPackProgress({ ...e.payload, category: packProgress.category }); }).catch(() => {});
+listen('wallpaper-pack-progress', (e) => { if (packProgress && !packProgress.finished) setPackProgress({ ...e.payload, category: packProgress.category }); }).catch(() => {});
 
 // Each gallery downloads only its own part of the pack: "GIFs" (animated) or
 // "JPGs" (images). One download at a time; the progress card shows in the
@@ -1902,79 +1952,173 @@ function WallpaperPackButton({ category, t, showToast }) {
   useEffect(() => { packListeners.add(setProgress); return () => packListeners.delete(setProgress); }, []);
   const progress = all?.category === category ? all : null;
   const otherBusy = !!all && !progress; // the other gallery is downloading
-  if (hasWallpaperPack(category) && !progress) return null;
+  // Stays mounted so leaving (pack installed) collapses smoothly instead of popping out.
+  const visible = !(wallpaperPackComplete(category) && !progress);
 
-  // Dev aid (only in `tauri dev`): Shift+click plays a fake download (no
-  // network), to see the progress card before the pack is published.
-  const simulate = () => {
-    const total = 226 * 1048576;
-    let done = 0;
-    setPackProgress({ category, done, total });
-    const timer = setInterval(() => {
-      done = Math.min(total, done + total / 40);
-      setPackProgress({ category, done, total });
-      if (done >= total) { clearInterval(timer); setTimeout(() => setPackProgress(null), 600); }
-    }, 150);
-  };
-
-  const start = async (e) => {
+  const start = async () => {
     if (otherBusy) return;
-    if (import.meta.env.DEV && e?.shiftKey) { simulate(); return; }
     setPackProgress({ category, done: 0, total: 0 });
+    let ok = false;
     try {
       await addWallpaperPack(await invoke('download_wallpaper_pack', { category }));
+      ok = true;
       showToast?.('wallpaper_pack_done', 'success');
     } catch (err) {
       if (String(err) !== 'canceled') { console.error('[wallpaper pack]', err); showToast?.('wallpaper_pack_error', 'error'); }
     } finally {
-      setPackProgress(null);
+      if (ok) {
+        // Brief "done" state (bar full + check) before the block collapses away.
+        setPackProgress({ ...(packProgress || { category }), finished: true });
+        setTimeout(() => setPackProgress(null), 1500);
+      } else {
+        setPackProgress(null);
+      }
     }
   };
-  const percent = progress?.total ? Math.floor((progress.done * 100) / progress.total) : 0;
+  const phase = progress?.finished ? 'done' : progress ? 'loading' : 'idle';
+  const percent = phase === 'done' ? 100 : progress?.total ? Math.floor((progress.done * 100) / progress.total) : 0;
+  const fillWidth = phase === 'done' ? '100%' : `${Math.max(percent, phase === 'loading' ? 2 : 0)}%`;
 
   return (
-    <div className="pt-4">
-      {progress ? (
-        <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 space-y-2">
-          <div className="flex items-center justify-between gap-3 text-[13px]">
-            <span className="font-semibold text-zinc-100">
-              {t('settings.visual.pack_downloading', { defaultValue: 'Downloading wallpapers… {{percent}}%', percent })}
-            </span>
-            <button
-              type="button"
-              onClick={() => invoke('cancel_wallpaper_pack')}
-              className="text-zinc-400 hover:text-white transition-colors cursor-pointer"
-            >
-              {t('settings.visual.pack_cancel', { defaultValue: 'Cancel' })}
-            </button>
-          </div>
-          <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
-            <div className="h-full rounded-full bg-(--accent) transition-[width] duration-300" style={{ width: `${percent}%` }} />
-          </div>
-          {progress.total > 0 && (
-            <div className="text-[12px] text-zinc-400 tabular-nums">{packMb(progress.done)} / {packMb(progress.total)}</div>
-          )}
-        </div>
-      ) : (
-        <motion.button
-          type="button"
-          whileTap={{ scale: 0.98, transition: TAP }}
-          onClick={start}
-          disabled={otherBusy}
-          className={`w-full flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-[13px] font-semibold text-zinc-100 transition-colors ${otherBusy ? "opacity-50 cursor-not-allowed" : "hover:bg-white/10 hover:border-white/20 cursor-pointer"}`}
+    // layout: while downloading, each new card can add a row to the gallery
+    // above; the button glides down to its new place instead of jumping (it
+    // re-renders on the same preset change, so the move is measured). Outside
+    // Collapse, whose overflow:hidden would clip the button mid-move.
+    <motion.div layout="position" transition={{ layout: { type: 'spring', stiffness: 300, damping: 32 } }}>
+    <Collapse show={visible}>
+      <div className="pt-4">{/* 8 (list gap) + 16 = 24: a sub-section */}
+        {/* One 48 px box that morphs between idle / downloading / done, so nothing
+            around it jumps. Radius 12 = same as the 48 px tabs (25% of height). */}
+        <motion.div
+          className={`relative h-12 rounded-xl overflow-hidden border transition-colors duration-500 ${phase === 'idle'
+            ? 'border-white/10 bg-white/5'
+            : 'border-(--accent-strong)/40 bg-(--accent-strong)/5'} ${otherBusy ? 'opacity-50' : ''}`}
+          animate={phase === 'done' ? { scale: [1, 1.015, 1] } : { scale: 1 }}
+          transition={{ duration: 0.35, ease: 'easeOut' }}
         >
-          <Download size={16} />
-          {t('settings.visual.pack_download', { defaultValue: 'Download an extension with lots of new wallpapers' })}
-        </motion.button>
-      )}
-    </div>
+          {/* Progress fill (whole box) + a bright 2 px edge at the bottom. */}
+          <AnimatePresence>
+            {phase !== 'idle' && (
+              <motion.div
+                key="fill"
+                className="absolute inset-y-0 left-0 overflow-hidden"
+                initial={{ width: '0%', opacity: 0 }}
+                animate={{ width: fillWidth, opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ width: { type: 'spring', stiffness: 120, damping: 24 }, opacity: { duration: 0.2 } }}
+              >
+                <div className="absolute inset-0 bg-linear-to-r from-(--accent-strong)/10 to-(--accent-strong)/25" />
+                <div className="absolute bottom-0 inset-x-0 h-0.5 bg-(--accent) shadow-[0_0_10px_var(--accent)]" />
+                {phase === 'loading' && (
+                  // Light running through the filled part while it downloads.
+                  <motion.span
+                    aria-hidden
+                    className="absolute inset-y-0 w-24 -skew-x-20 bg-linear-to-r from-transparent via-white/15 to-transparent"
+                    initial={{ left: '-30%' }}
+                    animate={{ left: '130%' }}
+                    transition={{ duration: 1.3, ease: 'easeInOut', repeat: Infinity, repeatDelay: 0.2 }}
+                  />
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <AnimatePresence mode="wait" initial={false}>
+            {phase === 'idle' && (
+              <motion.button
+                key="idle"
+                type="button"
+                onClick={start}
+                disabled={otherBusy}
+                whileTap={{ scale: 0.98, transition: TAP }}
+                initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6, filter: 'blur(4px)' }}
+                transition={{ duration: 0.18, ease: 'easeOut' }}
+                className={`group absolute inset-0 flex items-center justify-center gap-2 px-4 text-[13px] font-semibold text-zinc-100 transition-colors ${otherBusy ? 'cursor-not-allowed' : 'hover:bg-white/5 cursor-pointer'}`}
+              >
+                {/* Premium sheen: a light band sweeps across once on hover (fast in,
+                    no animation back on hover-out). */}
+                {!otherBusy && (
+                  <span
+                    aria-hidden
+                    className="pointer-events-none absolute inset-y-0 -left-1/3 w-1/3 -skew-x-20 bg-linear-to-r from-transparent via-white/30 to-transparent transition-none group-hover:translate-x-[450%] group-hover:transition-transform group-hover:duration-[450ms] group-hover:ease-out"
+                  />
+                )}
+                <Download size={16} />
+                {t('settings.visual.pack_download', { defaultValue: 'Download an extension with lots of New Wallpapers' })}
+              </motion.button>
+            )}
+
+            {phase === 'loading' && (
+              <motion.div
+                key="loading"
+                initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.18, ease: 'easeOut' }}
+                className="absolute inset-0 flex items-center gap-3 pl-4 pr-1.5 text-[13px]"
+              >
+                <Loader2 size={16} className="text-(--accent) shrink-0" />
+                <span className="font-semibold text-zinc-100 tabular-nums truncate">
+                  {t('settings.visual.pack_downloading', { defaultValue: 'Downloading wallpapers… {{percent}}%', percent })}
+                </span>
+                <span className="ml-auto text-[12px] text-zinc-400 tabular-nums shrink-0">
+                  {progress.total > 0 ? `${packMb(progress.done)} / ${packMb(progress.total)}` : ''}
+                </span>
+                <motion.button
+                  type="button"
+                  onClick={() => invoke('cancel_wallpaper_pack')}
+                  whileTap={{ scale: 0.95, transition: TAP }}
+                  className="h-9 px-3 shrink-0 rounded-lg text-[12.5px] font-semibold text-zinc-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                >
+                  {t('settings.visual.pack_cancel', { defaultValue: 'Cancel' })}
+                </motion.button>
+              </motion.div>
+            )}
+
+            {phase === 'done' && (
+              <motion.div
+                key="done"
+                initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
+                transition={{ type: 'spring', stiffness: 420, damping: 26 }}
+                className="absolute inset-0 flex items-center justify-center gap-2 text-[13px] font-semibold text-(--accent)"
+              >
+                <motion.span
+                  className="flex"
+                  initial={{ scale: 0, rotate: -45 }} animate={{ scale: 1, rotate: 0 }}
+                  transition={{ type: 'spring', stiffness: 500, damping: 18, delay: 0.05 }}
+                >
+                  <Check size={16} />
+                </motion.span>
+                {t('toast.wallpaper_pack_done', { defaultValue: 'All wallpapers downloaded!' })}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
+      </div>
+    </Collapse>
+    </motion.div>
   );
 }
 
-function HoverPreview({ src }) {
+// `file`: a video on disk (wallpaper pack) — read into a blob URL only while
+// hovered, freed on leave.
+function HoverPreview({ src: srcProp, file }) {
   const ref = useRef(null);
   const [hover, setHover] = useState(false);
   const [ready, setReady] = useState(false);
+  const [fileUrl, setFileUrl] = useState(null);
+  useEffect(() => {
+    if (!hover || !file || srcProp) return undefined;
+    let url = null, alive = true;
+    // A short wait: sweeping the mouse across the gallery doesn't load every video.
+    const timer = setTimeout(() => {
+      if (canStream()) { setFileUrl(streamSrc(file)); return; } // streamed, nothing loaded whole
+      readFile(file)
+        .then((bytes) => { if (!alive) return; url = URL.createObjectURL(mediaBlob(bytes, file)); setFileUrl(url); })
+        .catch(() => {});
+    }, 180);
+    return () => { alive = false; clearTimeout(timer); if (url) URL.revokeObjectURL(url); setFileUrl(null); };
+  }, [hover, file, srcProp]);
+  const src = srcProp || fileUrl;
+  const isVideo = srcProp ? /\.mp4($|[?#])/i.test(srcProp) : !!file;
   useEffect(() => {
     const card = ref.current?.closest('[role="button"]');
     if (!card) return;
@@ -1986,7 +2130,7 @@ function HoverPreview({ src }) {
   }, []);
   return (
     <span ref={ref} className="absolute inset-0 pointer-events-none">
-      {hover && (/\.mp4($|[?#])/i.test(src)
+      {hover && src && (isVideo
         ? (
           // Video wallpapers: the wallpaper itself plays as the preview.
           <video

@@ -14,7 +14,9 @@ const MIN_THUMB = 28; // px
 const INSET = 4;      // default px of space above and below the bar
 const RIGHT = 4;      // default px from the right edge
 
-export default function ScrollThumb({ scrollRef, className = "", inset = INSET, right = RIGHT }) {
+// insetTop / insetBottom: a different space at each end — e.g. a container with
+// rounded bottom corners keeps the bar clear of the curve.
+export default function ScrollThumb({ scrollRef, className = "", inset = INSET, insetTop = inset, insetBottom = inset, right = RIGHT }) {
   const [metrics, setMetrics] = useState({ top: 0, height: 0, visible: false });
   const dragRef = useRef(null);
 
@@ -27,7 +29,7 @@ export default function ScrollThumb({ scrollRef, className = "", inset = INSET, 
         setMetrics((m) => (m.visible ? { ...m, visible: false } : m));
         return;
       }
-      const track = clientHeight - inset * 2;
+      const track = clientHeight - insetTop - insetBottom;
       const height = Math.max(MIN_THUMB, (track * clientHeight) / scrollHeight);
       const top = (scrollTop / (scrollHeight - clientHeight)) * (track - height);
       setMetrics({ top, height, visible: true });
@@ -46,7 +48,7 @@ export default function ScrollThumb({ scrollRef, className = "", inset = INSET, 
       resize.disconnect();
       mutations.disconnect();
     };
-  }, [scrollRef, inset]);
+  }, [scrollRef, insetTop, insetBottom]);
 
   // Dragging the thumb scrolls proportionally.
   const onPointerDown = (e) => {
@@ -61,14 +63,14 @@ export default function ScrollThumb({ scrollRef, className = "", inset = INSET, 
     const drag = dragRef.current;
     if (!el || !drag) return;
     const { scrollHeight, clientHeight } = el;
-    const free = clientHeight - inset * 2 - metrics.height;
+    const free = clientHeight - insetTop - insetBottom - metrics.height;
     if (free <= 0) return;
     el.scrollTop = drag.scrollTop + ((e.clientY - drag.y) * (scrollHeight - clientHeight)) / free;
   };
   const onPointerUp = () => { dragRef.current = null; };
 
   return (
-    <div className={`absolute w-1.5 pointer-events-none ${className}`} style={{ top: inset, bottom: inset, right }} aria-hidden="true">
+    <div className={`absolute w-1.5 pointer-events-none ${className}`} style={{ top: insetTop, bottom: insetBottom, right }} aria-hidden="true">
       <div
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}

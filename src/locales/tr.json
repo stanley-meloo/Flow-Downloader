@@ -109,6 +109,9 @@
       "group_app": "Uygulama",
       "group_advanced": "Gelişmiş",
       "autopaste_short": "Kopyalanan bağlantıyı çubuğa yapıştırır",
+      "notifications": "Bildirimler",
+      "notifications_short": "Kapalı: yalnızca hatalar ve uyarılar",
+      "notifications_info": "Rutin onayları gizlemek için kapatın (sıraya eklendi, bağlantı yapıştırıldı, kopyalandı…). Hatalar ve önemli uyarılar her zaman gösterilir.",
       "analytics": "Anonim kullanım istatistikleri",
       "analytics_short": "Uygulamayı kaç kişinin kullandığını saymaya yardımcı olur",
       "analytics_info": "Yalnızca uygulamanın açıldığını; sürüm, sistem ve ülke bilgisiyle gönderir. Kişisel veri, bağlantı veya indirmelerinizle ilgili hiçbir şey gönderilmez.",
@@ -292,7 +295,7 @@
       "my_wallpapers": "Duvar kağıtlarım",
       "remove_photo": "Duvar kağıtlarımdan kaldır",
       "photo_name": "Ad",
-      "pack_download": "Birçok yeni duvar kâğıdı içeren bir eklenti indirin",
+      "pack_download": "Birçok Yeni Duvar Kâğıdı içeren bir eklenti indirin",
       "pack_downloading": "Duvar kağıtları indiriliyor… %{{percent}}",
       "pack_cancel": "İptal"
     },

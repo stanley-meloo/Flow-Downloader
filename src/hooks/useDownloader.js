@@ -234,27 +234,39 @@ export default function useDownloader(settings, showToast) {
   // user already has, and never re-paste the same link twice.
   const urlRef = useRef("");
   const lastAutoPaste = useRef("");
-  const autoPasteRef = useRef(true);
+  // Follows the saved setting. Nothing is pasted before the settings are
+  // loaded: the startup check used to run with the default (on) before the
+  // saved "off" was read, so a link was pasted even with the option disabled.
+  const autoPasteRef = useRef(false);
   useEffect(() => { urlRef.current = url; }, [url]);
-  useEffect(() => { autoPasteRef.current = settings.autoPaste !== false; }, [settings.autoPaste]);
+  useEffect(() => { autoPasteRef.current = !!settings.loaded && settings.autoPaste !== false; }, [settings.loaded, settings.autoPaste]);
 
+  const tryAutoPasteRef = useRef(() => {});
+  tryAutoPasteRef.current = async () => {
+    try {
+      if (!autoPasteRef.current) return;          // disabled in settings (or not loaded yet)
+      if (urlRef.current) return;                 // don't disturb what the user already has
+      const clip = ((await readText()) || "").trim();
+      if (!autoPasteRef.current) return;          // turned off while reading the clipboard
+      if (!/^https?:\/\/\S+$/i.test(clip)) return;
+      if (clip === lastAutoPaste.current) return; // already offered this one
+      lastAutoPaste.current = clip;
+      setUrl(clip);
+      showToast("clipboard_autopaste", "info");
+    } catch (e) { /* clipboard not readable — ignore */ }
+  };
+
+  // Once at startup (after the settings are loaded), then on every window focus.
+  const startupPasteDone = useRef(false);
   useEffect(() => {
-    const tryAutoPaste = async () => {
-      try {
-        if (!autoPasteRef.current) return;          // disabled in settings
-        if (urlRef.current) return;                 // don't disturb what the user already has
-        const clip = ((await readText()) || "").trim();
-        if (!/^https?:\/\/\S+$/i.test(clip)) return;
-        if (clip === lastAutoPaste.current) return; // already offered this one
-        lastAutoPaste.current = clip;
-        setUrl(clip);
-        showToast("clipboard_autopaste", "info");
-      } catch (e) { /* clipboard not readable — ignore */ }
-    };
-
-    tryAutoPaste(); // also run once on startup
-    window.addEventListener("focus", tryAutoPaste);
-    return () => window.removeEventListener("focus", tryAutoPaste);
+    if (!settings.loaded || startupPasteDone.current) return;
+    startupPasteDone.current = true;
+    tryAutoPasteRef.current();
+  }, [settings.loaded]);
+  useEffect(() => {
+    const onFocus = () => tryAutoPasteRef.current();
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
   }, []);
 
   // --- PROGRESS EVENTS FROM RUST ---

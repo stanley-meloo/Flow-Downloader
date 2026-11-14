@@ -155,7 +155,8 @@ export default function useSettings() {
   const [cookieBrowser, setCookieBrowser] = useState(""); // "" = disabled; else chrome/firefox/edge/...
   const [cookieFile, setCookieFile] = useState("");       // path to a cookies.txt file (takes priority)
   const [autoPaste, setAutoPaste] = useState(true);
-  const [analytics, setAnalytics] = useState(true);     // anonymous usage statistics (utils/analytics.js)       // auto-fill the bar from the clipboard
+  const [analytics, setAnalytics] = useState(true);
+  const [notifications, setNotifications] = useState(true); // false = only important notifications (App.jsx)     // anonymous usage statistics (utils/analytics.js)       // auto-fill the bar from the clipboard
   const [defaultQuality, setDefaultQuality] = useState("1080p"); // Full HD
   const [language, setLanguage] = useState("auto");
   const [showSetup, setShowSetup] = useState(false);
@@ -201,6 +202,7 @@ export default function useSettings() {
           if (config.cookieFile !== undefined) setCookieFile(config.cookieFile);
           if (config.autoPaste !== undefined) setAutoPaste(config.autoPaste);
           if (config.analytics !== undefined) setAnalytics(config.analytics !== false);
+          if (config.notifications !== undefined) setNotifications(config.notifications !== false);
           if (config.defaultQuality) setDefaultQuality(config.defaultQuality);
           if (config.language) setLanguage(config.language);
           if (config.autoDownload !== undefined) setAutoDownload(!!config.autoDownload);
@@ -321,6 +323,7 @@ export default function useSettings() {
     if (updates.cookieFile !== undefined) setCookieFile(updates.cookieFile);
     if (updates.autoPaste !== undefined) setAutoPaste(updates.autoPaste);
     if (updates.analytics !== undefined) setAnalytics(updates.analytics !== false);
+    if (updates.notifications !== undefined) setNotifications(updates.notifications !== false);
     if (updates.language) setLanguage(updates.language);
     if (updates.defaultQuality) setDefaultQuality(updates.defaultQuality);
     if (updates.autoDownload !== undefined) setAutoDownload(!!updates.autoDownload);
@@ -342,7 +345,7 @@ export default function useSettings() {
   }
 
   return {
-    loaded, defaultPath, playlistLimit, maxConcurrent, cookieBrowser, cookieFile, autoPaste, analytics, defaultQuality, language, showSetup, visuals,
+    loaded, defaultPath, playlistLimit, maxConcurrent, cookieBrowser, cookieFile, autoPaste, analytics, notifications, defaultQuality, language, showSetup, visuals,
     autoDownload, lastDownloadPreset,
     keybinds, setShowSetup, saveSettings, changeDefaultPath
   };

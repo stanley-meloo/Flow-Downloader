@@ -17,6 +17,7 @@
 
 import { useSyncExternalStore } from 'react';
 import { invoke } from '@tauri-apps/api/core';
+import { listen } from '@tauri-apps/api/event';
 import { readFile } from '@tauri-apps/plugin-fs';
 
 const PREFIX = '@preset:';
@@ -85,10 +86,25 @@ export const useWallpaperPresets = () => useSyncExternalStore(subscribe, () => v
 
 const fileUrl = async (path) => URL.createObjectURL(new Blob([await readFile(path)]));
 
-/** Adds a pack ({ dir, manifest } from Rust) to the galleries. Returns how many wallpapers it has. */
-export async function addWallpaperPack(pack) {
+// Galleries ("GIFs" / "JPGs") whose pack download was started but not finished.
+let incompleteParts = new Set();
+
+// Calls run one after another (they await file reads between "is it there
+// yet?" and adding it, so two at once could add the same wallpaper twice).
+let packQueue = Promise.resolve();
+/** Adds a pack ({ dir, manifest, files, incomplete } from Rust) to the galleries. Returns how many wallpapers it has. */
+export function addWallpaperPack(pack) {
+  const run = packQueue.then(() => addPackNow(pack));
+  packQueue = run.catch(() => {});
+  return run;
+}
+
+async function addPackNow(pack) {
   if (!pack?.manifest) return 0;
   const { items = [] } = JSON.parse(pack.manifest);
+  const inc = new Set(Array.isArray(pack.incomplete) ? pack.incomplete : []);
+  let changed = inc.size !== incompleteParts.size || [...inc].some((c) => !incompleteParts.has(c));
+  incompleteParts = inc;
   const dir = String(pack.dir).replace(/\/+$/, '');
   // Only what's on disk: a video's 4K version is downloaded on big screens only.
   const present = Array.isArray(pack.files) ? new Set(pack.files) : null;
@@ -109,7 +125,22 @@ export async function addWallpaperPack(pack) {
       continue;
     }
     const list = item.folder === 'JPGs' ? STATIC_PRESETS : item.folder === 'GIFs' ? ANIMATED_PRESETS : null;
-    if (!list || !has(item.file) || allPresets().some((p) => p.id === item.id)) continue;
+    if (!list) continue;
+    // Already in the gallery (added earlier in this download): only its bigger
+    // versions may have arrived since.
+    const existing = allPresets().find((p) => p.id === item.id);
+    if (existing) {
+      if (existing.pack && existing.tiers) {
+        for (const [h, f] of Object.entries(item.tiers || {})) {
+          if (!has(f) || existing.tiers.some((t) => t.h === Number(h))) continue;
+          existing.tiers.push({ h: Number(h), file: `${dir}/${f}` });
+          existing.tiers.sort((a, b) => a.h - b.h);
+        }
+      }
+      continue;
+    }
+    // A card shows once its wallpaper AND its thumbnail are on disk.
+    if (!has(item.file) || (item.thumb && !has(item.thumb))) continue;
     const file = `${dir}/${item.file}`;
     const [thumb, preview] = await Promise.all([
       has(item.thumb) ? fileUrl(`${dir}/${item.thumb}`).catch(() => null) : null,
@@ -125,6 +156,9 @@ export async function addWallpaperPack(pack) {
       source: item.video ? 'motionbgs' : 'wallpaperaccess',
       thumb,
       preview,
+      // Pack videos have no preview file: the wallpaper itself plays on hover,
+      // read from disk only then (SettingsModal HoverPreview).
+      previewFile: item.video && !preview ? file : null,
       tiers: item.video
         ? [{ h: 1080, file }, ...Object.entries(item.tiers || {}).filter(([, f]) => has(f)).map(([h, f]) => ({ h: Number(h), file: `${dir}/${f}` }))].sort((a, b) => a.h - b.h)
         : null,
@@ -134,14 +168,36 @@ export async function addWallpaperPack(pack) {
   if (added) {
     ANIMATED_PRESETS.sort((a, b) => a.id.localeCompare(b.id));
     STATIC_PRESETS.sort((a, b) => a.id.localeCompare(b.id));
-    notify();
   }
+  if (added || changed) notify();
   return items.filter((i) => !i.builtin).length;
 }
 
 /** Whether a wallpaper pack is downloaded (its wallpapers are in the galleries). */
 // category: "GIFs" / "JPGs" — that gallery's part of the pack (any part if omitted).
 export const hasWallpaperPack = (category) => allPresets().some((p) => p.pack && (!category || p.id.startsWith(`${category}/`)));
+/** That gallery's part of the pack is fully downloaded (not just started / canceled halfway). */
+export const wallpaperPackComplete = (category) => hasWallpaperPack(category) && !incompleteParts.has(category);
+
+// While downloading, each finished file adds the wallpapers it completes
+// (calls coalesce: one refresh at a time, one more queued at most).
+let refreshing = false;
+let refreshAgain = false;
+const refreshPack = async () => {
+  if (refreshing) { refreshAgain = true; return; }
+  refreshing = true;
+  try {
+    do {
+      refreshAgain = false;
+      await addWallpaperPack(await invoke('wallpaper_pack_local'));
+    } while (refreshAgain);
+  } catch (e) {
+    console.warn('[wallpaper pack]', e);
+  } finally {
+    refreshing = false;
+  }
+};
+listen('wallpaper-pack-file', refreshPack).catch(() => {});
 
 // The downloaded pack, loaded once at startup. useSettings waits for it before
 // checking the saved wallpaper (a pack wallpaper must be known by then).

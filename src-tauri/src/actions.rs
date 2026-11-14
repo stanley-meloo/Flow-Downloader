@@ -119,7 +119,7 @@ pub fn find_media_file(directory: String, names: Vec<String>) -> Result<FoundMed
 /// macOS). Only existing media files can be dragged. Runs on the main thread
 /// (sync command), which the OS drag-and-drop requires.
 #[tauri::command]
-pub fn start_file_drag(window: tauri::WebviewWindow, path: String) -> Result<(), String> {
+pub fn start_file_drag(window: tauri::WebviewWindow, path: String, icon: Option<String>) -> Result<(), String> {
     // Native separators (the frontend sends "/"): Explorer's drop targets
     // expect backslashes.
     let native = if cfg!(windows) { path.trim().replace('/', "\\") } else { path.trim().to_string() };
@@ -134,15 +134,93 @@ pub fn start_file_drag(window: tauri::WebviewWindow, path: String) -> Result<(),
     }
     #[cfg(any(target_os = "windows", target_os = "macos"))]
     {
+        use tauri::Manager;
         let item = drag::DragItem::Files(vec![p.to_path_buf()]);
-        let icon = drag::Image::Raw(include_bytes!("../icons/64x64.png").to_vec());
+        // The video's thumbnail (made by prepare_drag_icon) under the cursor;
+        // the app logo if there's none. Only files from the drag-icon folder.
+        let thumb = icon
+            .as_deref()
+            .map(std::path::PathBuf::from)
+            .filter(|f| drag_icons_dir(window.app_handle()).map_or(false, |d| f.parent() == Some(d.as_path())))
+            .and_then(|f| std::fs::read(f).ok());
+        let icon = drag::Image::Raw(thumb.unwrap_or_else(|| include_bytes!("../icons/64x64.png").to_vec()));
         drag::start_drag(&window, item, icon, |_, _| {}, drag::Options::default()).map_err(|e| e.to_string())
     }
     #[cfg(not(any(target_os = "windows", target_os = "macos")))]
     {
-        let _ = window;
+        let _ = (window, icon);
         Err("dragging files out is not supported on this system".into())
     }
+}
+
+// --- Drag icon: the video's thumbnail ----------------------------------------
+// Dragging a finished download out of the queue shows its thumbnail under the
+// cursor. The drag has to start at once (the mouse button is down), so the
+// thumbnail is prepared beforehand, when the download finishes: downloaded
+// (https only, size-capped), shrunk to 192 px wide and saved as a PNG in <app cache>/drag-icons (one file per thumbnail URL).
+
+fn drag_icons_dir(app: &AppHandle) -> Option<std::path::PathBuf> {
+    use tauri::Manager;
+    let dir = app.path().app_cache_dir().ok()?.join("drag-icons");
+    std::fs::create_dir_all(&dir).ok()?;
+    // Once per run: icons older than a day go (a new one is made when needed),
+    // so the folder never grows.
+    static CLEAN: std::sync::Once = std::sync::Once::new();
+    CLEAN.call_once(|| {
+        if let Ok(entries) = std::fs::read_dir(&dir) {
+            for entry in entries.flatten() {
+                let old = entry
+                    .metadata()
+                    .and_then(|m| m.modified())
+                    .ok()
+                    .and_then(|t| t.elapsed().ok())
+                    .map_or(false, |age| age > Duration::from_secs(24 * 3600));
+                if old {
+                    let _ = std::fs::remove_file(entry.path());
+                }
+            }
+        }
+    });
+    Some(dir)
+}
+
+/// Returns the path of the drag icon for a thumbnail URL (made if needed).
+#[tauri::command]
+pub async fn prepare_drag_icon(app: AppHandle, url: String) -> Result<String, String> {
+    use std::hash::{Hash, Hasher};
+    const MAX_BYTES: usize = 10 * 1024 * 1024;
+    let url = url.trim().to_string();
+    if !url.to_ascii_lowercase().starts_with("https://") || url.len() > 4096 || url.chars().any(|c| c.is_whitespace() || c.is_control()) {
+        return Err("invalid url".into());
+    }
+    let dir = drag_icons_dir(&app).ok_or("no cache folder")?;
+    let mut h = std::collections::hash_map::DefaultHasher::new();
+    url.hash(&mut h);
+    let file = dir.join(format!("{:016x}.png", h.finish()));
+    if file.is_file() {
+        return Ok(file.to_string_lossy().into_owned());
+    }
+    let client = tauri_plugin_http::reqwest::Client::builder()
+        .timeout(Duration::from_secs(15))
+        .build()
+        .map_err(|e| e.to_string())?;
+    let resp = client.get(&url).send().await.map_err(|e| e.to_string())?;
+    if !resp.status().is_success() || resp.content_length().map_or(false, |l| l as usize > MAX_BYTES) {
+        return Err(format!("http {}", resp.status()));
+    }
+    let body = resp.bytes().await.map_err(|e| e.to_string())?;
+    if body.len() > MAX_BYTES {
+        return Err("image too large".into());
+    }
+    let out = file.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let img = image::load_from_memory(&body).map_err(|e| e.to_string())?;
+        let small = img.thumbnail(192, 192); // keeps the aspect ratio (16:9 → 192x108)
+        small.save_with_format(&out, image::ImageFormat::Png).map_err(|e| e.to_string())
+    })
+    .await
+    .map_err(|e| e.to_string())??;
+    Ok(file.to_string_lossy().into_owned())
 }
 
 // --- The user's own wallpapers ---------------------------------------------
@@ -682,4 +760,161 @@ fn move_loupe(app: &AppHandle, x: i32, y: i32, hex: &str) -> bool {
         hex.to_uppercase()
     ));
     true
+}
+
+// --- flowmedia:// — wallpapers streamed from disk ------------------------------
+// Video wallpapers on disk (the wallpaper pack, the user's own videos) used to
+// be read WHOLE into memory before playing — up to ~90 MB for a 4K one: the
+// background took seconds to appear and the file sat in memory twice. This
+// custom protocol serves them like a media server instead: the player asks for
+// byte ranges ("Range: bytes=…") and gets only the part it is about to play,
+// so a video starts at once and memory stays flat.
+//
+// Only files inside the app's own wallpaper folders (<app data>/wallpaper-pack
+// and <app data>/wallpapers) with a media extension are served. CORS is open
+// (the files are the app's own): the liquid glass and the accent color read
+// the video's pixels, which a cross-origin video without it would forbid.
+//
+// URL (frontend utils/mediaSrc.js → convertFileSrc(path, "flowmedia")):
+//   Windows: http://flowmedia.localhost/<encoded path>   macOS/Linux: flowmedia://localhost/<encoded path>
+
+const MEDIA_CHUNK: u64 = 2 * 1024 * 1024; // bytes per response when the end of the range is open
+
+fn media_type(ext: &str) -> &'static str {
+    match ext {
+        "mp4" | "m4v" => "video/mp4",
+        "webm" => "video/webm",
+        "mov" => "video/quicktime",
+        "png" => "image/png",
+        "jpg" | "jpeg" => "image/jpeg",
+        "webp" => "image/webp",
+        "gif" => "image/gif",
+        _ => "application/octet-stream",
+    }
+}
+
+/// %XX decoding of the URL path.
+fn percent_decode(s: &str) -> String {
+    let b = s.as_bytes();
+    let mut out = Vec::with_capacity(b.len());
+    let mut i = 0;
+    while i < b.len() {
+        if b[i] == b'%' && i + 2 < b.len() {
+            let hex = |c: u8| (c as char).to_digit(16).map(|d| d as u8);
+            if let (Some(hi), Some(lo)) = (hex(b[i + 1]), hex(b[i + 2])) {
+                out.push(hi * 16 + lo);
+                i += 3;
+                continue;
+            }
+        }
+        out.push(b[i]);
+        i += 1;
+    }
+    String::from_utf8_lossy(&out).into_owned()
+}
+
+/// The file a flowmedia URL points to, if it may be served.
+fn media_file<R: tauri::Runtime>(app: &tauri::AppHandle<R>, uri_path: &str) -> Option<(std::path::PathBuf, &'static str)> {
+    use tauri::Manager;
+    let raw = percent_decode(uri_path.trim_start_matches('/'));
+    let file = std::fs::canonicalize(std::path::PathBuf::from(raw)).ok()?;
+    let data = app.path().app_data_dir().ok()?;
+    let allowed = ["wallpaper-pack", "wallpapers"]
+        .iter()
+        .filter_map(|d| std::fs::canonicalize(data.join(d)).ok())
+        .any(|root| file.starts_with(&root));
+    if !allowed || !file.is_file() {
+        return None;
+    }
+    let ext = file.extension()?.to_str()?.to_ascii_lowercase();
+    let kind = media_type(&ext);
+    if kind == "application/octet-stream" {
+        return None;
+    }
+    Some((file, kind))
+}
+
+fn media_response<R: tauri::Runtime>(
+    app: &tauri::AppHandle<R>,
+    request: &tauri::http::Request<Vec<u8>>,
+) -> tauri::http::Response<Vec<u8>> {
+    use std::io::{Read, Seek, SeekFrom};
+    use tauri::http::{header, Response, StatusCode};
+    let fail = |status: StatusCode| {
+        Response::builder()
+            .status(status)
+            .header(header::ACCESS_CONTROL_ALLOW_ORIGIN, "*")
+            .body(Vec::new())
+            .unwrap_or_default()
+    };
+    let Some((path, kind)) = media_file(app, request.uri().path()) else { return fail(StatusCode::FORBIDDEN) };
+    let Ok(mut f) = std::fs::File::open(&path) else { return fail(StatusCode::NOT_FOUND) };
+    let len = f.metadata().map(|m| m.len()).unwrap_or(0);
+
+    // "Range: bytes=START-[END]"
+    let range = request
+        .headers()
+        .get(header::RANGE)
+        .and_then(|v| v.to_str().ok())
+        .and_then(|v| v.strip_prefix("bytes="))
+        .and_then(|v| {
+            let (a, b) = v.split_once('-')?;
+            let start: u64 = a.trim().parse().ok()?;
+            let end: Option<u64> = b.trim().parse().ok();
+            Some((start, end))
+        });
+
+    let builder = Response::builder()
+        .header(header::CONTENT_TYPE, kind)
+        .header(header::ACCEPT_RANGES, "bytes")
+        .header(header::ACCESS_CONTROL_ALLOW_ORIGIN, "*")
+        .header(header::CACHE_CONTROL, "no-cache");
+
+    match range {
+        Some((start, end)) => {
+            if len == 0 || start >= len {
+                return Response::builder()
+                    .status(StatusCode::RANGE_NOT_SATISFIABLE)
+                    .header(header::CONTENT_RANGE, format!("bytes */{len}"))
+                    .header(header::ACCESS_CONTROL_ALLOW_ORIGIN, "*")
+                    .body(Vec::new())
+                    .unwrap_or_default();
+            }
+            let last = end.unwrap_or(u64::MAX).min(start + MEDIA_CHUNK - 1).min(len - 1);
+            let mut buf = vec![0u8; (last - start + 1) as usize];
+            if f.seek(SeekFrom::Start(start)).is_err() || f.read_exact(&mut buf).is_err() {
+                return fail(StatusCode::INTERNAL_SERVER_ERROR);
+            }
+            builder
+                .status(StatusCode::PARTIAL_CONTENT)
+                .header(header::CONTENT_RANGE, format!("bytes {start}-{last}/{len}"))
+                .header(header::CONTENT_LENGTH, buf.len().to_string())
+                .body(buf)
+                .unwrap_or_default()
+        }
+        None => {
+            let mut buf = Vec::with_capacity(len as usize);
+            if f.read_to_end(&mut buf).is_err() {
+                return fail(StatusCode::INTERNAL_SERVER_ERROR);
+            }
+            builder
+                .status(StatusCode::OK)
+                .header(header::CONTENT_LENGTH, buf.len().to_string())
+                .body(buf)
+                .unwrap_or_default()
+        }
+    }
+}
+
+/// Handler of the flowmedia:// protocol (registered in lib.rs). Each request
+/// is answered on its own thread: reading the disk never blocks the UI.
+pub fn media_protocol<R: tauri::Runtime>(
+    ctx: tauri::UriSchemeContext<'_, R>,
+    request: tauri::http::Request<Vec<u8>>,
+    responder: tauri::UriSchemeResponder,
+) {
+    let app = ctx.app_handle().clone();
+    std::thread::spawn(move || {
+        responder.respond(media_response(&app, &request));
+    });
 }

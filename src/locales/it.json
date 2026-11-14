@@ -109,6 +109,9 @@
       "group_app": "App",
       "group_advanced": "Avanzate",
       "autopaste_short": "Compila la barra con il link copiato",
+      "notifications": "Notifiche",
+      "notifications_short": "Disattivate: solo errori e avvisi",
+      "notifications_info": "Disattiva per nascondere le conferme di routine (aggiunto alla coda, link incollato, copiato…). Errori e avvisi importanti vengono sempre mostrati.",
       "analytics": "Statistiche d'uso anonime",
       "analytics_short": "Aiuta a contare quante persone usano l'app",
       "analytics_info": "Invia solo che l'app è stata aperta, con versione, sistema e paese. Nessun dato personale, nessun link, niente sui tuoi download.",
@@ -292,7 +295,7 @@
       "my_wallpapers": "I miei sfondi",
       "remove_photo": "Rimuovi da I miei sfondi",
       "photo_name": "Nome",
-      "pack_download": "Scarica un’estensione con tanti nuovi sfondi",
+      "pack_download": "Scarica un’estensione con tanti Nuovi Sfondi",
       "pack_downloading": "Download degli sfondi… {{percent}}%",
       "pack_cancel": "Annulla"
     },

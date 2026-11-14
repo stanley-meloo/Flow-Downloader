@@ -111,6 +111,9 @@
       "group_app": "Aplikacja",
       "group_advanced": "Zaawansowane",
       "autopaste_short": "Wkleja skopiowany link do paska",
+      "notifications": "Powiadomienia",
+      "notifications_short": "Wyłączone: tylko błędy i ostrzeżenia",
+      "notifications_info": "Wyłącz, aby ukryć rutynowe potwierdzenia (dodano do kolejki, wklejono link, skopiowano…). Błędy i ważne ostrzeżenia są zawsze pokazywane.",
       "analytics": "Anonimowe statystyki użycia",
       "analytics_short": "Pomaga policzyć, ile osób korzysta z aplikacji",
       "analytics_info": "Wysyła tylko informację o uruchomieniu aplikacji, z jej wersją, systemem i krajem. Żadnych danych osobowych, linków ani informacji o pobieraniach.",
@@ -294,7 +297,7 @@
       "my_wallpapers": "Moje tapety",
       "remove_photo": "Usuń z Moich tapet",
       "photo_name": "Nazwa",
-      "pack_download": "Pobierz rozszerzenie z wieloma nowymi tapetami",
+      "pack_download": "Pobierz rozszerzenie z wieloma Nowymi Tapetami",
       "pack_downloading": "Pobieranie tapet… {{percent}}%",
       "pack_cancel": "Anuluj"
     },

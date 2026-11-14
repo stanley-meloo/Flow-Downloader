@@ -9,8 +9,8 @@
 // liquidGlass/renderer.js), so it can be read back; where it's transparent
 // (the clear core) the background snapshot (liquidGlass/backdrop.js) shows.
 //
-// Mark an element with data-contrast. Its measured brightness is written to
-// data-contrast-lum (0–1) — handy to check in the dev tools.
+// Mark an element with data-contrast. In `tauri dev` its measured brightness
+// is written to data-contrast-lum — handy to check in the dev tools.
 
 import { getBackdrop } from "../components/ui/liquidGlass/backdrop";
 
@@ -108,7 +108,7 @@ export function startContrastWatch() {
         const m = measure(el, backdrop);
         if (!m) return;
         const { lum, chroma } = m;
-        el.setAttribute("data-contrast-lum", `${lum.toFixed(2)} / chroma ${chroma.toFixed(2)}`);
+        if (import.meta.env.DEV) el.setAttribute("data-contrast-lum", `${lum.toFixed(2)} / chroma ${chroma.toFixed(2)}`);
         const light = el.getAttribute("data-on-light") === "true";
         // "Light" = very bright AND close to white/grey (little color).
         const next = light ? lum > OFF && chroma < CHROMA + 0.05 : lum > ON && chroma < CHROMA;

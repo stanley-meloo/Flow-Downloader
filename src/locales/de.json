@@ -109,6 +109,9 @@
       "group_app": "App",
       "group_advanced": "Erweitert",
       "autopaste_short": "Füllt die Leiste mit dem kopierten Link",
+      "notifications": "Benachrichtigungen",
+      "notifications_short": "Aus: nur Fehler und Warnungen",
+      "notifications_info": "Ausschalten, um alltägliche Bestätigungen auszublenden (zur Warteschlange hinzugefügt, Link eingefügt, kopiert…). Fehler und wichtige Warnungen werden immer angezeigt.",
       "analytics": "Anonyme Nutzungsstatistik",
       "analytics_short": "Hilft zu zählen, wie viele Menschen die App nutzen",
       "analytics_info": "Sendet nur, dass die App geöffnet wurde – mit App-Version, System und Land. Keine persönlichen Daten, keine Links, nichts über deine Downloads.",
@@ -292,7 +295,7 @@
       "my_wallpapers": "Meine Hintergründe",
       "remove_photo": "Aus Meine Hintergründe entfernen",
       "photo_name": "Name",
-      "pack_download": "Lade eine Erweiterung mit vielen neuen Hintergründen herunter",
+      "pack_download": "Lade eine Erweiterung mit vielen Neuen Hintergründen herunter",
       "pack_downloading": "Hintergründe werden heruntergeladen… {{percent}} %",
       "pack_cancel": "Abbrechen"
     },

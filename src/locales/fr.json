@@ -109,6 +109,9 @@
       "group_app": "Application",
       "group_advanced": "Avancé",
       "autopaste_short": "Remplit la barre avec le lien copié",
+      "notifications": "Notifications",
+      "notifications_short": "Désactivé : seulement erreurs et alertes",
+      "notifications_info": "Désactivez pour masquer les confirmations courantes (ajouté à la file, lien collé, copié…). Les erreurs et alertes importantes restent toujours affichées.",
       "analytics": "Statistiques d'utilisation anonymes",
       "analytics_short": "Aide à compter combien de personnes utilisent l'app",
       "analytics_info": "Envoie uniquement l'ouverture de l'app, avec sa version, le système et le pays. Aucune donnée personnelle, aucun lien, rien sur vos téléchargements.",
@@ -292,7 +295,7 @@
       "my_wallpapers": "Mes fonds d'écran",
       "remove_photo": "Retirer de Mes fonds d'écran",
       "photo_name": "Nom",
-      "pack_download": "Téléchargez une extension avec plein de nouveaux fonds d'écran",
+      "pack_download": "Téléchargez une extension avec plein de Nouveaux Fonds d'écran",
       "pack_downloading": "Téléchargement des fonds d'écran… {{percent}} %",
       "pack_cancel": "Annuler"
     },

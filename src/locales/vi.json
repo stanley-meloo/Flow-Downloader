@@ -108,6 +108,9 @@
       "group_app": "Ứng dụng",
       "group_advanced": "Nâng cao",
       "autopaste_short": "Tự điền liên kết đã sao chép",
+      "notifications": "Thông báo",
+      "notifications_short": "Tắt: chỉ lỗi và cảnh báo",
+      "notifications_info": "Tắt để ẩn các xác nhận thông thường (đã thêm vào hàng chờ, đã dán liên kết, đã sao chép…). Lỗi và cảnh báo quan trọng luôn được hiển thị.",
       "analytics": "Thống kê sử dụng ẩn danh",
       "analytics_short": "Giúp đếm số người dùng ứng dụng",
       "analytics_info": "Chỉ gửi việc ứng dụng được mở, kèm phiên bản, hệ điều hành và quốc gia. Không có dữ liệu cá nhân, liên kết hay thông tin về các lượt tải của bạn.",
@@ -291,7 +294,7 @@
       "my_wallpapers": "Hình nền của tôi",
       "remove_photo": "Xóa khỏi Hình nền của tôi",
       "photo_name": "Tên",
-      "pack_download": "Tải tiện ích mở rộng với nhiều hình nền mới",
+      "pack_download": "Tải tiện ích mở rộng với nhiều Hình Nền Mới",
       "pack_downloading": "Đang tải hình nền… {{percent}}%",
       "pack_cancel": "Hủy"
     },

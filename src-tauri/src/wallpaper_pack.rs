@@ -64,6 +64,22 @@ pub struct LocalPack {
     /// Names of the pack files present on disk (a video's 4K version is only
     /// there on big screens): the frontend only offers what exists.
     files: Vec<String>,
+    /// Galleries ("GIFs" / "JPGs") whose download was started but not finished
+    /// (canceled or failed): their wallpapers done so far are shown, and the
+    /// download button stays so the rest can be fetched.
+    incomplete: Vec<String>,
+}
+
+/// Marker file "<dir>/.incomplete-<category>": written when a gallery's
+/// download starts, removed when it finishes.
+const INCOMPLETE: &str = ".incomplete-";
+const PARTS: [&str; 2] = ["GIFs", "JPGs"];
+
+/// One more file of the pack is on disk and verified (the frontend adds the
+/// wallpapers that are now complete to the galleries right away).
+#[derive(serde::Serialize, Clone)]
+struct FileDone {
+    name: String,
 }
 
 #[derive(serde::Serialize, Clone)]
@@ -95,11 +111,16 @@ fn local(dir: &PathBuf) -> Option<LocalPack> {
             entries
                 .flatten()
                 .map(|e| e.file_name().to_string_lossy().to_string())
-                .filter(|n| n != MANIFEST && n != VERIFIED && !n.ends_with(".part"))
+                .filter(|n| n != MANIFEST && n != VERIFIED && !n.ends_with(".part") && !n.starts_with(INCOMPLETE))
                 .collect()
         })
         .unwrap_or_default();
-    Some(LocalPack { dir: dir.to_string_lossy().replace('\\', "/"), manifest, files })
+    let incomplete = PARTS
+        .iter()
+        .filter(|c| dir.join(format!("{INCOMPLETE}{c}")).exists())
+        .map(|c| c.to_string())
+        .collect();
+    Some(LocalPack { dir: dir.to_string_lossy().replace('\\', "/"), manifest, files, incomplete })
 }
 
 /// The downloaded pack, or None.
@@ -147,7 +168,8 @@ fn selected(files: &HashMap<String, FileEntry>, big_screen: bool) -> HashSet<Str
 }
 
 /// Downloads the pack (or what's missing / changed in it). The manifest is
-/// written last, so a pack only counts as downloaded once every file is there.
+/// written first, so each wallpaper shows up as soon as its files are there;
+/// a gallery counts as fully downloaded once its ".incomplete-" marker is gone.
 #[tauri::command]
 pub async fn download_wallpaper_pack(app: AppHandle, category: Option<String>) -> Result<LocalPack, String> {
     let category = match category.as_deref() {
@@ -194,6 +216,14 @@ async fn download(app: &AppHandle, prefix: Option<&str>) -> Result<LocalPack, St
         .filter(|n| in_part(n.as_str()))
         .collect();
 
+    // Manifest now (wallpapers appear one by one while downloading) and this
+    // gallery marked unfinished until the end.
+    std::fs::write(dir.join(MANIFEST), &text).map_err(|e| e.to_string())?;
+    let parts: Vec<&str> = PARTS.iter().copied().filter(|c| prefix.map_or(true, |p| p.starts_with(c))).collect();
+    for c in &parts {
+        let _ = std::fs::write(dir.join(format!("{INCOMPLETE}{c}")), b"");
+    }
+
     // Files already downloaded and checked (name → hash).
     let mut verified: HashMap<String, String> = std::fs::read_to_string(dir.join(VERIFIED))
         .ok()
@@ -218,8 +248,12 @@ async fn download(app: &AppHandle, prefix: Option<&str>) -> Result<LocalPack, St
     let _ = app.emit("wallpaper-pack-progress", Progress { done, total });
     let mut last_emit = Instant::now();
 
+    // Order: every thumbnail / preview first (small: the cards can show as
+    // soon as their wallpaper arrives), then the Full HD wallpapers one by one
+    // (each completes a card), then the big 1440p / 4K versions.
+    let rank = |n: &str| if tier_of(n).is_some() { 2 } else if n.contains(".thumb.") || n.contains(".preview.") { 0 } else { 1 };
     let mut names: Vec<&String> = wanted.iter().collect();
-    names.sort(); // thumbnails (small) and wallpapers of the same name together
+    names.sort_by(|a, b| rank(a).cmp(&rank(b)).then_with(|| a.cmp(b)));
     for name in names {
         let entry = &manifest.files[name];
         if is_done(name.as_str(), entry, &verified) {
@@ -266,6 +300,8 @@ async fn download(app: &AppHandle, prefix: Option<&str>) -> Result<LocalPack, St
         }
         std::fs::rename(&part, dir.join(name)).map_err(|e| e.to_string())?;
         verified.insert(name.clone(), hash);
+        save_verified(&verified);
+        let _ = app.emit("wallpaper-pack-file", FileDone { name: name.clone() });
     }
 
     // Files no longer wanted: removed from the pack, or a 4K version on a
@@ -277,13 +313,15 @@ async fn download(app: &AppHandle, prefix: Option<&str>) -> Result<LocalPack, St
     if let Ok(entries) = std::fs::read_dir(&dir) {
         for entry in entries.flatten() {
             let name = entry.file_name().to_string_lossy().to_string();
-            if name != MANIFEST && name != VERIFIED && stale(name.as_str()) {
+            if name != MANIFEST && name != VERIFIED && !name.starts_with(INCOMPLETE) && stale(name.as_str()) {
                 let _ = std::fs::remove_file(entry.path());
             }
         }
     }
     save_verified(&verified);
-    std::fs::write(dir.join(MANIFEST), &text).map_err(|e| e.to_string())?;
+    for c in &parts {
+        let _ = std::fs::remove_file(dir.join(format!("{INCOMPLETE}{c}")));
+    }
     let _ = app.emit("wallpaper-pack-progress", Progress { done: total, total });
     local(&dir).ok_or_else(|| "pack not saved".into())
 }

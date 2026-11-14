@@ -195,6 +195,18 @@ const QueueItem = memo(function QueueItem({ item, t, handlers, actions, glassPau
   const dragFrom = useRef(null);
   // (Windows / macOS only: Linux has no native drag-out here.)
   const canDragOut = isFinished && !!item.outputFile && !!item.directory && !IS_LINUX;
+  // The video's thumbnail under the cursor while dragging: prepared as soon as
+  // the download is finished (Rust prepare_drag_icon), since the drag must
+  // start immediately. Falls back to the app logo.
+  const [dragIcon, setDragIcon] = useState(null);
+  useEffect(() => {
+    if (!canDragOut || !/^https:\/\//i.test(imgSrc || "")) return undefined;
+    let alive = true;
+    invoke("prepare_drag_icon", { url: imgSrc })
+      .then((p) => { if (alive) setDragIcon(p); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [canDragOut, imgSrc]);
   const dragOutHandlers = canDragOut ? {
     onPointerDown: (e) => { if (e.button === 0 && !e.target.closest("button")) dragFrom.current = { x: e.clientX, y: e.clientY }; },
     onPointerUp: () => { dragFrom.current = null; },
@@ -206,7 +218,7 @@ const QueueItem = memo(function QueueItem({ item, t, handlers, actions, glassPau
       handlers?.leave?.();
       // outputFile is only the file name: Rust needs the full path.
       const path = `${String(item.directory).replace(/[\\/]+$/, "")}/${item.outputFile}`;
-      invoke("start_file_drag", { path }).catch((err) => console.warn("[drag out]", err));
+      invoke("start_file_drag", { path, icon: dragIcon }).catch((err) => console.warn("[drag out]", err));
     },
   } : {};
 

@@ -11,6 +11,7 @@ import { openUrl as open } from '@tauri-apps/plugin-opener'; // opens external l
 // Components
 import TitleBar from "./components/ui/TitleBar";
 import { trackAppStart } from "./utils/analytics";
+import { streamSrc, isStreamSrc, canStream, markStreamFailed } from "./utils/mediaSrc";
 import Toast from "./components/ui/Toast";
 import FloatingLines from "./components/features/FloatingLines";
 import { BurstLayer, fireBurst } from "./components/ui/SearchBurst";
@@ -67,12 +68,31 @@ import { resolveLanguage, RTL_CODES } from "./locales/languages";
 
 const smoothTransition = { type: "spring", stiffness: 200, damping: 25 };
 
+// Shown even with notifications turned off (errors always are).
+const IMPORTANT_TOASTS = new Set([
+  "disk_low",                  // little free space left
+  "app_update_wait",           // can't update while downloading
+  "clipboard_empty",           // "paste" did nothing
+  "ytdlp_checking", "ytdlp_uptodate", "ytdlp_updated", // engine update the user asked for
+  "wallpaper_pack_done",       // the download the user started is over
+  "wallpaper_video_preparing", // a video wallpaper is being converted (takes a while)
+]);
+
 function App() {
   const { t, i18n } = useTranslation();
   const toastRef = useRef(null);
-  const showToast = (msg, type, params) => toastRef.current?.add(msg, type, params);
+  // Notifications. With "Notifications" turned off in Settings only the
+  // important ones are shown: errors, warnings and answers to something the
+  // user asked for that have no other visible result (engine update check…).
+  // Routine confirmations ("added to the queue", "link pasted", "copied"…) go.
+  const quietToasts = useRef(false);
+  const showToast = (msg, type, params) => {
+    if (quietToasts.current && type !== "error" && !IMPORTANT_TOASTS.has(msg)) return;
+    toastRef.current?.add(msg, type, params);
+  };
 
   const settings = useSettings();
+  quietToasts.current = settings.notifications === false;
   const downloader = useDownloader(settings, showToast);
   const closeShown = !!downloader.closePrompt;
 
@@ -249,6 +269,8 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [settings.visuals?.bgImage, bgPhoto?.tiers, bgZoom, tierTick, packVersion]);
   const bgSourceKey = bgSource ? bgSource.url || bgSource.file || "" : "";
+  // Bumped when a streamed video can't play here: reloads it the old way.
+  const [streamRetry, setStreamRetry] = useState(0);
   // Switching a video to another size keeps its playback position.
   const resumeAt = useRef(null);
 
@@ -271,7 +293,16 @@ function App() {
         return;
       }
 
-      // A file on disk (wallpaper pack, the user's own image or video): read the bytes into a blob URL.
+      // A video on disk (wallpaper pack, the user's own videos): streamed by
+      // the app's flowmedia:// protocol (utils/mediaSrc.js) — starts at once,
+      // never loaded whole into memory. Falls back below if it can't play.
+      if (isVideoPath(bgSource.file) && canStream()) {
+        setBgImageBlobUrl(streamSrc(bgSource.file));
+        setBgShownPath(img);
+        return;
+      }
+
+      // Otherwise (an image, or streaming unavailable): read the bytes into a blob URL.
       try {
         const fileBytes = await readFile(bgSource.file);
         if (cancelled) return;
@@ -292,7 +323,7 @@ function App() {
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [settings.visuals?.bgImage, bgSourceKey]);
+  }, [settings.visuals?.bgImage, bgSourceKey, streamRetry]);
 
   // --- GLOBAL KEYBOARD SHORTCUTS (main window) ---
   // Bindings come from Settings → Shortcuts (defaults: Enter = search,
@@ -528,7 +559,18 @@ function App() {
                         key={bgImageBlobUrl}
                         src={bgImageBlobUrl}
                         data-glass-layer={bgIsVideo ? "video" : "image"}
-                        {...(bgIsVideo ? { ref: bgVideoRef, autoPlay: true, muted: true, loop: true, playsInline: true, disablePictureInPicture: true } : {})}
+                        {...(bgIsVideo ? {
+                          ref: bgVideoRef, autoPlay: true, muted: true, loop: true, playsInline: true, disablePictureInPicture: true,
+                          // Streamed from flowmedia:// (another origin): CORS mode, so the
+                          // liquid glass and the accent color can still read its pixels.
+                          crossOrigin: "anonymous",
+                          onError: (e) => {
+                            if (isStreamSrc(e.currentTarget.currentSrc || e.currentTarget.src)) {
+                              markStreamFailed();
+                              setStreamRetry((n) => n + 1);
+                            }
+                          },
+                        } : {})}
                         initial={{ opacity: 0 }}
                         animate={{ opacity: ownPhoto && !bgNatural ? 0 : 1 }}
                         exit={{ opacity: 0 }}

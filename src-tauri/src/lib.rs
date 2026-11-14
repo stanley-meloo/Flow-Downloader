@@ -258,6 +258,10 @@ pub fn run() {
         // signature with the public key in tauri.conf.json) + relaunch after it.
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
+        // flowmedia:// — wallpapers on disk streamed in byte ranges (actions.rs).
+        .register_asynchronous_uri_scheme_protocol("flowmedia", |ctx, request, responder| {
+            actions::media_protocol(ctx, request, responder)
+        })
         // Anonymous usage statistics (Aptabase): only the events the frontend
         // sends (utils/analytics.js), only when the user leaves it on in Settings.
         .plugin(tauri_plugin_aptabase::Builder::new(APTABASE_APP_KEY).build())
@@ -296,6 +300,7 @@ pub fn run() {
             actions::find_media_file,
             actions::copy_image_from_url,
             actions::start_file_drag,
+            actions::prepare_drag_icon,
             actions::disk_free,
             actions::import_wallpaper,
             actions::remove_wallpaper,

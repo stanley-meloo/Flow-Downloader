@@ -25,6 +25,8 @@ const ANIMATED_INTERVAL = 8;
 const STATIC_INTERVAL = 400;         // ms between snapshots otherwise
 
 let shared = null;
+// Last good frame of each video wallpaper (see the "video" layer below).
+const lastVideoFrames = new WeakMap();
 
 // --- Animated wallpapers ------------------------------------------------------
 // Canvas drawImage() of an animated GIF / WebP always paints its FIRST frame
@@ -210,18 +212,30 @@ function createBackdrop() {
         drawBlurred(ctx, source, sx, sy, sw, sh, b.x, b.y, b.w, b.h, blur * SCALE);
       }
     } else if (type === "video") {
-      // Video wallpaper (MP4 loop): the frame on screen right now.
+      // Video wallpaper (MP4 loop): the frame on screen right now. When the
+      // loop jumps back to the start the video has no frame for a moment
+      // (seeking): the last frame is drawn instead — otherwise the glass
+      // blinked black at every loop. The page's own <video> keeps showing
+      // its last frame meanwhile, so this matches what's on screen.
       const video = el;
       const nw = video.videoWidth, nh = video.videoHeight;
-      if (video.readyState >= 2 && nw > 0 && nh > 0) {
+      const blur = parseFloat((style.filter.match(/blur\(([\d.]+)px\)/) || [])[1] || "0");
+      const w = Math.max(1, Math.round(b.w)), h = Math.max(1, Math.round(b.h));
+      let last = lastVideoFrames.get(video);
+      if (video.readyState >= 2 && !video.seeking && nw > 0 && nh > 0) {
         const ir = nw / nh;
         const br = b.w / b.h;
         let sw = nw, sh = nh, sx = 0, sy = 0;
         if (ir > br) { sw = sh * br; sx = (nw - sw) / 2; }
         else { sh = sw / br; sy = (nh - sh) / 2; }
-        const blur = parseFloat((style.filter.match(/blur\(([\d.]+)px\)/) || [])[1] || "0");
-        drawBlurred(ctx, video, sx, sy, sw, sh, b.x, b.y, b.w, b.h, blur * SCALE);
+        // Keep this frame (cover-cropped, snapshot size, unblurred).
+        if (!last) { last = document.createElement("canvas"); lastVideoFrames.set(video, last); }
+        if (last.width !== w || last.height !== h) { last.width = w; last.height = h; }
+        const lctx = last.getContext("2d");
+        lctx.drawImage(video, sx, sy, sw, sh, 0, 0, w, h);
+        last.ready = true;
       }
+      if (last?.ready) drawBlurred(ctx, last, 0, 0, last.width, last.height, b.x, b.y, b.w, b.h, blur * SCALE);
     } else if (type === "gradient") {
       const color = el.getAttribute("data-glass-color") || "#000000";
       const g = ctx.createLinearGradient(0, b.y, 0, b.y + b.h * 0.6);

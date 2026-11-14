@@ -656,6 +656,67 @@ async fn blocking<T: Send + 'static>(
 // Commands: analyze, version, update
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Info cache: a faster start for downloads
+// ---------------------------------------------------------------------------
+// Reading a link (ytdlp_analyze, when the download card opens) is the slow
+// part of a download: the page, the site's checks, the list of streams. The
+// download used to do all of it again. Now the single-video info read when the
+// card opened is kept in a file and handed to yt-dlp (`--load-info-json`), so
+// clicking Download goes straight to transferring. Entries expire after
+// INFO_TTL (stream links from sites expire too); a download that fails with
+// a cached info drops the entry, so the automatic retry reads the link fresh.
+
+const INFO_TTL: Duration = Duration::from_secs(20 * 60);
+static INFO_CACHE: Mutex<Vec<(String, PathBuf, Instant)>> = Mutex::new(Vec::new());
+
+fn info_dir(app: &AppHandle) -> Option<PathBuf> {
+    let dir = app.path().app_cache_dir().ok()?.join("info");
+    // Files left by a previous run are useless (the index is in memory) and
+    // hold video titles / links: wiped on first use.
+    static CLEAN: std::sync::Once = std::sync::Once::new();
+    CLEAN.call_once(|| {
+        let _ = std::fs::remove_dir_all(&dir);
+    });
+    std::fs::create_dir_all(&dir).ok()?;
+    Some(dir)
+}
+
+/// Keeps the info JSON of a single video (analyze output) for `urls`.
+fn remember_info(app: &AppHandle, urls: &[String], json: &str) {
+    let Some(dir) = info_dir(app) else { return };
+    let mut cache = INFO_CACHE.lock().unwrap_or_else(|e| e.into_inner());
+    // Expired entries go (with their files).
+    cache.retain(|(_, path, at)| {
+        let keep = at.elapsed() < INFO_TTL;
+        if !keep { let _ = std::fs::remove_file(path); }
+        keep
+    });
+    use std::hash::{Hash, Hasher};
+    let mut h = std::collections::hash_map::DefaultHasher::new();
+    urls[0].hash(&mut h);
+    let file = dir.join(format!("{:016x}.info.json", h.finish()));
+    if std::fs::write(&file, json).is_err() { return; }
+    for u in urls {
+        cache.retain(|(k, _, _)| k != u);
+        cache.push((u.clone(), file.clone(), Instant::now()));
+    }
+}
+
+/// The cached info file for a link, if still fresh.
+fn cached_info(url: &str) -> Option<PathBuf> {
+    let cache = INFO_CACHE.lock().unwrap_or_else(|e| e.into_inner());
+    cache
+        .iter()
+        .find(|(k, p, at)| k == url && at.elapsed() < INFO_TTL && p.is_file())
+        .map(|(_, p, _)| p.clone())
+}
+
+fn forget_info(url: &str) {
+    let mut cache = INFO_CACHE.lock().unwrap_or_else(|e| e.into_inner());
+    cache.retain(|(k, _, _)| k != url);
+}
+
 /// Reads a link's metadata (`--dump-single-json`). `single` = only that video
 /// (used to probe the first entry of a playlist); otherwise playlists are
 /// listed flat, up to `playlist_limit` entries.
@@ -684,10 +745,25 @@ pub async fn ytdlp_analyze(
         args.extend(common_args());
         args.extend(cookie);
         let host = host_of(&url);
+        let analyzed_url = url.clone();
         args.push("--".into());
         args.push(url);
         let out = run_to_end(&bin, &args)?;
         let empty = matches!(out.stdout.trim(), "" | "null");
+        // A single video with its streams: kept for a faster download start.
+        if out.code == Some(0) && !empty {
+            if let Ok(v) = serde_json::from_str::<serde_json::Value>(&out.stdout) {
+                let is_video = v.get("_type").and_then(|t| t.as_str()).map_or(true, |t| t == "video")
+                    && v.get("formats").map_or(false, |f| f.is_array());
+                if is_video {
+                    let mut urls = vec![analyzed_url.clone()];
+                    if let Some(w) = v.get("webpage_url").and_then(|w| w.as_str()) {
+                        if w != analyzed_url { urls.push(w.to_string()); }
+                    }
+                    remember_info(&app, &urls, &out.stdout);
+                }
+            }
+        }
         // Links yt-dlp simply can't handle (a page with no video, a site it
         // doesn't support, a site's anti-bot wall on a generic page) are the
         // user's input, not an app problem: the toast explains it, no log entry.
@@ -1089,8 +1165,15 @@ pub async fn ytdlp_download(
             args.push("--ffmpeg-location".into());
             args.push(ffmpeg.to_string_lossy().into_owned());
         }
-        args.push("--".into());
-        args.push(url);
+        // The info read when the card opened, if fresh: no second extraction.
+        let info_file = cached_info(&url);
+        if let Some(info) = &info_file {
+            args.push("--load-info-json".into());
+            args.push(info.to_string_lossy().into_owned());
+        } else {
+            args.push("--".into());
+            args.push(url.clone());
+        }
 
         // Files for this name that already exist are never deleted on cancel.
         let keep = crate::download_artifacts(&dir, &stem);
@@ -1168,6 +1251,12 @@ pub async fn ytdlp_download(
                 code = Some(1);
                 stderr = format!("{stderr}\nffmpeg: could not remove the audio track: {e}");
             }
+        }
+
+        // A failed download from cached info (e.g. its stream links expired):
+        // the retry reads the link again.
+        if info_file.is_some() && !cancelled && code != Some(0) {
+            forget_info(&url);
         }
 
         if cancelled {

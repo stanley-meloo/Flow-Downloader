@@ -13,6 +13,7 @@ import { readFile } from "@tauri-apps/plugin-fs";
 import { useTranslation } from "react-i18next";
 import { coverBox } from "../../utils/coverBox";
 import { isVideoPath, mediaBlob } from "../../utils/customPhotos";
+import { streamSrc, isStreamSrc, canStream, markStreamFailed } from "../../utils/mediaSrc";
 
 export default function PhotoPositioner({ path, x = 50, y = 50, zoom = 1, blur = 0, darken = 0, onChange, bare = false }) {
   const { t } = useTranslation();
@@ -34,18 +35,24 @@ export default function PhotoPositioner({ path, x = 50, y = 50, zoom = 1, blur =
   };
   useEffect(() => () => cancelAnimationFrame(raf.current), []);
 
-  // The photo / video file → a blob URL.
+  // The photo / video file → a URL: a video is streamed (utils/mediaSrc.js),
+  // a photo (or a video where streaming doesn't work) becomes a blob URL.
+  const [streamRetry, setStreamRetry] = useState(0);
   useEffect(() => {
     let url = null, cancelled = false;
     setSrc(null);
     if (!path) return undefined;
+    if (isVideoPath(path) && canStream()) {
+      setSrc(streamSrc(path));
+      return undefined;
+    }
     readFile(path).then((bytes) => {
       if (cancelled) return;
       url = URL.createObjectURL(mediaBlob(bytes, path));
       setSrc(url);
     }).catch((e) => console.error("[photo framing]", e));
     return () => { cancelled = true; if (url) URL.revokeObjectURL(url); };
-  }, [path]);
+  }, [path, streamRetry]);
 
   // Frame size + the window's proportions.
   useEffect(() => {
@@ -125,6 +132,8 @@ export default function PhotoPositioner({ path, x = 50, y = 50, zoom = 1, blur =
               loop
               playsInline
               disablePictureInPicture
+              crossOrigin="anonymous"
+              onError={(e) => { if (isStreamSrc(e.currentTarget.currentSrc || e.currentTarget.src)) { markStreamFailed(); setStreamRetry((n) => n + 1); } }}
               onLoadedMetadata={(e) => setNat({ w: e.currentTarget.videoWidth, h: e.currentTarget.videoHeight })}
               className={className}
               style={style}

@@ -40,6 +40,7 @@
     "vite": "^7.0.4"
   },
   "allowScripts": {
+    "esbuild@0.28.2": true,
     "sharp@0.35.5": true
   }
 }
