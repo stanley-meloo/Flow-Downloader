@@ -71,5 +71,5 @@ The biggest update yet: a brand-new **liquid glass** interface, animated icons, 
 
 ---
 
-**Install:** Windows → `.msi` or `-setup.exe` · macOS → `aarch64.dmg` (Apple Silicon) or `x64.dmg` (Intel).
+**Install:** Windows → `FlowDownloader-1.2.0.exe` · macOS → `aarch64.dmg` (Apple Silicon) or `x64.dmg` (Intel).
 On macOS, if the app is blocked on first launch, right-click it → **Open** (or run `xattr -cr "/Applications/Flow Downloader.app"` in Terminal).

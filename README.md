@@ -27,7 +27,7 @@
 
 | Your computer | File to download |
 |---|---|
-| 🪟 **Windows** 10 / 11 | `..._x64-setup.exe` |
+| 🪟 **Windows** 10 / 11 | `FlowDownloader-….exe` |
 | 🍎 **Mac** with Apple chip (M1, M2, M3, M4…) — macOS 12+ | `..._aarch64.dmg` |
 | 🍎 **Mac** with Intel chip — macOS 12+ | `..._x64.dmg` |
 | 🐧 **Linux** (any distro) | `..._amd64.AppImage` |
