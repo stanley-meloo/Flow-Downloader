@@ -64,8 +64,9 @@ jobs:
             target: aarch64-apple-darwin
           - platform: macos-latest
             target: x86_64-apple-darwin
-          # Ubuntu 22.04 (older glibc) so the Linux build runs on more distros.
-          - platform: ubuntu-22.04
+          # Ubuntu 24.04: the screen-capture library (xcap → pipewire/libspa)
+          # needs PipeWire headers newer than the ones in 22.04.
+          - platform: ubuntu-24.04
             target: x86_64-unknown-linux-gnu
     runs-on: ${{ matrix.platform }}
     env:
