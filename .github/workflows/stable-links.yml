@@ -39,8 +39,16 @@ jobs:
           VERSION="${TAG#v}"
           NEW="FlowDownloader-${VERSION}.exe"
 
-          # Rename the installer (if it still has Tauri's name).
+          # Rename the installer (if it still has Tauri's name). A file already
+          # called "$NEW" (e.g. uploaded by hand) is replaced by the built one.
           gh api "repos/$REPO/releases/tags/$TAG" --jq '.assets[] | "\(.id)\t\(.name)"' > assets.tsv
+          if grep -q $'_x64-setup.exe$' assets.tsv; then
+            old_id=$(awk -F'\t' -v n="$NEW" '$2 == n { print $1 }' assets.tsv)
+            if [ -n "$old_id" ]; then
+              echo "replacing the existing $NEW"
+              gh api -X DELETE "repos/$REPO/releases/assets/$old_id"
+            fi
+          fi
           while IFS=$'\t' read -r id name; do
             case "$name" in
               *_x64-setup.exe)
