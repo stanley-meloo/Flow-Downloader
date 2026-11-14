@@ -12,9 +12,8 @@ name: Release installers
 #    (+ the macOS update bundles "….app.tar.gz" and every ".sig"), and
 #    latest.json — what the app's auto-update reads — is rewritten with the
 #    new names, so updates keep working.
-# 2) Fixed-name copies for the README's download buttons, which point to
-#      https://github.com/<repo>/releases/latest/download/FlowDownloader-<system>.<ext>
-#    (that link only works if the name never changes between releases).
+# 2) The README's download buttons and table are moved to this version's files
+#    (commit on main), so they always download the latest release directly.
 #
 # The wallpaper pack release ("wallpapers") is ignored. Running it again on the
 # same release is harmless (already renamed files are left as they are).
@@ -91,33 +90,27 @@ jobs:
             gh release upload "$TAG" latest.json --clobber -R "$REPO"
           fi
 
-      - name: Fixed-name copies for the README buttons
+      # The README's download buttons and table link to this release's files
+      # by name ("…/releases/download/v1.2.0/FlowDownloader-1.2.0.exe"): the
+      # version in them is moved to the new one and committed to main.
+      - name: Checkout main (README)
+        uses: actions/checkout@v5
+        with:
+          ref: main
+
+      - name: Point the README's download links at this version
         run: |
           case "$TAG" in v*) ;; *) exit 0 ;; esac
           V="${TAG#v}"
-          P="FlowDownloader-${V}"
-          mkdir -p src out && cd src
-          gh release download "$TAG" -R "$REPO" \
-            -p "${P}.exe" -p "${P}-macOS-AppleSilicon.dmg" -p "${P}-macOS-Intel.dmg" \
-            -p "${P}-Linux.AppImage" -p "${P}-Linux.deb" -p "${P}-Linux.rpm" || true
-          for f in *; do
-            [ -f "$f" ] || continue
-            case "$f" in
-              "${P}.exe")                       n=FlowDownloader-Windows.exe ;;
-              "${P}-macOS-AppleSilicon.dmg")    n=FlowDownloader-macOS-AppleSilicon.dmg ;;
-              "${P}-macOS-Intel.dmg")           n=FlowDownloader-macOS-Intel.dmg ;;
-              "${P}-Linux.AppImage")            n=FlowDownloader-Linux.AppImage ;;
-              "${P}-Linux.deb")                 n=FlowDownloader-Linux.deb ;;
-              "${P}-Linux.rpm")                 n=FlowDownloader-Linux.rpm ;;
-              *) continue ;;
-            esac
-            cp "$f" "../out/$n"
-            echo "$f -> $n"
-          done
-          cd ../out
-          ls -l
-          if ls FlowDownloader-* > /dev/null 2>&1; then
-            gh release upload "$TAG" FlowDownloader-* --clobber -R "$REPO"
-          else
-            echo "No installers found in $TAG"
+          sed -i -E \
+            -e "s#releases/download/v[0-9][0-9A-Za-z.+-]*/#releases/download/v${V}/#g" \
+            -e "s#FlowDownloader-[0-9][0-9A-Za-z.+]*(\.exe|-macOS|-Linux)#FlowDownloader-${V}\1#g" \
+            README.md
+          if git diff --quiet README.md; then
+            echo "README already points at $TAG"
+            exit 0
           fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "README: download links for $TAG"
+          git push origin HEAD:main

@@ -6,15 +6,15 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/stanley-meloo/Flow-Downloader/releases/latest/download/FlowDownloader-Windows.exe">
+  <a href="https://github.com/stanley-meloo/Flow-Downloader/releases/download/v1.2.0/FlowDownloader-1.2.0.exe">
     <img src="https://img.shields.io/badge/Download%20for-Windows-0078D4?style=for-the-badge&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0id2hpdGUiPjxwYXRoIGQ9Ik0wIDMuNCA5LjggMnY5LjVIMHpNMTAuOSAxLjkgMjQgMHYxMS40SDEwLjl6TTAgMTIuNWg5LjhWMjJMMCAyMC42ek0xMC45IDEyLjZIMjRWMjRsLTEzLjEtMS45eiIvPjwvc3ZnPg%3D%3D" alt="Download for Windows" height="48">
   </a>
   &nbsp;
-  <a href="https://github.com/stanley-meloo/Flow-Downloader/releases/latest/download/FlowDownloader-macOS-AppleSilicon.dmg">
+  <a href="https://github.com/stanley-meloo/Flow-Downloader/releases/download/v1.2.0/FlowDownloader-1.2.0-macOS-AppleSilicon.dmg">
     <img src="https://img.shields.io/badge/Download%20for-macOS-000000?style=for-the-badge&logo=apple&logoColor=white" alt="Download for macOS (Apple chip)" height="48">
   </a>
   &nbsp;
-  <a href="https://github.com/stanley-meloo/Flow-Downloader/releases/latest/download/FlowDownloader-Linux.AppImage">
+  <a href="https://github.com/stanley-meloo/Flow-Downloader/releases/download/v1.2.0/FlowDownloader-1.2.0-Linux.AppImage">
     <img src="https://img.shields.io/badge/Download%20for-Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black" alt="Download for Linux" height="48">
   </a>
 </p>
@@ -27,12 +27,12 @@
 
 | Your computer | Download |
 |---|---|
-| 🪟 **Windows** 10 / 11 | [FlowDownloader-Windows.exe](https://github.com/stanley-meloo/Flow-Downloader/releases/latest/download/FlowDownloader-Windows.exe) |
-| 🍎 **Mac** with Apple chip (M1, M2, M3, M4…) — macOS 12+ | [FlowDownloader-macOS-AppleSilicon.dmg](https://github.com/stanley-meloo/Flow-Downloader/releases/latest/download/FlowDownloader-macOS-AppleSilicon.dmg) |
-| 🍎 **Mac** with Intel chip — macOS 12+ | [FlowDownloader-macOS-Intel.dmg](https://github.com/stanley-meloo/Flow-Downloader/releases/latest/download/FlowDownloader-macOS-Intel.dmg) |
-| 🐧 **Linux** (any distro from 2024 on) | [FlowDownloader-Linux.AppImage](https://github.com/stanley-meloo/Flow-Downloader/releases/latest/download/FlowDownloader-Linux.AppImage) |
-| 🐧 **Linux** — Ubuntu / Debian | [FlowDownloader-Linux.deb](https://github.com/stanley-meloo/Flow-Downloader/releases/latest/download/FlowDownloader-Linux.deb) |
-| 🐧 **Linux** — Fedora / openSUSE | [FlowDownloader-Linux.rpm](https://github.com/stanley-meloo/Flow-Downloader/releases/latest/download/FlowDownloader-Linux.rpm) |
+| 🪟 **Windows** 10 / 11 | [FlowDownloader-1.2.0.exe](https://github.com/stanley-meloo/Flow-Downloader/releases/download/v1.2.0/FlowDownloader-1.2.0.exe) |
+| 🍎 **Mac** with Apple chip (M1, M2, M3, M4…) — macOS 12+ | [FlowDownloader-1.2.0-macOS-AppleSilicon.dmg](https://github.com/stanley-meloo/Flow-Downloader/releases/download/v1.2.0/FlowDownloader-1.2.0-macOS-AppleSilicon.dmg) |
+| 🍎 **Mac** with Intel chip — macOS 12+ | [FlowDownloader-1.2.0-macOS-Intel.dmg](https://github.com/stanley-meloo/Flow-Downloader/releases/download/v1.2.0/FlowDownloader-1.2.0-macOS-Intel.dmg) |
+| 🐧 **Linux** (any distro from 2024 on) | [FlowDownloader-1.2.0-Linux.AppImage](https://github.com/stanley-meloo/Flow-Downloader/releases/download/v1.2.0/FlowDownloader-1.2.0-Linux.AppImage) |
+| 🐧 **Linux** — Ubuntu / Debian | [FlowDownloader-1.2.0-Linux.deb](https://github.com/stanley-meloo/Flow-Downloader/releases/download/v1.2.0/FlowDownloader-1.2.0-Linux.deb) |
+| 🐧 **Linux** — Fedora / openSUSE | [FlowDownloader-1.2.0-Linux.rpm](https://github.com/stanley-meloo/Flow-Downloader/releases/download/v1.2.0/FlowDownloader-1.2.0-Linux.rpm) |
 
 <sub>Not sure which Mac you have? Apple menu  → About This Mac → "Chip" (Apple M…) or "Processor" (Intel). · [All files of the latest release](https://github.com/stanley-meloo/Flow-Downloader/releases/latest)</sub>
 
