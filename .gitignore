@@ -34,3 +34,4 @@ wallpaper-pack/
 # warns over 50 MB). Kept on this computer only — the app ships the optimized
 # copies (src/assets/backgrounds) and the pack lives in the "wallpapers" release.
 assets-src/
+.tmp-readme/

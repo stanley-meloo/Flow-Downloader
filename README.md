@@ -48,7 +48,7 @@
 
 <!-- GIF: the app opening + a download from start to finish -->
 <p align="center">
-  <img src="https://github.com/stanley-meloo/Flow-Downloader/raw/main/docs/gifs/overview.webp" width="900" alt="Flow Downloader in action">
+  <img src="https://github.com/stanley-meloo/Flow-Downloader/raw/main/docs/gifs/overview.avif" width="900" alt="Flow Downloader in action">
 </p>
 
 ## ✨ What is Flow Downloader?
@@ -85,7 +85,7 @@ That's it. The file goes to your Downloads folder (or any folder you choose).
 
 <!-- GIF: playlist + queue with several downloads -->
 <p align="center">
-  <img src="https://github.com/stanley-meloo/Flow-Downloader/raw/main/docs/gifs/playlist.webp" width="900" alt="Playlist and download queue">
+  <img src="https://github.com/stanley-meloo/Flow-Downloader/raw/main/docs/gifs/playlist.avif" width="900" alt="Playlist and download queue">
 </p>
 
 ### 🎨 Make it yours
@@ -97,7 +97,7 @@ That's it. The file goes to your Downloads folder (or any folder you choose).
 
 <!-- GIF: changing backgrounds / adding your own wallpaper -->
 <p align="center">
-  <img src="https://github.com/stanley-meloo/Flow-Downloader/raw/main/docs/gifs/customize.webp" width="900" alt="Customizing the look">
+  <img src="https://github.com/stanley-meloo/Flow-Downloader/raw/main/docs/gifs/customize.avif" width="900" alt="Customizing the look">
 </p>
 
 ### ⚡ Made for everyday use
