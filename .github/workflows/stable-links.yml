@@ -1,0 +1,93 @@
+name: Release installers
+
+# Runs when an app release is published (or by hand for an existing one:
+# Actions → "Release installers" → Run workflow → tag, e.g. v1.2.0).
+#
+# 1) Windows installer name: Tauri calls it "Flow.Downloader_<version>_x64-setup.exe";
+#    it's renamed to "FlowDownloader-<version>.exe", and latest.json (what the
+#    app's auto-update reads) is updated to the new name — otherwise the update
+#    would look for a file that no longer exists.
+# 2) Fixed-name copies for the README's download buttons, which point to
+#      https://github.com/<repo>/releases/latest/download/FlowDownloader-<system>.<ext>
+#    (that link only works if the name never changes between releases).
+#
+# The wallpaper pack release ("wallpapers") is ignored.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag (e.g. v1.2.0)"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  installers:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      TAG: ${{ github.event.release.tag_name || inputs.tag }}
+      REPO: ${{ github.repository }}
+    steps:
+      - name: Windows installer → FlowDownloader-<version>.exe (+ latest.json)
+        run: |
+          case "$TAG" in v*) ;; *) echo "Not an app release: $TAG"; exit 0 ;; esac
+          VERSION="${TAG#v}"
+          NEW="FlowDownloader-${VERSION}.exe"
+
+          # Rename the installer (if it still has Tauri's name).
+          gh api "repos/$REPO/releases/tags/$TAG" --jq '.assets[] | "\(.id)\t\(.name)"' > assets.tsv
+          while IFS=$'\t' read -r id name; do
+            case "$name" in
+              *_x64-setup.exe)
+                echo "rename: $name -> $NEW"
+                gh api -X PATCH "repos/$REPO/releases/assets/$id" -f name="$NEW" > /dev/null ;;
+            esac
+          done < assets.tsv
+
+          # Point latest.json's Windows entries at the new name.
+          if grep -q $'\tlatest.json$' assets.tsv; then
+            gh release download "$TAG" -R "$REPO" -p latest.json --clobber
+            jq --arg n "$NEW" '.platforms |= with_entries(
+                if (.key | startswith("windows")) then .value.url |= sub("[^/]+$"; $n) else . end)' \
+              latest.json > latest.fixed.json
+            mv latest.fixed.json latest.json
+            cat latest.json
+            gh release upload "$TAG" latest.json --clobber -R "$REPO"
+          else
+            echo "No latest.json in $TAG (no updater artifacts) — nothing to fix"
+          fi
+
+      - name: Fixed-name copies for the README buttons
+        run: |
+          case "$TAG" in v*) ;; *) exit 0 ;; esac
+          mkdir -p src out && cd src
+          gh release download "$TAG" -R "$REPO" \
+            -p 'FlowDownloader-*.exe' -p '*_x64-setup.exe' -p '*_aarch64.dmg' -p '*_x64.dmg' \
+            -p '*_amd64.AppImage' -p '*_amd64.deb' -p '*.x86_64.rpm' || true
+          for f in *; do
+            [ -f "$f" ] || continue
+            case "$f" in
+              FlowDownloader-Windows.exe) continue ;;   # an older copy
+              FlowDownloader-*.exe|*_x64-setup.exe) n=FlowDownloader-Windows.exe ;;
+              *_aarch64.dmg)    n=FlowDownloader-macOS-AppleSilicon.dmg ;;
+              *_x64.dmg)        n=FlowDownloader-macOS-Intel.dmg ;;
+              *_amd64.AppImage) n=FlowDownloader-Linux.AppImage ;;
+              *_amd64.deb)      n=FlowDownloader-Linux.deb ;;
+              *.x86_64.rpm)     n=FlowDownloader-Linux.rpm ;;
+              *) continue ;;
+            esac
+            cp "$f" "../out/$n"
+            echo "$f -> $n"
+          done
+          cd ../out
+          ls -l
+          if ls FlowDownloader-* > /dev/null 2>&1; then
+            gh release upload "$TAG" FlowDownloader-* --clobber -R "$REPO"
+          else
+            echo "No installers found in $TAG"
+          fi
