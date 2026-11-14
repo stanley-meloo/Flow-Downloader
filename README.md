@@ -1,4 +1,4 @@
-<h1 align="center">🌊 Flow Downloader</h1>
+<h1 align="center">Flow Downloader</h1>
 
 <p align="center">
   <b>Download videos, music and playlists from 1000+ sites — in 2 clicks.</b><br>
