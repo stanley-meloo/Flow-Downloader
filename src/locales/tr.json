@@ -492,6 +492,7 @@
     "position": "Video konumu",
     "show_wave": "Ses dalgalarını göster",
     "show_ruler": "Zaman cetvelini göster",
+    "preview_failed": "Video yüklenemedi — sessiz kareler gösteriliyor",
     "wave_loading": "Ses dalgaları yükleniyor…",
     "wave_error": "Ses dalgaları yüklenemedi"
   }

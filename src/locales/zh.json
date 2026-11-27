@@ -491,6 +491,7 @@
     "position": "视频位置",
     "show_wave": "显示声波",
     "show_ruler": "显示时间标尺",
+    "preview_failed": "无法加载视频 — 显示无声画面",
     "wave_loading": "正在加载声波…",
     "wave_error": "无法加载声波"
   }

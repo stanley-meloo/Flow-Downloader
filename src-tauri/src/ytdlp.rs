@@ -205,6 +205,24 @@ fn ytdlp_file_name() -> &'static str {
 /// refreshed; otherwise a self-updated copy is kept as is.
 fn prepare_writable_copy(app: &AppHandle, bundled: &Path) -> Option<PathBuf> {
     let dir = app.path().app_local_data_dir().ok()?.join("bin");
+    // A new app version used to replace the copy with the bundled yt-dlp even
+    // when the copy had already updated itself to something NEWER — so after
+    // every app update the engine went back to the (older) bundled one, and
+    // sites that had changed since (403 errors) broke until the next daily
+    // check. Now the copy is kept when it isn't older than the bundled one.
+    let target = dir.join(ytdlp_file_name());
+    let marker = dir.join("yt-dlp.source");
+    if let Ok(meta) = std::fs::metadata(bundled) {
+        let stamp = format!("{}:{}", env!("CARGO_PKG_VERSION"), meta.len());
+        let current = std::fs::read_to_string(&marker).unwrap_or_default();
+        if target.is_file() && current.trim() != stamp {
+            if let (Some(have), Some(ship)) = (binary_version(&target), binary_version(bundled)) {
+                if !is_newer(&ship, &have) {
+                    let _ = std::fs::write(&marker, &stamp);
+                }
+            }
+        }
+    }
     // Same marker name as before ("yt-dlp.source"), so an existing copy that
     // updated itself isn't replaced needlessly.
     copy_to_bin(&dir, bundled, ytdlp_file_name(), "yt-dlp.source")
@@ -1177,8 +1195,11 @@ pub async fn ytdlp_preview_clip(
         let folder = dir.to_string_lossy().replace('\\', "/").replace('%', "%%");
         let mut args: Vec<String> = vec![
             "--format".into(),
-            // Light and playable everywhere: H.264 + AAC up to 360p.
-            "best[height<=360][vcodec^=avc1][ext=mp4]/bv*[height<=360][vcodec^=avc1]+ba[ext=m4a]/bv*[height<=480][ext=mp4]+ba[ext=m4a]/best[height<=480][ext=mp4]/bv*[height<=480]+ba/worst".into(),
+            // Light and playable everywhere: H.264 + AAC up to 360p. Separate
+            // video + audio streams first: the single-file 360p stream (YouTube
+            // "18") is now refused (403) when ffmpeg opens it for a section, so
+            // it's only the last resort.
+            "bv*[height<=360][vcodec^=avc1]+ba[ext=m4a]/bv*[height<=480][vcodec^=avc1]+ba[ext=m4a]/bv*[height<=480][ext=mp4]+ba[ext=m4a]/bv*[height<=480]+ba/best[height<=480][ext=mp4]/worst".into(),
             "--merge-output-format".into(), "mp4".into(),
             "--output".into(), format!("{}/{}.%(ext)s", folder.trim_end_matches('/'), stem),
             "--no-playlist".into(),
@@ -1192,16 +1213,24 @@ pub async fn ytdlp_preview_clip(
             args.push("--ffmpeg-location".into());
             args.push(ffmpeg.to_string_lossy().into_owned());
         }
-        if let Some(info) = cached_info(&url) {
-            args.push("--load-info-json".into());
-            args.push(info.to_string_lossy().into_owned());
-        } else {
-            args.push("--".into());
-            args.push(url.clone());
-        }
-        let out = run_to_end(&bin, &args)?;
+        let fresh = |mut a: Vec<String>| { a.push("--".into()); a.push(url.clone()); a };
+        let cached = cached_info(&url);
+        let used_cache = cached.is_some();
+        let first = match cached {
+            Some(info) => { let mut a = args.clone(); a.push("--load-info-json".into()); a.push(info.to_string_lossy().into_owned()); a }
+            None => fresh(args.clone()),
+        };
+        let mut out = run_to_end(&bin, &first)?;
         if out.code == Some(0) && file.is_file() {
             return Ok(done(&file));
+        }
+        // The links saved when the video was analyzed may have been refused
+        // (expired / tied to another request): once more with fresh ones.
+        if used_cache {
+            out = run_to_end(&bin, &fresh(args))?;
+            if out.code == Some(0) && file.is_file() {
+                return Ok(done(&file));
+            }
         }
         // Leftovers of a failed attempt.
         if let Ok(rd) = std::fs::read_dir(&dir) {

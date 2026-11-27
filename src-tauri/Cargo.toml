@@ -1,6 +1,6 @@
 [package]
 name = "flow-downloader"
-version = "1.3.0"
+version = "1.3.1"
 description = "Download videos, audio, and playlists from the web."
 authors = ["you"]
 edition = "2021"

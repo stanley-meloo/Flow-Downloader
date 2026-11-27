@@ -492,6 +492,7 @@
     "position": "Videoposition",
     "show_wave": "Schallwellen anzeigen",
     "show_ruler": "Zeitlineal anzeigen",
+    "preview_failed": "Video konnte nicht geladen werden – Einzelbilder ohne Ton",
     "wave_loading": "Schallwellen werden geladen…",
     "wave_error": "Schallwellen konnten nicht geladen werden"
   }

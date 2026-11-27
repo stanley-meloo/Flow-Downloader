@@ -492,6 +492,7 @@
     "position": "Position de la vidéo",
     "show_wave": "Afficher les ondes sonores",
     "show_ruler": "Afficher la règle de temps",
+    "preview_failed": "Impossible de charger la vidéo — images sans son",
     "wave_loading": "Chargement des ondes sonores…",
     "wave_error": "Impossible de charger les ondes sonores"
   }

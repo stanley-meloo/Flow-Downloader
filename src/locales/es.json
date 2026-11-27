@@ -492,6 +492,7 @@
     "position": "Posición del video",
     "show_wave": "Mostrar ondas de sonido",
     "show_ruler": "Mostrar regla de tiempo",
+    "preview_failed": "No se pudo cargar el video: mostrando fotogramas sin sonido",
     "wave_loading": "Cargando las ondas de sonido…",
     "wave_error": "No se pudieron cargar las ondas de sonido"
   }

@@ -492,6 +492,7 @@
     "position": "Posizione del video",
     "show_wave": "Mostra le onde sonore",
     "show_ruler": "Mostra il righello del tempo",
+    "preview_failed": "Impossibile caricare il video: fotogrammi senza audio",
     "wave_loading": "Caricamento delle onde sonore…",
     "wave_error": "Impossibile caricare le onde sonore"
   }

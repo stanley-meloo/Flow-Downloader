@@ -6,65 +6,49 @@
 -->
 
 ## en
-- Now you can trim videos before downloading
-- Bug fixes and optimizations
+- Bug fixes and quality of life improvements
 
 ## pt
-- Agora você pode cortar os vídeos antes de baixar
-- Correções de bugs e otimizações
+- Correções de bugs e melhorias de qualidade de vida
 
 ## es
-- Ahora puedes recortar los videos antes de descargarlos
-- Corrección de errores y optimizaciones
+- Corrección de errores y mejoras de calidad de vida
 
 ## fr
-- Vous pouvez maintenant couper les vidéos avant de les télécharger
-- Corrections de bugs et optimisations
+- Corrections de bugs et améliorations de confort
 
 ## de
-- Du kannst Videos jetzt vor dem Herunterladen zuschneiden
-- Fehlerbehebungen und Optimierungen
+- Fehlerbehebungen und Komfortverbesserungen
 
 ## it
-- Ora puoi tagliare i video prima di scaricarli
-- Correzioni di bug e ottimizzazioni
+- Correzioni di bug e miglioramenti alla qualità della vita
 
 ## pl
-- Teraz możesz przycinać filmy przed pobraniem
-- Poprawki błędów i optymalizacje
+- Poprawki błędów i usprawnienia wygody użytkowania
 
 ## ru
-- Теперь можно обрезать видео перед загрузкой
-- Исправления ошибок и оптимизация
+- Исправления ошибок и улучшения удобства
 
 ## tr
-- Artık videoları indirmeden önce kırpabilirsiniz
-- Hata düzeltmeleri ve optimizasyonlar
+- Hata düzeltmeleri ve kullanım kolaylığı iyileştirmeleri
 
 ## ar
-- يمكنك الآن قص مقاطع الفيديو قبل تنزيلها
-- إصلاحات للأخطاء وتحسينات في الأداء
+- إصلاحات للأخطاء وتحسينات في سهولة الاستخدام
 
 ## hi
-- अब आप डाउनलोड करने से पहले वीडियो काट सकते हैं
-- बग फ़िक्स और ऑप्टिमाइज़ेशन
+- बग फ़िक्स और उपयोग में सुधार
 
 ## bn
-- এখন ডাউনলোডের আগে ভিডিও কেটে নিতে পারবেন
-- বাগ সংশোধন ও অপ্টিমাইজেশন
+- বাগ সংশোধন ও ব্যবহারের সুবিধা বাড়ানো হয়েছে
 
 ## ja
-- ダウンロード前に動画をカットできるようになりました
-- バグ修正と最適化
+- バグ修正と使い勝手の改善
 
 ## ko
-- 이제 다운로드하기 전에 동영상을 자를 수 있습니다
-- 버그 수정 및 최적화
+- 버그 수정 및 편의성 개선
 
 ## zh
-- 现在可以在下载前剪辑视频
-- 错误修复和性能优化
+- 错误修复和使用体验改进
 
 ## vi
-- Giờ đây bạn có thể cắt video trước khi tải xuống
-- Sửa lỗi và tối ưu hóa
+- Sửa lỗi và cải thiện trải nghiệm sử dụng

@@ -491,6 +491,7 @@
     "position": "동영상 위치",
     "show_wave": "음파 표시",
     "show_ruler": "시간 눈금자 표시",
+    "preview_failed": "동영상을 불러올 수 없음 — 소리 없이 프레임 표시 중",
     "wave_loading": "음파를 불러오는 중…",
     "wave_error": "음파를 불러올 수 없습니다"
   }

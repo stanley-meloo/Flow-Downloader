@@ -491,6 +491,7 @@
     "position": "Vị trí video",
     "show_wave": "Hiện sóng âm",
     "show_ruler": "Hiện thước thời gian",
+    "preview_failed": "Không tải được video — đang hiển thị khung hình không có âm thanh",
     "wave_loading": "Đang tải sóng âm…",
     "wave_error": "Không thể tải sóng âm"
   }

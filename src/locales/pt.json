@@ -492,6 +492,7 @@
     "position": "Posição do vídeo",
     "show_wave": "Mostrar ondas sonoras",
     "show_ruler": "Mostrar régua de tempo",
+    "preview_failed": "Não foi possível carregar o vídeo — mostrando quadros sem som",
     "wave_loading": "Carregando as ondas sonoras…",
     "wave_error": "Não foi possível carregar as ondas sonoras"
   }

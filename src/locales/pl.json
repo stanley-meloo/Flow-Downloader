@@ -494,6 +494,7 @@
     "position": "Pozycja wideo",
     "show_wave": "Pokaż fale dźwiękowe",
     "show_ruler": "Pokaż linijkę czasu",
+    "preview_failed": "Nie udało się wczytać wideo — klatki bez dźwięku",
     "wave_loading": "Wczytywanie fal dźwiękowych…",
     "wave_error": "Nie udało się wczytać fal dźwiękowych"
   }

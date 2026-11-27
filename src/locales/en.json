@@ -492,6 +492,7 @@
     "position": "Video position",
     "show_wave": "Show the sound waves",
     "show_ruler": "Show the time ruler",
+    "preview_failed": "Couldn't load the video — showing frames without sound",
     "wave_loading": "Loading the sound waves…",
     "wave_error": "Couldn't load the sound waves"
   }

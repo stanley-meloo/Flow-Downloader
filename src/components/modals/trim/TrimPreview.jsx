@@ -21,7 +21,17 @@ export function TrimPreview({ thumbnail, aspect, storyboard, url, getClip, windo
   // { src, base, from, to } — base = the video time where the clip starts.
   const [clip, setClip] = useState(null);
   const [loading, setLoading] = useState(false);
+  const { t } = useTranslation();
   const [clipFailed, setClipFailed] = useState(false);
+  // The video part couldn't be fetched: say so for a moment (the preview then
+  // plays the storyboard frames, without sound).
+  const [failNotice, setFailNotice] = useState(false);
+  useEffect(() => {
+    if (!clipFailed) return undefined;
+    setFailNotice(true);
+    const id = setTimeout(() => setFailNotice(false), 3500);
+    return () => clearTimeout(id);
+  }, [clipFailed]);
   const [playing, setPlaying] = useState(false);
   const [boardTime, setBoardTime] = useState(null); // storyboard playback (fallback)
   const [now, setNow] = useState(windows[0][0]);
@@ -300,6 +310,21 @@ export function TrimPreview({ thumbnail, aspect, storyboard, url, getClip, windo
           <div className="rounded-sm shadow-2xl" style={boardStyle} />
         </div>
       )}
+
+      {/* The video part couldn't be fetched (frames only, no sound) */}
+      <AnimatePresence>
+        {failNotice && (
+          <motion.div
+            key="fail"
+            initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 6 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+            className="absolute bottom-14 left-1/2 -translate-x-1/2 px-3 h-7 flex items-center rounded-full bg-zinc-950/80 backdrop-blur-md ring-1 ring-white/10 text-[11.5px] font-semibold text-zinc-200 whitespace-nowrap pointer-events-none"
+            role="status"
+          >
+            {t("trim.preview_failed", { defaultValue: "Couldn't load the video — showing frames without sound" })}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Fetching the part to play */}
       <AnimatePresence>

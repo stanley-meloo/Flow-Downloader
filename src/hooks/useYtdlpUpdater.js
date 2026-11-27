@@ -2,14 +2,14 @@ import { useState, useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 
-const ONE_DAY_MS = 24 * 60 * 60 * 1000;
-const LAST_CHECK_KEY = 'ytdlp_last_update_check';
+const LAST_CHECK_KEY = 'ytdlp_last_update_check'; // time of the last check (also read by useAppUpdater)
 const PROGRESS_EVENT = 'ytdlp://update-progress'; // ytdlp.rs UPDATE_PROGRESS_EVENT
 
 /**
  * Keeps yt-dlp (the download engine) up to date.
- * - Automatic check (max once per day) shortly after startup; the Settings
- *   button runs it on demand (checkForUpdate, ignores the throttle).
+ * - Automatic check every time the app opens (a few seconds after startup):
+ *   sites change often and an old engine breaks them. The Settings button
+ *   runs it on demand too (checkForUpdate).
  * - The check only compares versions (`ytdlp_check_update`, nothing is
  *   downloaded). Only when a newer release exists is it downloaded
  *   (`ytdlp_update`), with a progress toast, then "updated". An automatic
@@ -83,16 +83,11 @@ export default function useYtdlpUpdater(showToast, progressToast, hideToast) {
     }
   };
 
-  // Installed version right away + automatic throttled check on startup.
+  // Installed version right away + automatic check on every launch.
   // (No "run once" ref: in React StrictMode the effect runs, is cleaned up and
   // runs again — a ref guard would cancel the timer and skip the check.)
   useEffect(() => {
     refreshVersion();
-
-    let last = 0;
-    try { last = parseInt(localStorage.getItem(LAST_CHECK_KEY) || '0', 10) || 0; } catch (e) { /* ignore */ }
-
-    if (Date.now() - last < ONE_DAY_MS) return;
 
     // Delay so it never competes with the first render or a quick first analyze.
     const timer = setTimeout(() => runUpdate(false), 5000);

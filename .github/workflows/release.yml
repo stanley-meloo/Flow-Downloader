@@ -98,6 +98,18 @@ jobs:
             libpipewire-0.3-dev libwayland-dev libegl-dev libgbm-dev xz-utils unzip \
             gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-libav
 
+      # The committed Windows / macOS yt-dlp gets old between releases (sites
+      # change; an old engine fails with 403 errors): ship the latest one.
+      - name: Download the latest yt-dlp (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: curl -fL --retry 3 -o src-tauri/ytdlp-x86_64-pc-windows-msvc.exe https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe
+      - name: Download the latest yt-dlp (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          curl -fL --retry 3 -o src-tauri/ytdlp-${{ matrix.target }} https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_macos
+          chmod +x src-tauri/ytdlp-${{ matrix.target }}
+
       # Linux sidecars aren't committed (large): downloaded for each build.
       - name: Download Linux sidecars
         if: runner.os == 'Linux'
