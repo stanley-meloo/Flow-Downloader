@@ -126,7 +126,11 @@ void main() {
     gl_FragColor = vec4(0.,0.,0.,shadow);
     return;
   }
-  float mask = 1.0 - smoothstep(-1.8, .45, sdf);
+  // Edge anti-aliasing centred on the shape's exact edge (like the browser's
+  // own rounded-corner clipping): the glass reaches the box edge, so a CSS
+  // blur / content clipped at the same rounded corners never peeks out past
+  // the glass as a thin sliver (it used to fade out ~1.8 px inside).
+  float mask = 1.0 - smoothstep(-0.75, 0.75, sdf);
   float inside = -sdf;
   float edge = 1.0 - smoothstep(0.0, u_zRadius * 1.12, inside);
   float core = smoothstep(u_zRadius * .55, u_zRadius * 1.9, inside);

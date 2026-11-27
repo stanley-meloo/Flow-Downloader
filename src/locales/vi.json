@@ -315,9 +315,29 @@
         "openSettings": "Mở cài đặt",
         "download": "Bắt đầu tải xuống",
         "closeModal": "Đóng cửa sổ",
-        "autoDownload": "Bật/tắt tự động tải"
+        "autoDownload": "Bật/tắt tự động tải",
+        "trim": "Cắt video (màn hình cắt)",
+        "undo": "Hoàn tác",
+        "redo": "Làm lại",
+        "addCut": "Thêm đoạn cắt tại con trỏ",
+        "playPause": "Phát / tạm dừng bản xem trước"
       },
-      "restored": "Đã khôi phục mặc định"
+      "restored": "Đã khôi phục mặc định",
+      "mouse_group": "Dòng thời gian cắt (chuột)",
+      "mouse": {
+        "set_in": "Di chuyển mốc \"in\" (giữ để kéo)",
+        "set_out": "Di chuyển mốc \"out\" (giữ để kéo)",
+        "cut_menu": "Thêm / xóa đoạn cắt",
+        "pick_cut": "Chỉnh đoạn cắt khác",
+        "zoom": "Phóng to dòng thời gian tại con trỏ"
+      },
+      "mouse_keys": {
+        "click": "Nhấp",
+        "click_any": "Nhấp trái / phải",
+        "right_click": "Nhấp phải",
+        "click_cut": "Nhấp vào đoạn cắt",
+        "wheel": "Con lăn chuột"
+      }
     }
   },
   "toast": {
@@ -330,6 +350,7 @@
     "clipboard_error": "Không thể đọc bộ nhớ tạm.",
     "open_error": "Không thể mở tệp hoặc thư mục.",
     "ytdlp_checking": "Đang kiểm tra cập nhật công cụ tải xuống…",
+    "ytdlp_downloading": "Đang tải bản cập nhật công cụ tải xuống…",
     "ytdlp_updated": "Đã cập nhật công cụ tải xuống.",
     "ytdlp_uptodate": "Công cụ tải xuống đã là bản mới nhất.",
     "ytdlp_update_error": "Không thể cập nhật công cụ tải xuống.",
@@ -347,6 +368,7 @@
     "err_network": "Lỗi kết nối. Hãy kiểm tra internet và thử lại.",
     "err_unsupported": "Liên kết này không được hỗ trợ.",
     "err_download": "Tải xuống thất bại. Hãy thử lại hoặc cập nhật công cụ trong Cài đặt.",
+    "app_updated": "Flow Downloader đã được cập nhật lên phiên bản {{version}}!",
     "app_update_error": "Không thể kiểm tra hoặc cài đặt bản cập nhật.",
     "app_update_wait": "Hãy chờ các lượt tải xong rồi mới cập nhật.",
     "diagnostics_error": "Không thể tạo thông tin chẩn đoán.",
@@ -394,6 +416,11 @@
     "closing": "Đang đóng…"
   },
   "update": {
+    "badge": "Phiên bản mới",
+    "whats_new": "Có gì mới",
+    "title": "Flow Downloader có bản cập nhật mới!",
+    "ignore": "Bỏ qua",
+    "downloading": "Đang tải xuống…",
     "available": "Đã có Flow Downloader {{version}}",
     "install": "Cập nhật",
     "installing": "Đang cài đặt…",
@@ -441,5 +468,30 @@
   "resume": {
     "message": "Lượt tải chưa xong từ lần trước: {{n}}",
     "resume": "Tiếp tục"
+  },
+  "trim": {
+    "open": "Cắt video",
+    "back": "Quay lại tải xuống",
+    "unavailable": "Không thể cắt video này",
+    "length": "Thời lượng",
+    "reset": "Đặt lại đoạn cắt",
+    "start": "Bắt đầu",
+    "end": "Kết thúc",
+    "download_part": "Tải đoạn này",
+    "play": "Xem trước đoạn cắt",
+    "pause": "Tạm dừng",
+    "volume": "Âm lượng",
+    "mute": "Tắt tiếng",
+    "unmute": "Bật tiếng",
+    "zoom_in": "Tinh chỉnh: phóng to đoạn cắt",
+    "zoom_out": "Xem toàn bộ video",
+    "add_cut": "Thêm đoạn cắt tại đây",
+    "remove_cut": "Xóa đoạn cắt này",
+    "download_parts": "Tải các đoạn ({{count}})",
+    "position": "Vị trí video",
+    "show_wave": "Hiện sóng âm",
+    "show_ruler": "Hiện thước thời gian",
+    "wave_loading": "Đang tải sóng âm…",
+    "wave_error": "Không thể tải sóng âm"
   }
 }

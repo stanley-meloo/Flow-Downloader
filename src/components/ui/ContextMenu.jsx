@@ -29,6 +29,18 @@ import { buildDiagnosticsReport } from "../../utils/diagnostics";
 import { IS_MAC } from "../../utils/keybinds";
 import screenshotSfx from "../../assets/sounds/screenshot.mp3"; // shutter sound for "Screenshot"
 
+// Parts of the app can add their own items for right-clicks on an element
+// (e.g. the trim timeline: "Add a cut here"): setContextItems(el, fn) where
+// fn(event) returns [{ id, title?, items: [{ id, icon, label, action, danger? }] }]
+// — evaluated when the menu opens (so it can use where the click was).
+// Mark the element (or an ancestor of the click) with data-ctx-custom.
+const customProviders = new WeakMap();
+export function setContextItems(el, fn) {
+  if (!el) return () => {};
+  customProviders.set(el, fn);
+  return () => { if (customProviders.get(el) === fn) customProviders.delete(el); };
+}
+
 const MENU_GLASS = { blur: 1, preBlur: 10, darkTint: 0.55, edgeHighlight: 0.12, depth: 14, coreOpacity: 0.6 };
 const EDGE = 8; // px kept between the menu and the window edges
 const MOD = IS_MAC ? "⌘" : "Ctrl+";
@@ -89,10 +101,17 @@ export default function ContextMenu({ showToast, buildSections }) {
   // Replace the default menu everywhere.
   useEffect(() => {
     const onContextMenu = (e) => {
+      // Already handled by the element (e.g. Shift + right-click on the trim
+      // timeline sets the "out" handle): no menu.
+      if (e.defaultPrevented && e.target instanceof Element && e.target.closest("[data-ctx-custom]")) return;
       e.preventDefault();
       const target = e.target instanceof Element ? e.target.closest("input, textarea, [contenteditable='true']") || e.target : null;
       const ctxEl = e.target instanceof Element ? e.target.closest("[data-ctx]") : null;
+      const customEl = e.target instanceof Element ? e.target.closest("[data-ctx-custom]") : null;
+      let custom = [];
+      try { custom = (customEl && customProviders.get(customEl)?.(e)) || []; } catch (err) { console.warn("[ContextMenu] custom items", err); }
       setMenu({
+        custom,
         ctx: { kind: ctxEl?.dataset.ctx || null, id: ctxEl?.dataset.ctxId || null },
         x: e.clientX,
         y: e.clientY,
@@ -221,8 +240,10 @@ export default function ContextMenu({ showToast, buildSections }) {
       key={item.id}
       role={item.checked !== undefined ? "menuitemcheckbox" : "menuitem"}
       aria-checked={item.checked}
-      onClick={(e) => { if (item.burst) fireBurst(e.clientX, e.clientY); run(item.action)(); }} /* burst: the same explosion as a search */
-      className={`w-full flex items-center gap-2.5 h-9 px-2.5 rounded-[10px] text-[12.5px] font-semibold transition-colors cursor-pointer outline-none hover:bg-white/10 focus-visible:bg-white/10 ${item.danger ? "text-red-300 hover:text-red-200" : item.support ? "text-rose-300 hover:text-rose-200" : "text-zinc-200 hover:text-white"}`}
+      disabled={item.disabled}
+      aria-disabled={item.disabled || undefined}
+      onClick={(e) => { if (item.disabled) return; if (item.burst) fireBurst(e.clientX, e.clientY); run(item.action)(); }} /* burst: the same explosion as a search */
+      className={`w-full flex items-center gap-2.5 h-9 px-2.5 rounded-[10px] text-[12.5px] font-semibold transition-colors outline-none ${item.disabled ? "opacity-40 cursor-not-allowed" : "cursor-pointer hover:bg-white/10 focus-visible:bg-white/10"} ${item.danger ? "text-red-300 hover:text-red-200" : item.support ? "text-rose-300 hover:text-rose-200" : "text-zinc-200 hover:text-white"}`}
     >
       <item.icon size={15} className={`shrink-0 ${item.danger ? "text-red-400" : item.support ? "text-rose-400" : "text-zinc-300"}`} />
       <span className="flex-1 min-w-0 text-left truncate">{item.label}</span>
@@ -232,8 +253,10 @@ export default function ContextMenu({ showToast, buildSections }) {
   );
 
   // Groups, in order, separated by a thin line.
+  const customSections = (menu?.custom || []).filter((sec) => sec?.items?.length);
   const groups = [
     editItems.length ? { id: "edit", items: editItems } : null,
+    ...customSections,
     ...contextSections,
     { id: "app", items: appItems },
     // Always the very last option: support link (same as the heart button).

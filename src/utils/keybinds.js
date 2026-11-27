@@ -22,6 +22,11 @@ export const DEFAULT_KEYBINDS = {
   autoDownload: 'D', // turn Auto Download on / off
   // Download windows (single video / playlist) and Settings
   download: 'Enter',
+  trim: 'T', // open / close the trim view in the download window
+  playPause: 'Space',    // trim view: play / pause the preview
+  addCut: 'N',           // trim view: add a cut where the mouse is on the timeline
+  undo: 'Ctrl+Z',        // undo the last change in the download window (cuts, title)
+  redo: 'Ctrl+Shift+Z',  // redo it (Ctrl+Y works too)
   closeModal: 'Escape',
 };
 
@@ -60,6 +65,11 @@ export const KEYBIND_ACTIONS = [
   { id: 'openSettings', group: 'main' },
   { id: 'autoDownload', group: 'main' },
   { id: 'download', group: 'modal' },
+  { id: 'trim', group: 'modal' },
+  { id: 'playPause', group: 'modal' },
+  { id: 'addCut', group: 'modal' },
+  { id: 'undo', group: 'modal' },
+  { id: 'redo', group: 'modal' },
   { id: 'closeModal', group: 'modal' },
 ];
 

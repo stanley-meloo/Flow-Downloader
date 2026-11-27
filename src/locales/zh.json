@@ -315,9 +315,29 @@
         "openSettings": "打开设置",
         "download": "开始下载",
         "closeModal": "关闭窗口",
-        "autoDownload": "开启/关闭自动下载"
+        "autoDownload": "开启/关闭自动下载",
+        "trim": "剪切视频（剪切界面）",
+        "undo": "撤销",
+        "redo": "重做",
+        "addCut": "在鼠标处添加片段",
+        "playPause": "播放 / 暂停预览"
       },
-      "restored": "已恢复默认"
+      "restored": "已恢复默认",
+      "mouse_group": "剪切时间轴（鼠标）",
+      "mouse": {
+        "set_in": "移动“in”标记（按住可拖动）",
+        "set_out": "移动“out”标记（按住可拖动）",
+        "cut_menu": "添加 / 删除片段",
+        "pick_cut": "编辑另一个片段",
+        "zoom": "在指针处缩放时间轴"
+      },
+      "mouse_keys": {
+        "click": "单击",
+        "click_any": "左键 / 右键单击",
+        "right_click": "右键单击",
+        "click_cut": "单击片段",
+        "wheel": "鼠标滚轮"
+      }
     }
   },
   "toast": {
@@ -330,6 +350,7 @@
     "clipboard_error": "无法读取剪贴板。",
     "open_error": "无法打开文件或文件夹。",
     "ytdlp_checking": "正在检查下载引擎更新…",
+    "ytdlp_downloading": "正在下载下载引擎更新…",
     "ytdlp_updated": "下载引擎已更新。",
     "ytdlp_uptodate": "下载引擎已是最新版本。",
     "ytdlp_update_error": "无法更新下载引擎。",
@@ -347,6 +368,7 @@
     "err_network": "网络连接有问题。请检查网络后重试。",
     "err_unsupported": "不支持此链接。",
     "err_download": "下载失败。请重试，或在设置中更新下载引擎。",
+    "app_updated": "Flow Downloader 已更新到 {{version}} 版本！",
     "app_update_error": "无法检查或安装更新。",
     "app_update_wait": "请等待下载完成后再更新。",
     "diagnostics_error": "无法生成诊断信息。",
@@ -394,6 +416,11 @@
     "closing": "正在关闭…"
   },
   "update": {
+    "badge": "新版本",
+    "whats_new": "新功能",
+    "title": "Flow Downloader 有新的更新可用！",
+    "ignore": "忽略",
+    "downloading": "正在下载…",
     "available": "Flow Downloader {{version}} 已可用",
     "install": "更新",
     "installing": "正在安装…",
@@ -441,5 +468,30 @@
   "resume": {
     "message": "上次未完成的下载：{{n}}",
     "resume": "继续"
+  },
+  "trim": {
+    "open": "剪切视频",
+    "back": "返回下载",
+    "unavailable": "此视频无法剪切",
+    "length": "时长",
+    "reset": "重置剪切",
+    "start": "开始",
+    "end": "结束",
+    "download_part": "下载片段",
+    "play": "预览剪切片段",
+    "pause": "暂停",
+    "volume": "音量",
+    "mute": "静音",
+    "unmute": "取消静音",
+    "zoom_in": "微调：放大剪切片段",
+    "zoom_out": "显示整个视频",
+    "add_cut": "在此添加片段",
+    "remove_cut": "删除此片段",
+    "download_parts": "下载片段（{{count}}）",
+    "position": "视频位置",
+    "show_wave": "显示声波",
+    "show_ruler": "显示时间标尺",
+    "wave_loading": "正在加载声波…",
+    "wave_error": "无法加载声波"
   }
 }

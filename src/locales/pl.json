@@ -318,9 +318,29 @@
         "openSettings": "Otwórz ustawienia",
         "download": "Rozpocznij pobieranie",
         "closeModal": "Zamknij okno",
-        "autoDownload": "Włącz/wyłącz auto-pobieranie"
+        "autoDownload": "Włącz/wyłącz auto-pobieranie",
+        "trim": "Przytnij wideo (widok cięcia)",
+        "undo": "Cofnij",
+        "redo": "Ponów",
+        "addCut": "Dodaj fragment pod kursorem",
+        "playPause": "Odtwórz / wstrzymaj podgląd"
       },
-      "restored": "Przywrócono domyślne"
+      "restored": "Przywrócono domyślne",
+      "mouse_group": "Oś cięcia (mysz)",
+      "mouse": {
+        "set_in": "Przesuń znacznik „in” (przytrzymaj, by przeciągnąć)",
+        "set_out": "Przesuń znacznik „out” (przytrzymaj, by przeciągnąć)",
+        "cut_menu": "Dodaj / usuń fragment",
+        "pick_cut": "Edytuj inny fragment",
+        "zoom": "Przybliż oś czasu pod kursorem"
+      },
+      "mouse_keys": {
+        "click": "Klik",
+        "click_any": "Lewy / prawy klik",
+        "right_click": "Prawy klik",
+        "click_cut": "Klik na fragment",
+        "wheel": "Kółko myszy"
+      }
     }
   },
   "toast": {
@@ -333,6 +353,7 @@
     "clipboard_error": "Nie udało się odczytać schowka.",
     "open_error": "Nie udało się otworzyć pliku ani folderu.",
     "ytdlp_checking": "Sprawdzanie aktualizacji silnika pobierania…",
+    "ytdlp_downloading": "Pobieranie aktualizacji silnika pobierania…",
     "ytdlp_updated": "Silnik pobierania zaktualizowany.",
     "ytdlp_uptodate": "Silnik pobierania jest już aktualny.",
     "ytdlp_update_error": "Nie udało się zaktualizować silnika pobierania.",
@@ -350,6 +371,7 @@
     "err_network": "Problem z połączeniem. Sprawdź internet i spróbuj ponownie.",
     "err_unsupported": "Ten link nie jest obsługiwany.",
     "err_download": "Pobieranie nie powiodło się. Spróbuj ponownie lub zaktualizuj silnik w Ustawieniach.",
+    "app_updated": "Flow Downloader zaktualizowano do wersji {{version}}!",
     "app_update_error": "Nie udało się sprawdzić ani zainstalować aktualizacji.",
     "app_update_wait": "Poczekaj na zakończenie pobierania przed aktualizacją.",
     "diagnostics_error": "Nie udało się wygenerować diagnostyki.",
@@ -397,6 +419,11 @@
     "closing": "Zamykanie…"
   },
   "update": {
+    "badge": "Nowa wersja",
+    "whats_new": "Co nowego",
+    "title": "Dostępna jest nowa aktualizacja Flow Downloader!",
+    "ignore": "Ignoruj",
+    "downloading": "Pobieranie…",
     "available": "Dostępny Flow Downloader {{version}}",
     "install": "Aktualizuj",
     "installing": "Instalowanie…",
@@ -444,5 +471,30 @@
   "resume": {
     "message": "Niedokończone pobierania z ostatniego razu: {{n}}",
     "resume": "Wznów"
+  },
+  "trim": {
+    "open": "Przytnij wideo",
+    "back": "Wróć do pobierania",
+    "unavailable": "Przycinanie jest niedostępne dla tego wideo",
+    "length": "Długość",
+    "reset": "Resetuj przycięcie",
+    "start": "Początek",
+    "end": "Koniec",
+    "download_part": "Pobierz fragment",
+    "play": "Podgląd fragmentu",
+    "pause": "Pauza",
+    "volume": "Głośność",
+    "mute": "Wycisz",
+    "unmute": "Włącz dźwięk",
+    "zoom_in": "Precyzyjna regulacja: przybliż fragment",
+    "zoom_out": "Pokaż całe wideo",
+    "add_cut": "Dodaj tu fragment",
+    "remove_cut": "Usuń ten fragment",
+    "download_parts": "Pobierz fragmenty ({{count}})",
+    "position": "Pozycja wideo",
+    "show_wave": "Pokaż fale dźwiękowe",
+    "show_ruler": "Pokaż linijkę czasu",
+    "wave_loading": "Wczytywanie fal dźwiękowych…",
+    "wave_error": "Nie udało się wczytać fal dźwiękowych"
   }
 }

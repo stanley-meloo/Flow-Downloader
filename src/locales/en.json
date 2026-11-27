@@ -316,9 +316,29 @@
         "openSettings": "Open settings",
         "download": "Start download",
         "closeModal": "Close window",
-        "autoDownload": "Toggle Auto Download"
+        "autoDownload": "Toggle Auto Download",
+        "trim": "Cut video (trim view)",
+        "undo": "Undo",
+        "redo": "Redo",
+        "addCut": "Add a cut at the mouse",
+        "playPause": "Play / pause the preview"
       },
-      "restored": "Defaults restored"
+      "restored": "Defaults restored",
+      "mouse_group": "Trim timeline (mouse)",
+      "mouse": {
+        "set_in": "Move the \"in\" marker (hold to drag)",
+        "set_out": "Move the \"out\" marker (hold to drag)",
+        "cut_menu": "Add / remove a cut",
+        "pick_cut": "Edit another cut",
+        "zoom": "Zoom the timeline at the pointer"
+      },
+      "mouse_keys": {
+        "click": "Click",
+        "click_any": "Left / right click",
+        "right_click": "Right click",
+        "click_cut": "Click on a cut",
+        "wheel": "Mouse wheel"
+      }
     }
   },
   "toast": {
@@ -331,6 +351,7 @@
     "clipboard_error": "Couldn't read the clipboard.",
     "open_error": "Couldn't open the file or folder.",
     "ytdlp_checking": "Checking for download engine updates…",
+    "ytdlp_downloading": "Downloading a download engine update…",
     "ytdlp_updated": "Download engine updated.",
     "ytdlp_uptodate": "The download engine is already up to date.",
     "ytdlp_update_error": "Couldn't update the download engine.",
@@ -348,6 +369,7 @@
     "err_network": "Connection problem. Check your internet and try again.",
     "err_unsupported": "This link isn't supported.",
     "err_download": "Download failed. Try again or update the engine in Settings.",
+    "app_updated": "Flow Downloader was updated to version {{version}}!",
     "app_update_error": "Couldn't check for or install the update.",
     "app_update_wait": "Wait for the downloads to finish before updating.",
     "diagnostics_error": "Couldn't generate the diagnostics.",
@@ -395,6 +417,11 @@
     "closing": "Closing…"
   },
   "update": {
+    "badge": "New version",
+    "whats_new": "What's new",
+    "title": "Flow Downloader has a new update available!",
+    "ignore": "Ignore",
+    "downloading": "Downloading…",
     "available": "Flow Downloader {{version}} is available",
     "install": "Update",
     "installing": "Installing…",
@@ -442,5 +469,30 @@
   "resume": {
     "message": "Unfinished downloads from last time: {{n}}",
     "resume": "Resume"
+  },
+  "trim": {
+    "open": "Cut video",
+    "back": "Back to download",
+    "unavailable": "Cutting isn't available for this video",
+    "length": "Length",
+    "reset": "Reset cut",
+    "start": "Start",
+    "end": "End",
+    "download_part": "Download part",
+    "play": "Preview the cut",
+    "pause": "Pause",
+    "volume": "Volume",
+    "mute": "Mute",
+    "unmute": "Unmute",
+    "zoom_in": "Fine adjustment: zoom into the cut",
+    "zoom_out": "Show the whole video",
+    "add_cut": "Add a cut here",
+    "remove_cut": "Remove this cut",
+    "download_parts": "Download parts ({{count}})",
+    "position": "Video position",
+    "show_wave": "Show the sound waves",
+    "show_ruler": "Show the time ruler",
+    "wave_loading": "Loading the sound waves…",
+    "wave_error": "Couldn't load the sound waves"
   }
 }

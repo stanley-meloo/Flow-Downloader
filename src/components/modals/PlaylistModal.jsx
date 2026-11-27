@@ -3,16 +3,17 @@ import { pressable } from "../../utils/a11y"; // keyboard access for clickable n
 import useScrollEdges from "../../hooks/useScrollEdges";
 import { motion } from "framer-motion";
 import { MusicIcon as Music, FolderInputIcon as FolderInput, EarOffIcon as EarOff, MonitorCogIcon as MonitorCog, ClapIcon as Clap, ImageIcon as ImageIcon, ListChecksIcon as ListChecks, TriangleAlertIcon as AlertTriangle, VideoIcon as Video, XIcon as X } from "../ui/AnimatedIcons"; // animated
-import { FolderOpenIcon as FolderOpen, DownloadIcon as Download, ExternalLinkIcon as ExternalLink, CheckIcon as Check } from "../ui/AnimatedIcons"; // animated (lucide-animated)
+import { FolderOpenIcon as FolderOpen, ExternalLinkIcon as ExternalLink, CheckIcon as Check } from "../ui/AnimatedIcons"; // animated (lucide-animated)
 import { openMediaLocation, saveBestThumbnail } from "../../utils/fileSystem";
 import { pickFolder } from "../../utils/folderPicker";
-import { Swap, Collapse, Pop, TAP } from "../ui/Motion";
+import { Swap, Collapse, Pop } from "../ui/Motion";
 import LiquidGlass from "../ui/liquidGlass/LiquidGlass";
 import { DIALOG_GLASS } from "../ui/liquidGlass/presets";
 import { isYouTubeExtractor, youtubeThumb } from "../../utils/media";
 import { DEFAULT_KEYBINDS, matchesBind, bindLabel } from "../../utils/keybinds";
 import { qualitiesOf, qualityOptionsOf, audioOptionsOf, formatOptionsOf, needsEditorWarning, formatDuration, DropdownConfigBox, useRememberedOptions, CARD_IN } from "./downloadOptions";
 import ScrollThumb from "../ui/ScrollThumb";
+import DownloadButton from "../ui/DownloadButton";
 import { useTranslation } from 'react-i18next';
 import SmoothScroll from "../ui/SmoothScroll";
 
@@ -156,7 +157,7 @@ export default function PlaylistModal({
 
       <motion.div
         variants={CARD_IN} initial="hidden" animate="shown" exit="exit"
-        className="relative isolate w-full max-w-4xl rounded-[36px] shadow-2xl overflow-hidden backdrop-blur-md flex flex-col max-h-[95vh]" /* no CSS bg/border: the glass draws them */
+        className="relative isolate w-full max-w-4xl rounded-[36px] shadow-2xl backdrop-blur-md overflow-hidden flex flex-col max-h-[95vh]" /* no CSS bg/border: the glass draws them */
       >
         {/* Liquid glass background — same material as the Settings dialog.
             Behind all the content (negative z inside the isolated dialog). */}
@@ -375,17 +376,10 @@ export default function PlaylistModal({
             </div>
           </motion.div>
 
-          <motion.button
-            whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99, transition: TAP }} onClick={handleConfirm}
-            data-tooltip={bindLabel(kb.download) || undefined} /* only the shortcut */
-            className="relative mt-2 w-full py-4 rounded-xl accent-button text-white font-black text-sm flex items-center justify-center gap-3 cursor-pointer group overflow-hidden transition-all shrink-0"
-          >
-            <motion.div animate={{ left: ["-100%", "200%"] }} transition={{ duration: 2, ease: "easeInOut", repeat: Infinity, repeatDelay: 2 }} className="absolute top-0 bottom-0 w-1/2 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12 z-0" />
-            <div className="relative z-10 flex items-center gap-2.5">
-              <Download size={18} strokeWidth={2.5} />
-              <span className="uppercase tracking-widest text-[12px] drop-shadow-md">{t('playlist_modal.download_selected')}</span>
-            </div>
-          </motion.button>
+          {/* Download button (ui/DownloadButton.jsx) */}
+          <DownloadButton onClick={handleConfirm} tooltip={bindLabel(kb.download)} /* only the shortcut */ iconSize={18} textClass="text-[12px]" className="mt-2 w-full py-4 shrink-0">
+            {t('playlist_modal.download_selected')}
+          </DownloadButton>
         </div>
       </motion.div>
     </div>

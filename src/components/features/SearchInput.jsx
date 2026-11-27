@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { TAP } from "../ui/Motion"; // fast, hard button press
 import { SearchIcon as Search, LinkIcon } from "../ui/AnimatedIcons"; // animated (lucide-animated)
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useAnimation } from "framer-motion";
 import { LoaderCircleIcon as Loader2 } from "../ui/AnimatedIcons"; // animated
 import { useTranslation } from "react-i18next";
 import { DEFAULT_KEYBINDS, withBind } from "../../utils/keybinds";
@@ -87,6 +87,24 @@ export default function SearchInput({
     const id = setTimeout(() => setRenewing(false), 1400);
     return () => clearTimeout(id);
   }, [renewSignal]);
+
+  // A link arrives in the bar at once (pasted — button, Ctrl+V, right-click —
+  // or auto-pasted from the clipboard): the text pops in — a quick, elastic
+  // slide + scale from the left. Typing (one character at a time) doesn't.
+  const pasteBounce = useAnimation();
+  const prevUrl = useRef(url);
+  useEffect(() => {
+    const prev = prevUrl.current || "";
+    prevUrl.current = url;
+    const next = url || "";
+    if (next.length - prev.length >= 6 && /^(https?:\/\/|www\.)/i.test(next.trim())) {
+      pasteBounce.set({ opacity: 0, x: -14, scale: 0.94 });
+      pasteBounce.start({
+        opacity: 1, x: 0, scale: 1,
+        transition: { type: "spring", stiffness: 520, damping: 18, mass: 0.6, opacity: { duration: 0.15 } },
+      });
+    }
+  }, [url, pasteBounce]);
 
   const handlePasteAndFocus = () => {
     onPaste(); 
@@ -206,8 +224,10 @@ export default function SearchInput({
 
 
         {/* Text field */}
-        <input
+        <motion.input
           ref={inputRef}
+          animate={pasteBounce}
+          style={{ transformOrigin: "left center" }}
           id="flow-search-input"
           data-contrast /* placeholder turns dark on a light background (utils/contrastWatch.js) */
           className="flex-1 min-w-0 h-12 bg-transparent border-none text-white px-2 outline-none placeholder-zinc-500/70 text-lg font-medium cursor-text tracking-wide"

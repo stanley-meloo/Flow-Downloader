@@ -316,9 +316,29 @@
         "openSettings": "Ouvrir les paramètres",
         "download": "Lancer le téléchargement",
         "closeModal": "Fermer la fenêtre",
-        "autoDownload": "Activer/désactiver le téléchargement auto"
+        "autoDownload": "Activer/désactiver le téléchargement auto",
+        "trim": "Couper la vidéo (vue de coupe)",
+        "undo": "Annuler",
+        "redo": "Rétablir",
+        "addCut": "Ajouter une coupe sous la souris",
+        "playPause": "Lire / mettre en pause l'aperçu"
       },
-      "restored": "Valeurs par défaut rétablies"
+      "restored": "Valeurs par défaut rétablies",
+      "mouse_group": "Timeline de coupe (souris)",
+      "mouse": {
+        "set_in": "Déplacer le repère « in » (maintenir pour glisser)",
+        "set_out": "Déplacer le repère « out » (maintenir pour glisser)",
+        "cut_menu": "Ajouter / supprimer une coupe",
+        "pick_cut": "Modifier une autre coupe",
+        "zoom": "Zoomer la timeline sous le pointeur"
+      },
+      "mouse_keys": {
+        "click": "Clic",
+        "click_any": "Clic gauche / droit",
+        "right_click": "Clic droit",
+        "click_cut": "Clic sur une coupe",
+        "wheel": "Molette"
+      }
     }
   },
   "toast": {
@@ -331,6 +351,7 @@
     "clipboard_error": "Impossible de lire le presse-papiers.",
     "open_error": "Impossible d'ouvrir le fichier ou le dossier.",
     "ytdlp_checking": "Recherche de mises à jour du moteur de téléchargement…",
+    "ytdlp_downloading": "Téléchargement de la mise à jour du moteur de téléchargement…",
     "ytdlp_updated": "Moteur de téléchargement mis à jour.",
     "ytdlp_uptodate": "Le moteur de téléchargement est déjà à jour.",
     "ytdlp_update_error": "Impossible de mettre à jour le moteur de téléchargement.",
@@ -348,6 +369,7 @@
     "err_network": "Problème de connexion. Vérifiez votre internet et réessayez.",
     "err_unsupported": "Ce lien n'est pas pris en charge.",
     "err_download": "Échec du téléchargement. Réessayez ou mettez à jour le moteur dans les Paramètres.",
+    "app_updated": "Flow Downloader a été mis à jour vers la version {{version}} !",
     "app_update_error": "Impossible de vérifier ou d'installer la mise à jour.",
     "app_update_wait": "Attendez la fin des téléchargements avant de mettre à jour.",
     "diagnostics_error": "Impossible de générer le diagnostic.",
@@ -395,6 +417,11 @@
     "closing": "Fermeture…"
   },
   "update": {
+    "badge": "Nouvelle version",
+    "whats_new": "Nouveautés",
+    "title": "Une nouvelle mise à jour de Flow Downloader est disponible !",
+    "ignore": "Ignorer",
+    "downloading": "Téléchargement…",
     "available": "Flow Downloader {{version}} est disponible",
     "install": "Mettre à jour",
     "installing": "Installation…",
@@ -442,5 +469,30 @@
   "resume": {
     "message": "Téléchargements inachevés de la dernière fois : {{n}}",
     "resume": "Reprendre"
+  },
+  "trim": {
+    "open": "Couper la vidéo",
+    "back": "Retour au téléchargement",
+    "unavailable": "La coupe n'est pas disponible pour cette vidéo",
+    "length": "Durée",
+    "reset": "Annuler la coupe",
+    "start": "Début",
+    "end": "Fin",
+    "download_part": "Télécharger le passage",
+    "play": "Prévisualiser la coupe",
+    "pause": "Pause",
+    "volume": "Volume",
+    "mute": "Couper le son",
+    "unmute": "Réactiver le son",
+    "zoom_in": "Réglage fin : zoom sur la coupe",
+    "zoom_out": "Voir toute la vidéo",
+    "add_cut": "Ajouter une coupe ici",
+    "remove_cut": "Supprimer cette coupe",
+    "download_parts": "Télécharger les passages ({{count}})",
+    "position": "Position de la vidéo",
+    "show_wave": "Afficher les ondes sonores",
+    "show_ruler": "Afficher la règle de temps",
+    "wave_loading": "Chargement des ondes sonores…",
+    "wave_error": "Impossible de charger les ondes sonores"
   }
 }

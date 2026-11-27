@@ -547,16 +547,18 @@ const SNIP = (dir) => ({
 });
 const BLADE_A = SNIP(-1);
 const BLADE_B = SNIP(1);
+// Pivot in the icon's own coordinates (not each blade's box).
+const SCISSORS_PIVOT = { transformOrigin: "12px 12px", transformBox: "view-box" };
 export function ScissorsIcon(props) {
   const [controls, ref] = useSimpleControls();
   return (
     <IconFrame {...props} iconRef={ref}>
-      <motion.g animate={controls} initial="normal" variants={BLADE_A} style={{ transformOrigin: "12px 12px" }}>
+      <motion.g animate={controls} initial="normal" variants={BLADE_A} style={SCISSORS_PIVOT}>
         <circle cx="6" cy="6" r="3" />
         <path d="M8.12 8.12 12 12" />
         <path d="M14.8 14.8 20 20" />
       </motion.g>
-      <motion.g animate={controls} initial="normal" variants={BLADE_B} style={{ transformOrigin: "12px 12px" }}>
+      <motion.g animate={controls} initial="normal" variants={BLADE_B} style={SCISSORS_PIVOT}>
         <circle cx="6" cy="18" r="3" />
         <path d="M20 4 8.12 15.88" />
       </motion.g>
@@ -612,6 +614,36 @@ export function BellIcon(props) {
       svgProps={{ animate: controls, initial: "normal", variants: BELL, style: { overflow: "visible", display: "block", transformOrigin: "12px 3px" } }}>
       <path d="M10.268 21a2 2 0 0 0 3.464 0" />
       <path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326" />
+    </IconFrame>
+  );
+}
+
+// --- Undo / Redo: the curved arrow nudges back / forward ----------------------
+const NUDGE = (dx) => ({
+  normal: { x: 0 },
+  animate: { x: [0, dx, 0], transition: { duration: 0.45, ease: "easeInOut" } },
+});
+const UNDO_NUDGE = NUDGE(-2.5);
+const REDO_NUDGE = NUDGE(2.5);
+export function UndoIcon(props) {
+  const [controls, ref] = useSimpleControls();
+  return (
+    <IconFrame {...props} iconRef={ref}>
+      <motion.g animate={controls} initial="normal" variants={UNDO_NUDGE}>
+        <path d="M9 14 4 9l5-5" />
+        <path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11" />
+      </motion.g>
+    </IconFrame>
+  );
+}
+export function RedoIcon(props) {
+  const [controls, ref] = useSimpleControls();
+  return (
+    <IconFrame {...props} iconRef={ref}>
+      <motion.g animate={controls} initial="normal" variants={REDO_NUDGE}>
+        <path d="m15 14 5-5-5-5" />
+        <path d="M20 9H9.5A5.5 5.5 0 0 0 4 14.5A5.5 5.5 0 0 0 9.5 20H13" />
+      </motion.g>
     </IconFrame>
   );
 }

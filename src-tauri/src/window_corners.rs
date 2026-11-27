@@ -36,7 +36,7 @@ fn windows_round(window: &tauri::WebviewWindow) {
     let _ = window.set_shadow(true);
     let Ok(h) = window.hwnd() else { return };
     // Tauri may use a different `windows` crate version: rebuild our HWND type.
-    let hwnd = HWND(h.0 as *mut core::ffi::c_void);
+    let hwnd = HWND(h.0);
     let preference = DWMWCP_ROUND;
     unsafe {
         let _ = DwmSetWindowAttribute(

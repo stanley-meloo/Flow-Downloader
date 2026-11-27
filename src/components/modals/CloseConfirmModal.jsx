@@ -65,7 +65,7 @@ export default function CloseConfirmModal({ items, waitingCount, closing, onConf
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.96, y: 10 }}
         transition={{ type: "spring", stiffness: 320, damping: 26 }}
-        className="relative isolate w-full max-w-xl max-h-[80vh] rounded-[36px] shadow-2xl overflow-hidden backdrop-blur-md flex flex-col" /* no CSS bg/border: the glass draws them */
+        className="relative isolate w-full max-w-xl max-h-[80vh] rounded-[36px] shadow-2xl backdrop-blur-md overflow-hidden flex flex-col" /* no CSS bg/border: the glass draws them */
       >
         <LiquidGlass
           variant="dark"

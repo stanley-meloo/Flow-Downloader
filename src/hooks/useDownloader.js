@@ -4,6 +4,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { readText } from "@tauri-apps/plugin-clipboard-manager";
 import { addSearchHistory, setLastDownloadFolder } from "../utils/recent";
+import { rangeLabel } from "../utils/trim";
 import { flushPendingSettings } from "./useSettings";
 import { initialQuality, qualitiesOf } from "../components/modals/downloadOptions"; // Auto Download: same quality rule as the card
 import {
@@ -120,6 +121,45 @@ function estimateBytes(info, config, formatType) {
 }
 
 const LOW_SPACE_MARGIN = 1024 ** 3; // warn when less than 1 GB would be left
+// Width ÷ height of the video (< 1 = vertical, e.g. Shorts), or null.
+function aspectOf(data) {
+  const r = Number(data?.aspect_ratio);
+  if (r > 0) return r;
+  if (data?.width > 0 && data?.height > 0) return data.width / data.height;
+  const f = (data?.formats || []).filter((x) => x?.width > 0 && x?.height > 0 && x.vcodec && x.vcodec !== 'none')
+    .sort((a, b) => b.height - a.height)[0];
+  return f ? f.width / f.height : null;
+}
+
+
+// Storyboard (the site's light preview sprites, e.g. YouTube "sb0"…"sb3"):
+// the sharpest one, as { width, height, rows, cols, perTile, sheets: [{url, start, tiles}] }.
+function storyboardOf(formats, duration) {
+  if (!Array.isArray(formats)) return null;
+  const boards = formats.filter((f) =>
+    (f?.format_note === 'storyboard' || /^sb\d/.test(String(f?.format_id || ''))) &&
+    Array.isArray(f.fragments) && f.fragments.length && f.rows > 0 && f.columns > 0 && f.width > 0 && f.height > 0);
+  if (!boards.length) return null;
+  const best = boards.reduce((a, b) => (b.width > a.width ? b : a));
+  const perSheet = best.rows * best.columns;
+  let start = 0;
+  const sheets = [];
+  for (const fr of best.fragments) {
+    const url = fr?.url || (best.url && fr?.path ? `${best.url}${fr.path}` : null);
+    const d = Number(fr?.duration) || 0;
+    if (!url || !/^https:\/\//i.test(url) || d <= 0) return null;
+    sheets.push({ url, start, duration: d });
+    start += d;
+  }
+  // Each tile covers the same time: 1 / fps when given, else a full sheet's
+  // duration ÷ its tiles (only the last sheet may be partly filled).
+  const perTile = best.fps > 0 ? 1 / best.fps : sheets[0].duration / perSheet;
+  if (!(perTile > 0)) return null;
+  return { width: best.width, height: best.height, rows: best.rows, cols: best.columns, perTile, sheets, duration: Number(duration) || start };
+}
+
+const REOPEN_WINDOW_MS = 10000; // a closed card can be reopened instantly for 10 s
+
 const formatGB = (bytes) => `${(bytes / 1024 ** 3).toFixed(bytes < 10 * 1024 ** 3 ? 1 : 0)} GB`;
 
 const QUALITY_LADDER = [4320, 2160, 1440, 1080, 720, 480, 360, 240, 144];
@@ -311,6 +351,15 @@ export default function useDownloader(settings, showToast) {
     if (override) setUrl(override);
     const cleanUrl = normalizeUrl(override ?? url);
     if (!cleanUrl) return;
+    // The same video's card was closed a moment ago (by accident?): it comes
+    // back instantly, with its edits, instead of reading the link again.
+    const recent = closedCard.current;
+    closedCard.current = null;
+    if (recent && Date.now() - recent.at < REOPEN_WINDOW_MS &&
+        [recent.data.originalUrl, recent.searched].some((u) => u && normalizeUrl(u) === cleanUrl)) {
+      setMediaData({ ...recent.data, restoredEdits: recent.edits || null });
+      return;
+    }
     setAnalyzing(true);
     try {
       // Folder for this download (the card can still change it).
@@ -429,7 +478,9 @@ export default function useDownloader(settings, showToast) {
           availableQualities: buildQualities(maxHeightOf(data.formats) || 1080),
           sizeInfo: sizeInfoOf(data.formats, data.duration),
           h264MaxHeight,
-          highResCodec
+          highResCodec,
+          storyboard: storyboardOf(data.formats, data.duration),
+          aspect: aspectOf(data),
         }, dir);
         addSearchHistory(cleanUrl, data.title);
       }
@@ -452,7 +503,11 @@ export default function useDownloader(settings, showToast) {
     if (!data) return false;
     const directory = opts.directory || downloadPath;
     const count = data.isPlaylist ? (data.entries?.length || 0) : 1;
-    const needed = estimateBytes(data.sizeInfo, config, formatType || "video") * count;
+    // Trimmed: only the chosen parts' share of the video.
+    const share = !data.isPlaylist && config?.sections?.length && data.duration > 0
+      ? Math.min(1, config.sections.reduce((s, x) => s + (x.end - x.start), 0) / data.duration)
+      : 1;
+    const needed = estimateBytes(data.sizeInfo, config, formatType || "video") * count * share;
     try {
       const free = await invoke("disk_free", { directory });
       if (needed > 0 && needed > free) {
@@ -517,17 +572,25 @@ export default function useDownloader(settings, showToast) {
         });
       });
     } else {
-      newItems.push({
-        ...baseItem(),
-        title: dataToDownload.title,
-        thumbnail: dataToDownload.thumbnail,
-        videoId: isYouTube ? dataToDownload.id : null,
-        playlistIndex: null,
-        url: dataToDownload.originalUrl,
+      // Trim: one queue item per cut, named "Title [1m20s-2m05s]".
+      const sections = Array.isArray(config?.sections) && config.sections.length ? config.sections : [null];
+      sections.forEach((sec) => {
+        newItems.push({
+          ...baseItem(),
+          title: sec ? `${dataToDownload.title} [${rangeLabel(sec.start, sec.end)}]` : dataToDownload.title,
+          thumbnail: dataToDownload.thumbnail,
+          videoId: isYouTube ? dataToDownload.id : null,
+          playlistIndex: null,
+          url: dataToDownload.originalUrl,
+          section: sec ? { start: sec.start, end: sec.end } : null,
+          preciseCut: !!(sec && config.preciseCut),
+        });
       });
     }
 
     setQueue(prev => [...prev, ...newItems]);
+    closedCard.current = null; // downloaded: nothing to reopen
+    cardEdits.current = null;
     setLastDownloadFolder(directory); // right-click menu: "open last download folder"
     // Remember the card's choices for Auto Download.
     if (!opts.auto) {
@@ -567,8 +630,8 @@ export default function useDownloader(settings, showToast) {
   function savePending(list) {
     const pending = list
       .filter((i) => ["Waiting", "Downloading", "Processing...", "Conflict"].includes(i.status))
-      .map(({ title, url, thumbnail, videoId, playlistIndex, directory, targetRes, targetAudio, ext, formatType }) =>
-        ({ title, url, thumbnail, videoId, playlistIndex, directory, targetRes, targetAudio, ext, formatType }));
+      .map(({ title, url, thumbnail, videoId, playlistIndex, directory, targetRes, targetAudio, ext, formatType, section, preciseCut }) =>
+        ({ title, url, thumbnail, videoId, playlistIndex, directory, targetRes, targetAudio, ext, formatType, section, preciseCut }));
     // Until the user answers, what's offered is kept too.
     const keep = [...resumable, ...pending];
     try {
@@ -676,6 +739,8 @@ export default function useDownloader(settings, showToast) {
         audioKbps: parseInt(item.targetAudio, 10) || 160,
         overwrite: item.conflictChoice === 'replace',
         cookies: cookiesOf(settings),
+        section: item.section || null,
+        preciseCut: !!item.preciseCut,
       },
     });
     runPromises.current[runId] = promise;
@@ -870,8 +935,38 @@ export default function useDownloader(settings, showToast) {
   const activeDownloads = queue.filter((i) => ACTIVE_STATUSES.includes(i.status));
   const waitingCount = queue.filter((i) => i.status === "Waiting").length;
 
+  // --- Reopen a card closed by accident ---
+  // Closing a single-video card (✕, Esc, outside, mouse Back) keeps it — and
+  // the edits made in it (cuts, title…) — for REOPEN_WINDOW_MS: searching the
+  // same link again in that time reopens it instantly, as it was. Starting the
+  // download forgets it.
+  const closedCard = useRef(null);  // { data, edits, searched, at }
+  const cardEdits = useRef(null);   // latest edits of the open card (MediaModal)
+  const rememberCardEdits = (edits) => { cardEdits.current = edits; };
+  const closeCard = () => {
+    if (mediaData && !mediaData.isPlaylist) {
+      const { restoredEdits, ...data } = mediaData;
+      void restoredEdits;
+      closedCard.current = { data, edits: cardEdits.current, searched: url, at: Date.now() };
+    }
+    cardEdits.current = null;
+    setMediaData(null);
+  };
+
+  // Trim view "Play": the selected part of the video, light quality, as a
+  // local clip (Rust ytdlp_preview_clip) → { path, start, end }.
+  const previewClip = (url, start, end) =>
+    invoke('ytdlp_preview_clip', { url, start, end, cookies: cookiesOf(settings) });
+
+  // Trim timeline: the video's sound as a waveform (Rust ytdlp_waveform) → [0–1…].
+  const waveform = (url, duration, points = 3000) =>
+    invoke('ytdlp_waveform', { url, points, duration: Number(duration) || null, cookies: cookiesOf(settings) });
+
   return {
     url, setUrl,
+    previewClip,
+    waveform,
+    closeCard, rememberCardEdits,
     analyzing, analyzeLink,
     queue,
     activeDownloads, waitingCount,

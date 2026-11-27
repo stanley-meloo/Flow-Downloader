@@ -316,9 +316,29 @@
         "openSettings": "Apri impostazioni",
         "download": "Avvia download",
         "closeModal": "Chiudi finestra",
-        "autoDownload": "Attiva/disattiva download automatico"
+        "autoDownload": "Attiva/disattiva download automatico",
+        "trim": "Taglia video (vista taglio)",
+        "undo": "Annulla",
+        "redo": "Ripeti",
+        "addCut": "Aggiungi taglio sotto il mouse",
+        "playPause": "Riproduci / metti in pausa l'anteprima"
       },
-      "restored": "Predefiniti ripristinati"
+      "restored": "Predefiniti ripristinati",
+      "mouse_group": "Timeline del taglio (mouse)",
+      "mouse": {
+        "set_in": "Sposta il marcatore \"in\" (tieni premuto per trascinare)",
+        "set_out": "Sposta il marcatore \"out\" (tieni premuto per trascinare)",
+        "cut_menu": "Aggiungi / rimuovi un taglio",
+        "pick_cut": "Modifica un altro taglio",
+        "zoom": "Zoom della timeline sul puntatore"
+      },
+      "mouse_keys": {
+        "click": "Clic",
+        "click_any": "Clic sin. / des.",
+        "right_click": "Clic destro",
+        "click_cut": "Clic su un taglio",
+        "wheel": "Rotellina"
+      }
     }
   },
   "toast": {
@@ -331,6 +351,7 @@
     "clipboard_error": "Impossibile leggere gli appunti.",
     "open_error": "Impossibile aprire il file o la cartella.",
     "ytdlp_checking": "Ricerca aggiornamenti del motore di download…",
+    "ytdlp_downloading": "Download dell'aggiornamento del motore di download…",
     "ytdlp_updated": "Motore di download aggiornato.",
     "ytdlp_uptodate": "Il motore di download è già aggiornato.",
     "ytdlp_update_error": "Impossibile aggiornare il motore di download.",
@@ -348,6 +369,7 @@
     "err_network": "Problema di connessione. Controlla internet e riprova.",
     "err_unsupported": "Questo link non è supportato.",
     "err_download": "Download non riuscito. Riprova o aggiorna il motore nelle Impostazioni.",
+    "app_updated": "Flow Downloader è stato aggiornato alla versione {{version}}!",
     "app_update_error": "Impossibile verificare o installare l'aggiornamento.",
     "app_update_wait": "Attendi la fine dei download prima di aggiornare.",
     "diagnostics_error": "Impossibile generare la diagnostica.",
@@ -395,6 +417,11 @@
     "closing": "Chiusura…"
   },
   "update": {
+    "badge": "Nuova versione",
+    "whats_new": "Novità",
+    "title": "È disponibile un nuovo aggiornamento di Flow Downloader!",
+    "ignore": "Ignora",
+    "downloading": "Download in corso…",
     "available": "Flow Downloader {{version}} è disponibile",
     "install": "Aggiorna",
     "installing": "Installazione…",
@@ -442,5 +469,30 @@
   "resume": {
     "message": "Download non completati dall'ultima volta: {{n}}",
     "resume": "Riprendi"
+  },
+  "trim": {
+    "open": "Taglia video",
+    "back": "Torna al download",
+    "unavailable": "Il taglio non è disponibile per questo video",
+    "length": "Durata",
+    "reset": "Annulla taglio",
+    "start": "Inizio",
+    "end": "Fine",
+    "download_part": "Scarica la parte",
+    "play": "Anteprima del taglio",
+    "pause": "Pausa",
+    "volume": "Volume",
+    "mute": "Disattiva audio",
+    "unmute": "Attiva audio",
+    "zoom_in": "Regolazione fine: zoom sul taglio",
+    "zoom_out": "Mostra tutto il video",
+    "add_cut": "Aggiungi un taglio qui",
+    "remove_cut": "Rimuovi questo taglio",
+    "download_parts": "Scarica le parti ({{count}})",
+    "position": "Posizione del video",
+    "show_wave": "Mostra le onde sonore",
+    "show_ruler": "Mostra il righello del tempo",
+    "wave_loading": "Caricamento delle onde sonore…",
+    "wave_error": "Impossibile caricare le onde sonore"
   }
 }

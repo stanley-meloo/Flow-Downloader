@@ -1,22 +1,26 @@
 import { useState, useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 const LAST_CHECK_KEY = 'ytdlp_last_update_check';
+const PROGRESS_EVENT = 'ytdlp://update-progress'; // ytdlp.rs UPDATE_PROGRESS_EVENT
 
 /**
  * Keeps yt-dlp (the download engine) up to date.
- * - Runs an automatic, throttled check (max once per day) shortly after startup.
- * - Exposes checkForUpdate() for the button in Settings (ignores the throttle).
+ * - Automatic check (max once per day) shortly after startup; the Settings
+ *   button runs it on demand (checkForUpdate, ignores the throttle).
+ * - The check only compares versions (`ytdlp_check_update`, nothing is
+ *   downloaded). Only when a newer release exists is it downloaded
+ *   (`ytdlp_update`), with a progress toast, then "updated". An automatic
+ *   check that finds nothing new shows nothing.
  * - Exposes the installed `version` and the last check's `status`
- *   ('idle' | 'uptodate' | 'updated' | 'error'), so Settings can show the result
- *   right on the button, not only in a toast.
+ *   ('idle' | 'uptodate' | 'updated' | 'error') for Settings.
  *
- * The update runs in Rust (`ytdlp_update`) on a writable copy of yt-dlp kept in
- * the app's local data folder, so it also works when the app itself is
- * installed in a protected folder (Program Files, /Applications).
+ * The binary is replaced in the app's local data folder (writable copy), so
+ * it also works when the app is installed in a protected folder.
  */
-export default function useYtdlpUpdater(showToast) {
+export default function useYtdlpUpdater(showToast, progressToast, hideToast) {
   const [updating, setUpdating] = useState(false);
   const [version, setVersion] = useState(null);
   const [status, setStatus] = useState('idle');
@@ -36,32 +40,44 @@ export default function useYtdlpUpdater(showToast) {
     setUpdating(true);
     if (force) showToast?.("ytdlp_checking", "info");
 
+    let unlisten = null;
+    let downloading = false;
     try {
-      const { output = '', code, version: newVersion } = await invoke('ytdlp_update');
-      if (newVersion) setVersion(newVersion);
-
+      const check = await invoke('ytdlp_check_update');
       try { localStorage.setItem(LAST_CHECK_KEY, String(Date.now())); } catch (e) { /* ignore */ }
+      if (check.current) setVersion(check.current);
+      hideToast?.("ytdlp_checking");
 
-      const updated = /updated yt-dlp to|updating to|installing yt-dlp/i.test(output);
-      const upToDate = /up.?to.?date|is the latest version/i.test(output);
-      const errored = code !== 0 || /ERROR|unable to (write|rename|download)|permission denied/i.test(output);
-
-      if (updated && !errored) {
-        setStatus('updated');
-        showToast?.("ytdlp_updated", "success");
-      } else if (upToDate && !errored) {
+      if (!check.outdated) {
         setStatus('uptodate');
         if (force) showToast?.("ytdlp_uptodate", "success");
-      } else {
-        console.warn("[yt-dlp update] output:\n" + output.trim());
-        setStatus('error');
-        if (force) showToast?.("ytdlp_update_error", "error");
+        return;
       }
+      if (!check.writable) throw new Error("yt-dlp is not in a writable folder");
+
+      // A newer version exists: download it, with the progress in a toast.
+      downloading = true;
+      const show = (progress) => progressToast?.("ytdlp_downloading", "download", { progress, version: check.latest });
+      show(null);
+      unlisten = await listen(PROGRESS_EVENT, ({ payload }) => {
+        const { received = 0, total } = payload || {};
+        show(total ? received / total : null);
+      });
+      const newVersion = await invoke('ytdlp_update');
+      setVersion(newVersion || check.latest);
+      setStatus('updated');
+      hideToast?.("ytdlp_downloading");
+      showToast?.("ytdlp_updated", "success", { version: newVersion || check.latest });
     } catch (err) {
       console.warn("[yt-dlp update] failed:", err);
       setStatus('error');
-      if (force) showToast?.("ytdlp_update_error", "error");
+      hideToast?.("ytdlp_checking");
+      hideToast?.("ytdlp_downloading");
+      // Silent for a failed automatic check (offline…); shown when the user
+      // asked, or when the download toast was already on screen.
+      if (force || downloading) showToast?.("ytdlp_update_error", "error");
     } finally {
+      unlisten?.();
       updatingRef.current = false;
       setUpdating(false);
     }

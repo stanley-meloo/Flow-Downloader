@@ -474,7 +474,7 @@ pub fn write_log(app: &AppHandle, title: &str, body: &str) {
     use std::io::Write;
     let Some(path) = log_path(app) else { return };
     prune_log_once(&path);
-    if std::fs::metadata(&path).map_or(false, |m| m.len() > LOG_MAX_BYTES) {
+    if std::fs::metadata(&path).is_ok_and(|m| m.len() > LOG_MAX_BYTES) {
         let _ = std::fs::remove_file(&path);
     }
     if is_not_media_failure(title, body) {
@@ -753,8 +753,8 @@ pub async fn ytdlp_analyze(
         // A single video with its streams: kept for a faster download start.
         if out.code == Some(0) && !empty {
             if let Ok(v) = serde_json::from_str::<serde_json::Value>(&out.stdout) {
-                let is_video = v.get("_type").and_then(|t| t.as_str()).map_or(true, |t| t == "video")
-                    && v.get("formats").map_or(false, |f| f.is_array());
+                let is_video = v.get("_type").and_then(|t| t.as_str()).is_none_or(|t| t == "video")
+                    && v.get("formats").is_some_and(|f| f.is_array());
                 if is_video {
                     let mut urls = vec![analyzed_url.clone()];
                     if let Some(w) = v.get("webpage_url").and_then(|w| w.as_str()) {
@@ -776,16 +776,6 @@ pub async fn ytdlp_analyze(
     .await
 }
 
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct UpdateOutput {
-    code: Option<i32>,
-    output: String,
-    writable: bool,
-    /// yt-dlp's version after the check/update (e.g. "2026.08.19").
-    version: Option<String>,
-}
-
 /// `yt-dlp --version` (None if it can't run).
 fn binary_version(bin: &Path) -> Option<String> {
     run_to_end(bin, &["--version".to_string()])
@@ -805,34 +795,255 @@ pub async fn ytdlp_version(app: AppHandle) -> Result<String, String> {
     .await
 }
 
-/// Updates yt-dlp to the latest stable release (the writable copy).
+// --- Update: check first, then download with progress ------------------------
+// The app no longer runs `yt-dlp --update-to` (no progress, and its output had
+// to be guessed to know whether anything changed). Instead:
+//   1. `ytdlp_check_update` asks GitHub for the latest stable release and
+//      compares it with the installed version — nothing is downloaded.
+//   2. Only when it's newer, `ytdlp_update` downloads that release's binary
+//      for this system, sending progress events (UPDATE_PROGRESS_EVENT),
+//      checks it against the release's SHA2-256SUMS and swaps it in.
+
+const YTDLP_LATEST_API: &str = "https://api.github.com/repos/yt-dlp/yt-dlp/releases/latest";
+const YTDLP_RELEASES: &str = "https://github.com/yt-dlp/yt-dlp/releases/download";
+const YTDLP_MAX_BYTES: u64 = 250 * 1024 * 1024;
+/// Event carrying the update download's progress: { received, total }.
+pub const UPDATE_PROGRESS_EVENT: &str = "ytdlp://update-progress";
+
+static UPDATING: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+/// yt-dlp's release file for this system.
+fn ytdlp_asset() -> &'static str {
+    if cfg!(target_os = "windows") {
+        "yt-dlp.exe"
+    } else if cfg!(target_os = "macos") {
+        "yt-dlp_macos"
+    } else if cfg!(target_arch = "aarch64") {
+        "yt-dlp_linux_aarch64"
+    } else {
+        "yt-dlp_linux"
+    }
+}
+
+/// "2026.08.19" / "2026.08.19.1" / "stable@2026.08.19" → [2026, 8, 19, (1)].
+fn parse_version(v: &str) -> Option<Vec<u64>> {
+    let v = v.trim().rsplit('@').next()?;
+    let parts: Option<Vec<u64>> = v.split('.').map(|p| p.parse().ok()).collect();
+    parts.filter(|p| p.len() >= 3)
+}
+
+/// True when `latest` is a newer version than `current`.
+fn is_newer(latest: &str, current: &str) -> bool {
+    match (parse_version(latest), parse_version(current)) {
+        (Some(l), Some(c)) => l > c,
+        _ => false,
+    }
+}
+
+fn http_client() -> Result<tauri_plugin_http::reqwest::Client, String> {
+    tauri_plugin_http::reqwest::Client::builder()
+        .connect_timeout(Duration::from_secs(20))
+        .user_agent(concat!("FlowDownloader/", env!("CARGO_PKG_VERSION")))
+        .build()
+        .map_err(|e| e.to_string())
+}
+
+/// Tag of yt-dlp's latest stable release (digits and dots only).
+async fn latest_tag(client: &tauri_plugin_http::reqwest::Client) -> Result<String, String> {
+    let resp = client
+        .get(YTDLP_LATEST_API)
+        .header("Accept", "application/vnd.github+json")
+        .timeout(Duration::from_secs(20))
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
+    if !resp.status().is_success() {
+        return Err(format!("release check: http {}", resp.status()));
+    }
+    let text = resp.text().await.map_err(|e| e.to_string())?;
+    let v: serde_json::Value = serde_json::from_str(&text).map_err(|e| e.to_string())?;
+    let tag = v.get("tag_name").and_then(|t| t.as_str()).unwrap_or_default().to_string();
+    if tag.is_empty() || !tag.chars().all(|c| c.is_ascii_digit() || c == '.') || parse_version(&tag).is_none() {
+        return Err("release check: unexpected tag".into());
+    }
+    Ok(tag)
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateCheck {
+    /// Installed version (None if yt-dlp didn't answer).
+    current: Option<String>,
+    latest: String,
+    /// A newer release exists (or the installed binary doesn't work).
+    outdated: bool,
+    /// The installed copy can be replaced.
+    writable: bool,
+}
+
+/// Is there a newer yt-dlp? Downloads nothing.
 #[tauri::command]
-pub async fn ytdlp_update(app: AppHandle) -> Result<UpdateOutput, String> {
-    blocking(move || {
-        let bin = ytdlp_path(&app)?;
-        let writable = is_writable_copy(&app, &bin);
-        if !writable {
-            // Running from the read-only bundled binary (the writable copy
-            // couldn't be made): yt-dlp can't replace itself there.
-            write_log(&app, "yt-dlp update skipped", "no writable copy of yt-dlp (app data folder not writable)");
-            return Ok(UpdateOutput {
-                code: Some(1),
-                output: "ERROR: yt-dlp is not in a writable folder".into(),
-                writable,
-                version: binary_version(&bin),
-            });
+pub async fn ytdlp_check_update(app: AppHandle) -> Result<UpdateCheck, String> {
+    let a = app.clone();
+    let (current, writable) = blocking(move || {
+        let bin = ytdlp_path(&a)?;
+        // Leftover of an earlier update (the old binary was still running then).
+        if let Some(dir) = bin.parent() {
+            let _ = std::fs::remove_file(dir.join(format!("{}.old", ytdlp_file_name())));
         }
-        // --ignore-config: a user's yt-dlp config file must not change how the update runs.
-        let out = run_to_end(&bin, &["--ignore-config".to_string(), "--update-to".to_string(), "stable".to_string()])?;
-        if out.code != Some(0) {
-            write_log(&app, "yt-dlp update failed", &format!("{}\n{}", out.stdout, out.stderr));
-        }
-        Ok(UpdateOutput {
-            code: out.code,
-            output: format!("{}\n{}", out.stdout, out.stderr),
-            writable,
-            version: binary_version(&bin), // after the update (the new version if it changed)
+        Ok((binary_version(&bin), is_writable_copy(&a, &bin)))
+    })
+    .await?;
+    let latest = latest_tag(&http_client()?).await?;
+    let outdated = current.as_deref().is_none_or(|c| is_newer(&latest, c));
+    Ok(UpdateCheck { current, latest, outdated, writable })
+}
+
+#[derive(Serialize, Clone)]
+struct UpdateProgress {
+    received: u64,
+    total: Option<u64>,
+}
+
+/// Downloads the latest yt-dlp (progress events), verifies its checksum and
+/// replaces the writable copy. Returns the new version.
+#[tauri::command]
+pub async fn ytdlp_update(app: AppHandle) -> Result<String, String> {
+    use std::sync::atomic::Ordering;
+    if UPDATING.swap(true, Ordering::SeqCst) {
+        return Err("an update is already running".into());
+    }
+    let result = download_update(&app).await;
+    UPDATING.store(false, Ordering::SeqCst);
+    if let Err(e) = &result {
+        write_log(&app, "yt-dlp update failed", e);
+    }
+    result
+}
+
+async fn download_update(app: &AppHandle) -> Result<String, String> {
+    use sha2::{Digest, Sha256};
+    use std::io::Write;
+
+    let a = app.clone();
+    let bin = blocking(move || ytdlp_path(&a)).await?;
+    if !is_writable_copy(app, &bin) {
+        return Err("yt-dlp is not in a writable folder".into());
+    }
+    let client = http_client()?;
+    let tag = latest_tag(&client).await?;
+    let asset = ytdlp_asset();
+
+    // Expected checksum, from the same release.
+    let sums = client
+        .get(format!("{YTDLP_RELEASES}/{tag}/SHA2-256SUMS"))
+        .timeout(Duration::from_secs(30))
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
+    if !sums.status().is_success() {
+        return Err(format!("checksums: http {}", sums.status()));
+    }
+    let sums = sums.text().await.map_err(|e| e.to_string())?;
+    let expected = sums
+        .lines()
+        .find_map(|l| {
+            let mut it = l.split_whitespace();
+            let (hash, name) = (it.next()?, it.next()?);
+            (name.trim_start_matches('*') == asset).then(|| hash.to_ascii_lowercase())
         })
+        .filter(|h| h.len() == 64 && h.chars().all(|c| c.is_ascii_hexdigit()))
+        .ok_or("checksums: no entry for this system")?;
+
+    // Download next to the binary, hashing as it arrives.
+    let dir = bin.parent().ok_or("no folder")?.to_path_buf();
+    let part = dir.join(format!("{}.download", ytdlp_file_name()));
+    let mut resp = client
+        .get(format!("{YTDLP_RELEASES}/{tag}/{asset}"))
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
+    if !resp.status().is_success() {
+        return Err(format!("download: http {}", resp.status()));
+    }
+    let total = resp.content_length().filter(|&l| l > 0);
+    if total.is_some_and(|l| l > YTDLP_MAX_BYTES) {
+        return Err("download: file too large".into());
+    }
+    let mut file = std::fs::File::create(&part).map_err(|e| e.to_string())?;
+    let mut hasher = Sha256::new();
+    let mut received: u64 = 0;
+    let _ = app.emit(UPDATE_PROGRESS_EVENT, UpdateProgress { received, total });
+    let mut last_emit = Instant::now();
+    let fail = |part: &Path, e: String| {
+        let _ = std::fs::remove_file(part);
+        e
+    };
+    loop {
+        let chunk = match resp.chunk().await {
+            Ok(Some(c)) => c,
+            Ok(None) => break,
+            Err(e) => { drop(file); return Err(fail(&part, e.to_string())); }
+        };
+        received += chunk.len() as u64;
+        if received > YTDLP_MAX_BYTES {
+            drop(file);
+            return Err(fail(&part, "download: file too large".into()));
+        }
+        hasher.update(&chunk);
+        if let Err(e) = file.write_all(&chunk) {
+            drop(file);
+            return Err(fail(&part, e.to_string()));
+        }
+        if last_emit.elapsed() >= Duration::from_millis(120) {
+            last_emit = Instant::now();
+            let _ = app.emit(UPDATE_PROGRESS_EVENT, UpdateProgress { received, total });
+        }
+    }
+    let _ = app.emit(UPDATE_PROGRESS_EVENT, UpdateProgress { received, total: Some(received) });
+    if let Err(e) = file.flush() {
+        drop(file);
+        return Err(fail(&part, e.to_string()));
+    }
+    drop(file);
+    let hash: String = hasher.finalize().iter().map(|b| format!("{b:02x}")).collect();
+    if hash != expected || total.is_some_and(|t| t != received) {
+        return Err(fail(&part, "download: checksum mismatch".into()));
+    }
+
+    // Swap it in. The running binary can't be overwritten on Windows (a
+    // download may be using it) but it can be renamed: old → .old, new → name.
+    let app2 = app.clone();
+    blocking(move || {
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let _ = std::fs::set_permissions(&part, std::fs::Permissions::from_mode(0o755));
+        }
+        #[cfg(target_os = "macos")]
+        {
+            let _ = Command::new("/usr/bin/xattr").arg("-c").arg(&part)
+                .stdout(Stdio::null()).stderr(Stdio::null()).status();
+        }
+        let old = dir.join(format!("{}.old", ytdlp_file_name()));
+        let _ = std::fs::remove_file(&old);
+        let moved = std::fs::rename(&bin, &old).is_ok();
+        if let Err(e) = std::fs::rename(&part, &bin) {
+            if moved { let _ = std::fs::rename(&old, &bin); }
+            let _ = std::fs::remove_file(&part);
+            return Err(format!("could not replace yt-dlp: {e}"));
+        }
+        let Some(version) = binary_version(&bin) else {
+            // The new binary doesn't run: put the old one back.
+            if moved {
+                let _ = std::fs::remove_file(&bin);
+                let _ = std::fs::rename(&old, &bin);
+            }
+            write_log(&app2, "yt-dlp update", "new binary did not start");
+            return Err("the new yt-dlp did not start".into());
+        };
+        let _ = std::fs::remove_file(&old); // fails while an old download still runs: removed next time
+        Ok(version)
     })
     .await
 }
@@ -858,6 +1069,286 @@ pub struct DownloadOpts {
     /// The user chose "Replace" for a file that already existed in the folder.
     #[serde(default)]
     overwrite: bool,
+    /// Trim: only this part of the video (seconds).
+    #[serde(default)]
+    section: Option<Section>,
+    /// Trim: exact cut (re-encodes the edges: slower, heavier) instead of the
+    /// nearest keyframes.
+    #[serde(default)]
+    precise_cut: bool,
+}
+
+#[derive(Deserialize, Clone, Copy)]
+pub struct Section {
+    start: f64,
+    end: f64,
+}
+
+/// yt-dlp args for a trimmed download (validated: finite, start ≥ 0,
+/// at least half a second long, under 7 days).
+fn section_args(section: Option<Section>, precise: bool) -> Result<Vec<String>, String> {
+    let Some(s) = section else { return Ok(Vec::new()) };
+    if !s.start.is_finite() || !s.end.is_finite() || s.start < 0.0 || s.end - s.start < 0.5 || s.end > 604_800.0 {
+        return Err("invalid section".into());
+    }
+    let mut args = vec![
+        "--download-sections".into(),
+        format!("*{:.3}-{:.3}", s.start, s.end),
+    ];
+    if precise {
+        args.push("--force-keyframes-at-cuts".into());
+    }
+    Ok(args)
+}
+
+// ---------------------------------------------------------------------------
+// Command: trim preview clip
+// ---------------------------------------------------------------------------
+// "Play" in the trim view plays the real video: the selected part is fetched
+// with yt-dlp in a light quality (≤ 360p, no re-encoding: it starts at the
+// keyframe just before the cut) into the app's data folder, and the webview
+// plays it through flowmedia:// (actions.rs). Clips are reused for the same
+// link + range, and old ones are deleted (older than 3 h, at most 12 kept).
+
+pub const PREVIEW_DIR: &str = "trim-preview";
+const PREVIEW_MAX_LEN: f64 = 20.0 * 60.0; // a longer part previews its first 20 min
+const PREVIEW_KEEP: usize = 12;
+const PREVIEW_TTL: Duration = Duration::from_secs(3 * 3600);
+
+fn tidy_previews(dir: &Path) {
+    let Ok(rd) = std::fs::read_dir(dir) else { return };
+    let mut files: Vec<(PathBuf, std::time::SystemTime)> = rd
+        .filter_map(|e| e.ok())
+        .filter_map(|e| Some((e.path(), e.metadata().ok()?.modified().ok()?)))
+        .collect();
+    files.sort_by(|a, b| b.1.cmp(&a.1)); // newest first
+    for (i, (path, at)) in files.iter().enumerate() {
+        let age = at.elapsed().unwrap_or_default();
+        // Files touched in the last 10 minutes may belong to a download still
+        // running (a preview clip or a waveform, with its fragment files).
+        if age < Duration::from_secs(600) { continue; }
+        let old = age > PREVIEW_TTL;
+        if old || i >= PREVIEW_KEEP {
+            let _ = std::fs::remove_file(path);
+        }
+    }
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PreviewClip {
+    /// Full path of the clip (played via flowmedia://).
+    path: String,
+    /// Range asked for (the clip may start a little earlier, at a keyframe).
+    start: f64,
+    end: f64,
+}
+
+#[tauri::command]
+pub async fn ytdlp_preview_clip(
+    app: AppHandle,
+    url: String,
+    start: f64,
+    end: f64,
+    cookies: Option<Cookies>,
+) -> Result<PreviewClip, String> {
+    let url = validate_url(&url)?;
+    let cookie = cookie_args(&cookies.unwrap_or_default())?;
+    let end = end.min(start + PREVIEW_MAX_LEN);
+    // Same checks as a download's section.
+    let section = section_args(Some(Section { start, end }), false)?;
+
+    blocking(move || {
+        let bin = ytdlp_path(&app)?;
+        let dir = app.path().app_data_dir().map_err(|e| e.to_string())?.join(PREVIEW_DIR);
+        std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+        tidy_previews(&dir);
+
+        use std::hash::{Hash, Hasher};
+        let mut h = std::collections::hash_map::DefaultHasher::new();
+        (url.as_str(), (start * 10.0).round() as i64, (end * 10.0).round() as i64).hash(&mut h);
+        let stem = format!("{:016x}", h.finish());
+        let file = dir.join(format!("{stem}.mp4"));
+        let done = |f: &Path| PreviewClip { path: f.to_string_lossy().into_owned(), start, end };
+        if file.is_file() {
+            return Ok(done(&file));
+        }
+
+        let folder = dir.to_string_lossy().replace('\\', "/").replace('%', "%%");
+        let mut args: Vec<String> = vec![
+            "--format".into(),
+            // Light and playable everywhere: H.264 + AAC up to 360p.
+            "best[height<=360][vcodec^=avc1][ext=mp4]/bv*[height<=360][vcodec^=avc1]+ba[ext=m4a]/bv*[height<=480][ext=mp4]+ba[ext=m4a]/best[height<=480][ext=mp4]/bv*[height<=480]+ba/worst".into(),
+            "--merge-output-format".into(), "mp4".into(),
+            "--output".into(), format!("{}/{}.%(ext)s", folder.trim_end_matches('/'), stem),
+            "--no-playlist".into(),
+            "--no-part".into(),
+            "--force-overwrites".into(),
+        ];
+        args.extend(section);
+        args.extend(common_args());
+        args.extend(cookie);
+        if let Some(ffmpeg) = bundled_binary("ffmpeg") {
+            args.push("--ffmpeg-location".into());
+            args.push(ffmpeg.to_string_lossy().into_owned());
+        }
+        if let Some(info) = cached_info(&url) {
+            args.push("--load-info-json".into());
+            args.push(info.to_string_lossy().into_owned());
+        } else {
+            args.push("--".into());
+            args.push(url.clone());
+        }
+        let out = run_to_end(&bin, &args)?;
+        if out.code == Some(0) && file.is_file() {
+            return Ok(done(&file));
+        }
+        // Leftovers of a failed attempt.
+        if let Ok(rd) = std::fs::read_dir(&dir) {
+            for e in rd.flatten() {
+                if e.file_name().to_string_lossy().starts_with(&stem) {
+                    let _ = std::fs::remove_file(e.path());
+                }
+            }
+        }
+        write_log(&app, &format!("preview clip failed: {} (exit {:?})", host_of(&url), out.code), &out.stderr);
+        Err(tail(&out.stderr, 600))
+    })
+    .await
+}
+
+// ---------------------------------------------------------------------------
+// Command: audio waveform (trim timeline)
+// ---------------------------------------------------------------------------
+// The video's sound as a waveform for the trim timeline: the lightest audio
+// stream is fetched with yt-dlp (≈ 1 MB for 3 min), ffmpeg decodes it to raw
+// mono samples, and their loudness is reduced to `points` values (0–1). The
+// audio file is deleted right after; the result is kept in memory for the
+// session (same link → instant).
+
+const WAVE_RATE: u32 = 2000; // samples per second decoded (plenty for a waveform)…
+const WAVE_MAX_SAMPLES: f64 = 20_000_000.0; // …but at most ~40 MB of samples in memory (long videos: lower rate)
+static WAVE_CACHE: Mutex<Vec<(String, Vec<f32>)>> = Mutex::new(Vec::new());
+
+/// Raw signed 16-bit little-endian mono samples → `points` loudness values,
+/// each the peak of its slice, normalised so the loudest is 1.
+fn wave_peaks(raw: &[u8], points: usize) -> Vec<f32> {
+    let samples: Vec<i16> = raw.chunks_exact(2).map(|b| i16::from_le_bytes([b[0], b[1]])).collect();
+    if samples.is_empty() || points == 0 {
+        return Vec::new();
+    }
+    let per = (samples.len() as f64 / points as f64).max(1.0);
+    let mut out = Vec::with_capacity(points);
+    for i in 0..points {
+        let a = (i as f64 * per) as usize;
+        let b = (((i + 1) as f64 * per) as usize).min(samples.len());
+        if a >= b { out.push(0.0); continue; }
+        // Peak blended with RMS: keeps transients visible without spiky noise.
+        let (mut peak, mut sum) = (0f32, 0f64);
+        for &v in &samples[a..b] {
+            let x = (v as f32 / 32768.0).abs();
+            peak = peak.max(x);
+            sum += (x as f64) * (x as f64);
+        }
+        let rms = (sum / (b - a) as f64).sqrt() as f32;
+        out.push(peak * 0.4 + rms * 0.6);
+    }
+    let max = out.iter().cloned().fold(0f32, f32::max);
+    if max > 0.0 { for v in &mut out { *v /= max; } }
+    out
+}
+
+#[tauri::command]
+pub async fn ytdlp_waveform(
+    app: AppHandle,
+    url: String,
+    points: Option<u32>,
+    duration: Option<f64>,
+    cookies: Option<Cookies>,
+) -> Result<Vec<f32>, String> {
+    let url = validate_url(&url)?;
+    let cookie = cookie_args(&cookies.unwrap_or_default())?;
+    let points = points.unwrap_or(2000).clamp(100, 20000) as usize;
+    let key = format!("{url}#{points}");
+    if let Some((_, v)) = WAVE_CACHE.lock().unwrap_or_else(|e| e.into_inner()).iter().find(|(k, _)| *k == key) {
+        return Ok(v.clone());
+    }
+
+    blocking(move || {
+        let bin = ytdlp_path(&app)?;
+        let ffmpeg = bundled_binary("ffmpeg").ok_or("ffmpeg not found")?;
+        let dir = app.path().app_data_dir().map_err(|e| e.to_string())?.join(PREVIEW_DIR);
+        std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+        use std::hash::{Hash, Hasher};
+        let mut h = std::collections::hash_map::DefaultHasher::new();
+        url.hash(&mut h);
+        // A name of its own per request: two requests running at once (even
+        // for the same video) never write over each other's files.
+        static WAVE_RUN: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+        let run = WAVE_RUN.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        let stem = format!("{:016x}-audio-{run}", h.finish());
+        let cleanup = || {
+            if let Ok(rd) = std::fs::read_dir(&dir) {
+                for e in rd.flatten() {
+                    if e.file_name().to_string_lossy().starts_with(&stem) { let _ = std::fs::remove_file(e.path()); }
+                }
+            }
+        };
+        cleanup();
+
+        // 1) The lightest audio stream (no re-encoding).
+        let folder = dir.to_string_lossy().replace('\\', "/").replace('%', "%%");
+        let mut args: Vec<String> = vec![
+            "--format".into(), "worstaudio/bestaudio/worst".into(),
+            "--output".into(), format!("{}/{}.%(ext)s", folder.trim_end_matches('/'), stem),
+            "--no-playlist".into(), "--no-part".into(), "--force-overwrites".into(),
+        ];
+        args.extend(common_args());
+        args.extend(cookie);
+        args.push("--ffmpeg-location".into());
+        args.push(ffmpeg.to_string_lossy().into_owned());
+        if let Some(info) = cached_info(&url) {
+            args.push("--load-info-json".into());
+            args.push(info.to_string_lossy().into_owned());
+        } else {
+            args.push("--".into());
+            args.push(url.clone());
+        }
+        let out = run_to_end(&bin, &args)?;
+        let file = std::fs::read_dir(&dir).ok().and_then(|rd| {
+            rd.flatten().map(|e| e.path()).find(|p| p.file_name().is_some_and(|n| n.to_string_lossy().starts_with(&stem)))
+        });
+        let Some(file) = file.filter(|_| out.code == Some(0)) else {
+            cleanup();
+            return Err(tail(&out.stderr, 400));
+        };
+
+        // 2) Decode to raw mono samples and measure.
+        // Long videos are decoded at a lower rate (a 10 h video: ~550 samples/s),
+        // so memory stays bounded; still far more samples than the bars.
+        let rate = duration
+            .filter(|d| d.is_finite() && *d > 0.0)
+            .map(|d| ((WAVE_MAX_SAMPLES / d) as u32).clamp(200, WAVE_RATE))
+            .unwrap_or(WAVE_RATE)
+            .to_string();
+        let decoded = base_command(&ffmpeg)
+            .args(["-v", "error", "-i"])
+            .arg(&file)
+            .args(["-vn", "-ac", "1", "-ar", rate.as_str(), "-f", "s16le", "-"])
+            .output()
+            .map_err(|e| format!("could not start ffmpeg: {e}"));
+        cleanup();
+        let decoded = decoded?;
+        if decoded.stdout.is_empty() {
+            return Err(tail(&String::from_utf8_lossy(&decoded.stderr), 400));
+        }
+        let peaks = wave_peaks(&decoded.stdout, points);
+        let mut cache = WAVE_CACHE.lock().unwrap_or_else(|e| e.into_inner());
+        if cache.len() > 8 { cache.remove(0); }
+        cache.push((key, peaks.clone()));
+        Ok(peaks)
+    })
+    .await
 }
 
 #[derive(Serialize, Default)]
@@ -888,7 +1379,7 @@ fn format_selection(o: &DownloadOpts) -> Result<(Vec<String>, String), String> {
     let res = height.map(|h| format!("[height<={h}]")).unwrap_or_default();
     // YouTube serves H.264 (avc1) only up to 1080p; above that it's VP9/AV1.
     // Prefer the editor-friendly H.264 stream for mp4 whenever it exists.
-    let above_1080 = height.map_or(false, |h| h > 1080);
+    let above_1080 = height.is_some_and(|h| h > 1080);
     let avc = if ext == "mp4" && !above_1080 { "[vcodec^=avc1]" } else { "" };
 
     match o.format_type.as_str() {
@@ -1060,9 +1551,9 @@ impl ProgressTracker {
             self.eta = Some((next, now));
         }
 
-        let warmed = self.started.map_or(false, |t| now.duration_since(t) >= WARMUP);
-        let text_due = warmed && self.last_text.map_or(true, |t| now.duration_since(t) >= TEXT_INTERVAL);
-        let bar_due = self.last_bar.map_or(true, |t| now.duration_since(t) >= BAR_INTERVAL);
+        let warmed = self.started.is_some_and(|t| now.duration_since(t) >= WARMUP);
+        let text_due = warmed && self.last_text.is_none_or(|t| now.duration_since(t) >= TEXT_INTERVAL);
+        let bar_due = self.last_bar.is_none_or(|t| now.duration_since(t) >= BAR_INTERVAL);
         if !text_due && !bar_due {
             return None;
         }
@@ -1088,6 +1579,78 @@ fn format_speed(bps: f64) -> String {
     if i == 0 { format!("{v:.0} {}", UNITS[i]) } else { format!("{v:.1} {}", UNITS[i]) }
 }
 
+/// ffmpeg's stats line ("frame= 120 … size=  2048KiB time=00:00:05.12 …
+/// speed=1.9x") → (seconds written, bytes written). Sizes in kB/KiB/MiB/B.
+fn parse_ffmpeg_stats(line: &str) -> Option<(f64, Option<f64>)> {
+    let t = line.split("time=").nth(1)?.split_whitespace().next()?;
+    let mut secs = 0.0;
+    for part in t.split(':') {
+        secs = secs * 60.0 + part.trim().parse::<f64>().ok()?;
+    }
+    if !secs.is_finite() || secs < 0.0 { return None; }
+    let size = line.split("size=").nth(1).and_then(|r| {
+        let r = r.trim_start();
+        let end = r.find(|c: char| !(c.is_ascii_digit() || c == '.')).unwrap_or(r.len());
+        let n: f64 = r[..end].parse().ok()?;
+        let unit = r[end..].split_whitespace().next().unwrap_or("");
+        let mult = match unit.to_ascii_lowercase().as_str() {
+            "kb" | "kib" => 1024.0,
+            "mb" | "mib" => 1024.0 * 1024.0,
+            "gb" | "gib" => 1024.0 * 1024.0 * 1024.0,
+            "b" | "" => 1.0,
+            _ => return None,
+        };
+        Some(n * mult)
+    });
+    Some((secs, size))
+}
+
+/// Progress of a trimmed download from ffmpeg's stats: percent of the part's
+/// length written, speed = bytes over the last few seconds, time left = media
+/// still to write ÷ how fast media is being written. Updates ≤ 4×/s (texts 1×/s).
+struct SectionProgress {
+    len: f64,
+    started: Instant,
+    samples: std::collections::VecDeque<(Instant, f64, f64)>, // (when, media s, bytes)
+    percent: f64,
+    last_bar: Option<Instant>,
+    last_text: Option<Instant>,
+}
+
+impl SectionProgress {
+    fn new(len: f64) -> Self {
+        Self { len, started: Instant::now(), samples: Default::default(), percent: 0.0, last_bar: None, last_text: None }
+    }
+
+    fn feed(&mut self, t: f64, size: Option<f64>) -> Option<ProgressUpdate> {
+        let now = Instant::now();
+        self.percent = self.percent.max((t / self.len * 100.0).min(99.5));
+        self.samples.push_back((now, t, size.unwrap_or(0.0)));
+        while self.samples.len() > 2 && now.duration_since(self.samples[0].0) > SPEED_WINDOW {
+            self.samples.pop_front();
+        }
+        let bar_due = self.last_bar.is_none_or(|x| now.duration_since(x) >= BAR_INTERVAL);
+        let text_due = now.duration_since(self.started) >= Duration::from_millis(1500)
+            && self.last_text.is_none_or(|x| now.duration_since(x) >= TEXT_INTERVAL);
+        if !bar_due && !text_due { return None; }
+        self.last_bar = Some(now);
+        let (speed, eta) = if text_due {
+            self.last_text = Some(now);
+            let (t0, m0, b0) = *self.samples.front()?;
+            let span = now.duration_since(t0).as_secs_f64().max(0.001);
+            let bytes = ((size.unwrap_or(0.0) - b0) / span).max(0.0);
+            let media_rate = ((t - m0) / span).max(0.0);
+            (
+                (bytes > 0.0).then(|| format_speed(bytes)),
+                (media_rate > 0.01).then(|| format_eta((self.len - t).max(0.0) / media_rate)),
+            )
+        } else {
+            (None, None)
+        };
+        Some(ProgressUpdate { percent: self.percent, speed, eta })
+    }
+}
+
 /// Time left, rounded the way people read it: "< 5 s", "40 s", "3 min 30 s",
 /// "12 min", "1 h 05 min". Small changes don't make the text flicker.
 fn format_eta(secs: f64) -> String {
@@ -1095,14 +1658,14 @@ fn format_eta(secs: f64) -> String {
     if s < 5 {
         "< 5 s".into()
     } else if s < 60 {
-        format!("{} s", (s + 4) / 5 * 5)                  // 5 s steps
+        format!("{} s", s.div_ceil(5) * 5)                  // 5 s steps
     } else if s < 600 {
-        let r = (s + 9) / 10 * 10;                         // 10 s steps
-        if r % 60 == 0 { format!("{} min", r / 60) } else { format!("{} min {:02} s", r / 60, r % 60) }
+        let r = s.div_ceil(10) * 10;                         // 10 s steps
+        if r.is_multiple_of(60) { format!("{} min", r / 60) } else { format!("{} min {:02} s", r / 60, r % 60) }
     } else if s < 3600 {
-        format!("{} min", (s + 59) / 60)
+        format!("{} min", s.div_ceil(60))
     } else {
-        let m = (s + 59) / 60;
+        let m = s.div_ceil(60);
         format!("{} h {:02} min", m / 60, m % 60)
     }
 }
@@ -1122,6 +1685,7 @@ pub async fn ytdlp_download(
     let dir = validate_dir(&opts.directory)?;
     let cookie = cookie_args(&opts.cookies)?;
     let (fmt, final_ext) = format_selection(&opts)?;
+    let trim = section_args(opts.section, opts.precise_cut)?;
     if run_id.is_empty() || run_id.len() > 64 {
         return Err("invalid run id".into());
     }
@@ -1160,6 +1724,7 @@ pub async fn ytdlp_download(
         if opts.overwrite {
             args.push("--force-overwrites".into());
         }
+        args.extend(trim);
         let host = host_of(&url);
         if let Some(ffmpeg) = bundled_binary("ffmpeg") {
             args.push("--ffmpeg-location".into());
@@ -1194,10 +1759,43 @@ pub async fn ytdlp_download(
         };
 
         // stderr in its own thread (keeps the pipe from filling up).
+        // Trimmed downloads go through ffmpeg, which doesn't feed yt-dlp's
+        // progress lines; its own stats on stderr ("size=… time=…") are read
+        // instead: progress = time written ÷ length of the part.
+        let section_len = opts.section.map(|s| (s.end - s.start).max(0.5));
+        let (stats_app, stats_run) = (app.clone(), run_id.clone());
         let stderr_reader = child.stderr.take().map(|mut err| {
             std::thread::spawn(move || {
                 let mut buf = Vec::new();
-                let _ = err.read_to_end(&mut buf);
+                match section_len {
+                    None => { let _ = err.read_to_end(&mut buf); }
+                    Some(len) => {
+                        let mut stats = SectionProgress::new(len);
+                        let mut chunk = [0u8; 4096];
+                        let mut line: Vec<u8> = Vec::new();
+                        loop {
+                            let n = match err.read(&mut chunk) { Ok(0) | Err(_) => break, Ok(n) => n };
+                            buf.extend_from_slice(&chunk[..n]);
+                            for &b in &chunk[..n] {
+                                if b == b'\r' || b == b'\n' {
+                                    if let Some((t, size)) = parse_ffmpeg_stats(&String::from_utf8_lossy(&line)) {
+                                        if let Some(u) = stats.feed(t, size) {
+                                            let _ = stats_app.emit(PROGRESS_EVENT, ProgressEvent {
+                                                run_id: stats_run.clone(), phase: "download",
+                                                percent: Some(u.percent), speed: u.speed, eta: u.eta,
+                                            });
+                                        }
+                                    }
+                                    line.clear();
+                                } else if line.len() < 4096 {
+                                    line.push(b);
+                                }
+                            }
+                            // Only the end of stderr is kept for error messages.
+                            if buf.len() > 4 * STDERR_TAIL { buf.drain(..buf.len() - 2 * STDERR_TAIL); }
+                        }
+                    }
+                }
                 tail(&String::from_utf8_lossy(&buf), STDERR_TAIL)
             })
         });
@@ -1205,9 +1803,27 @@ pub async fn ytdlp_download(
         if let Some(out) = child.stdout.take() {
             let mut tracker = ProgressTracker::new();
             let mut processing = false;
+            // ffmpeg's machine-readable progress ("-progress pipe:1": key=value
+            // lines on stdout), in case this yt-dlp version asks for it.
+            let mut kv_progress = section_len.map(SectionProgress::new);
+            let mut kv_size: Option<f64> = None;
             for line in BufReader::new(out).split(b'\n').map_while(Result::ok) {
                 let text = String::from_utf8_lossy(&line);
                 let text = text.trim();
+                if let Some(p) = kv_progress.as_mut() {
+                    if let Some(v) = text.strip_prefix("total_size=") { kv_size = v.trim().parse().ok(); continue; }
+                    if let Some(v) = text.strip_prefix("out_time_us=").or_else(|| text.strip_prefix("out_time_ms=")) {
+                        if let Ok(us) = v.trim().parse::<f64>() {
+                            if let Some(u) = p.feed(us / 1_000_000.0, kv_size) {
+                                let _ = app.emit(PROGRESS_EVENT, ProgressEvent {
+                                    run_id: run_id.clone(), phase: "download",
+                                    percent: Some(u.percent), speed: u.speed, eta: u.eta,
+                                });
+                            }
+                        }
+                        continue;
+                    }
+                }
                 if !processing && PROCESSING_MARKERS.iter().any(|m| text.starts_with(m)) {
                     processing = true;
                     let _ = app.emit(PROGRESS_EVENT, ProgressEvent {
@@ -1216,6 +1832,9 @@ pub async fn ytdlp_download(
                     });
                     continue;
                 }
+                // Trimmed: progress comes from ffmpeg (above / stderr), not from
+                // yt-dlp's lines (their sizes are for the whole video).
+                if section_len.is_some() { continue; }
                 if let Some((downloaded, stream_total, whole_total)) = parse_progress(text) {
                     if let Some(u) = tracker.feed(downloaded, stream_total, whole_total) {
                         let _ = app.emit(PROGRESS_EVENT, ProgressEvent {
@@ -1487,7 +2106,7 @@ pub async fn save_thumbnail(urls: Vec<String>, directory: String, stem: String) 
             continue;
         }
         let Ok(resp) = client.get(&url).send().await else { continue };
-        if !resp.status().is_success() || resp.content_length().map_or(false, |l| l as usize > MAX_BYTES) {
+        if !resp.status().is_success() || resp.content_length().is_some_and(|l| l as usize > MAX_BYTES) {
             continue;
         }
         let Ok(body) = resp.bytes().await else { continue };
@@ -1558,6 +2177,17 @@ pub async fn get_diagnostics(app: AppHandle) -> Result<String, String> {
 mod tests {
 
     #[test]
+    fn update_versions() {
+        assert!(is_newer("2026.08.19", "2026.07.30"));
+        assert!(is_newer("2026.08.19.1", "2026.08.19"));
+        assert!(is_newer("2027.01.02", "2026.12.31"));
+        assert!(!is_newer("2026.08.19", "2026.08.19"));
+        assert!(!is_newer("2026.08.19", "2026.09.01"));
+        assert!(!is_newer("2026.08.19", "stable@2026.08.19"));
+        assert!(!is_newer("garbage", "2026.08.19"));
+    }
+
+    #[test]
     fn log_redacts_links() {
         assert_eq!(
             redact_urls("ERROR: Unsupported URL: https://gitlab.com/a/b?x=1 (try again)"),
@@ -1625,6 +2255,38 @@ mod tests {
     fn hosts_and_dates() {
         assert_eq!(host_of("https://user@www.example.com/watch?v=1"), "www.example.com");
         assert_eq!(utc_now().len(), 19);
+    }
+
+    #[test]
+    fn waveform_peaks() {
+        let mut raw = Vec::new();
+        for i in 0..1000i32 { let v: i16 = if i < 500 { 1000 } else { 16000 }; raw.extend_from_slice(&v.to_le_bytes()); }
+        let p = wave_peaks(&raw, 10);
+        assert_eq!(p.len(), 10);
+        assert!((p[9] - 1.0).abs() < 1e-6);
+        assert!(p[0] < 0.1);
+        assert!(wave_peaks(&[], 10).is_empty());
+    }
+
+    #[test]
+    fn ffmpeg_stats() {
+        let (t, s) = parse_ffmpeg_stats("frame=  120 fps= 30 q=-1.0 size=    2048KiB time=00:01:05.50 bitrate= 256.0kbits/s speed=1.9x").unwrap();
+        assert!((t - 65.5).abs() < 1e-9);
+        assert_eq!(s, Some(2048.0 * 1024.0));
+        let (t, s) = parse_ffmpeg_stats("size=     512kB time=00:00:03.00 bitrate=1398.1kbits/s").unwrap();
+        assert!((t - 3.0).abs() < 1e-9);
+        assert_eq!(s, Some(512.0 * 1024.0));
+        assert!(parse_ffmpeg_stats("Stream mapping:").is_none());
+    }
+
+    #[test]
+    fn sections() {
+        assert!(section_args(None, true).unwrap().is_empty());
+        let a = section_args(Some(Section { start: 1.5, end: 10.0 }), true).unwrap();
+        assert_eq!(a, vec!["--download-sections", "*1.500-10.000", "--force-keyframes-at-cuts"]);
+        assert!(section_args(Some(Section { start: 5.0, end: 5.2 }), false).is_err());
+        assert!(section_args(Some(Section { start: -1.0, end: 5.0 }), false).is_err());
+        assert!(section_args(Some(Section { start: 0.0, end: f64::NAN }), false).is_err());
     }
 
     #[test]

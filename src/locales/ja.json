@@ -315,9 +315,29 @@
         "openSettings": "設定を開く",
         "download": "ダウンロードを開始",
         "closeModal": "ウィンドウを閉じる",
-        "autoDownload": "自動ダウンロードのオン/オフ"
+        "autoDownload": "自動ダウンロードのオン/オフ",
+        "trim": "動画をカット（カット画面）",
+        "undo": "元に戻す",
+        "redo": "やり直す",
+        "addCut": "マウス位置にカットを追加",
+        "playPause": "プレビューを再生 / 一時停止"
       },
-      "restored": "既定に戻しました"
+      "restored": "既定に戻しました",
+      "mouse_group": "カットのタイムライン（マウス）",
+      "mouse": {
+        "set_in": "「in」マーカーを移動（押したままドラッグ）",
+        "set_out": "「out」マーカーを移動（押したままドラッグ）",
+        "cut_menu": "カットを追加 / 削除",
+        "pick_cut": "別のカットを編集",
+        "zoom": "ポインター位置でタイムラインを拡大"
+      },
+      "mouse_keys": {
+        "click": "クリック",
+        "click_any": "左 / 右クリック",
+        "right_click": "右クリック",
+        "click_cut": "カットをクリック",
+        "wheel": "マウスホイール"
+      }
     }
   },
   "toast": {
@@ -330,6 +350,7 @@
     "clipboard_error": "クリップボードを読み取れませんでした。",
     "open_error": "ファイルまたはフォルダーを開けませんでした。",
     "ytdlp_checking": "ダウンロードエンジンの更新を確認しています…",
+    "ytdlp_downloading": "ダウンロードエンジンの更新をダウンロード中…",
     "ytdlp_updated": "ダウンロードエンジンを更新しました。",
     "ytdlp_uptodate": "ダウンロードエンジンはすでに最新です。",
     "ytdlp_update_error": "ダウンロードエンジンを更新できませんでした。",
@@ -347,6 +368,7 @@
     "err_network": "接続に問題があります。インターネットを確認して再試行してください。",
     "err_unsupported": "このリンクには対応していません。",
     "err_download": "ダウンロードに失敗しました。再試行するか、設定でエンジンを更新してください。",
+    "app_updated": "Flow Downloader をバージョン {{version}} に更新しました！",
     "app_update_error": "アップデートを確認またはインストールできませんでした。",
     "app_update_wait": "ダウンロードが終わってから更新してください。",
     "diagnostics_error": "診断情報を作成できませんでした。",
@@ -394,6 +416,11 @@
     "closing": "終了しています…"
   },
   "update": {
+    "badge": "新バージョン",
+    "whats_new": "新機能",
+    "title": "Flow Downloader の新しいアップデートがあります！",
+    "ignore": "無視",
+    "downloading": "ダウンロード中…",
     "available": "Flow Downloader {{version}} が利用可能です",
     "install": "更新",
     "installing": "インストール中…",
@@ -441,5 +468,30 @@
   "resume": {
     "message": "前回の未完了のダウンロード：{{n}}",
     "resume": "再開"
+  },
+  "trim": {
+    "open": "動画をカット",
+    "back": "ダウンロードに戻る",
+    "unavailable": "この動画はカットできません",
+    "length": "長さ",
+    "reset": "カットをリセット",
+    "start": "開始",
+    "end": "終了",
+    "download_part": "この部分をダウンロード",
+    "play": "カットをプレビュー",
+    "pause": "一時停止",
+    "volume": "音量",
+    "mute": "ミュート",
+    "unmute": "ミュート解除",
+    "zoom_in": "微調整：カット部分を拡大",
+    "zoom_out": "動画全体を表示",
+    "add_cut": "ここにカットを追加",
+    "remove_cut": "このカットを削除",
+    "download_parts": "部分をダウンロード（{{count}}）",
+    "position": "動画の位置",
+    "show_wave": "音声の波形を表示",
+    "show_ruler": "時間ルーラーを表示",
+    "wave_loading": "音声の波形を読み込み中…",
+    "wave_error": "音声の波形を読み込めませんでした"
   }
 }

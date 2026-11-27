@@ -6,7 +6,7 @@ import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 import { openUrl as openExternal } from "@tauri-apps/plugin-opener"; // opens links in the default browser
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
 import { PaletteIcon as Palette, PlusIcon, TrashIcon as Trash, PencilIcon as Pencil, RunIcon, HourglassIcon as Hourglass, SunDimIcon as SunDim, DropletIcon as Droplet, MousePointerIcon as MousePointer, SlidersHorizontalIcon as SlidersHorizontal, SparklesIcon as Sparkles, PaintbrushIcon as Paintbrush, ImageIcon as ImageIcon, WandSparklesIcon as Wand2, ListVideoIcon as ListVideo, LoaderCircleIcon as Loader2, XIcon as X } from "../ui/AnimatedIcons"; // animated
-import { EngineIcon, CookieIcon, MonitorCogIcon as MonitorCog, ClipboardPasteIcon as ClipboardPaste, LinkIcon, DownloadIcon as Download, FolderOpenIcon as FolderOpen, SettingsIcon as Settings, LanguagesIcon as Languages, KeyboardIcon as Keyboard, RotateCcwIcon as RotateCcw, FileCogIcon as FileCog, LayersIcon as Layers, ChevronDownIcon as ChevronDown, SearchIcon as Search, CheckIcon as Check, CircleHelpIcon as HelpCircle, ChartColumnIncreasingIcon, BellIcon } from "../ui/AnimatedIcons"; // animated (lucide-animated)
+import { EngineIcon, CookieIcon, MonitorCogIcon as MonitorCog, ClipboardPasteIcon as ClipboardPaste, LinkIcon, DownloadIcon as Download, FolderOpenIcon as FolderOpen, SettingsIcon as Settings, LanguagesIcon as Languages, KeyboardIcon as Keyboard, RotateCcwIcon as RotateCcw, FileCogIcon as FileCog, LayersIcon as Layers, ChevronDownIcon as ChevronDown, SearchIcon as Search, CheckIcon as Check, CircleHelpIcon as HelpCircle, ChartColumnIncreasingIcon, BellIcon, ScissorsIcon, ListChecksIcon, UndoIcon, RedoIcon, VideoIcon } from "../ui/AnimatedIcons"; // animated (lucide-animated)
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { readFile } from "@tauri-apps/plugin-fs";
@@ -334,7 +334,6 @@ export default function SettingsModal({ onClose, settings, ytdlpUpdater, appUpda
     </>
   );
   const colorActive = visuals?.activeBackground === 'static' && !visuals?.bgImage;
-  const ownPhotoActive = visuals?.activeBackground === 'static' && !!visuals?.bgImage && !findPreset(visuals.bgImage);
   // Picks a GIF / photo / color (null) as the background.
   const pickStatic = (bgImage) => {
     saveSettings({ visuals: { ...visuals, activeBackground: 'static', bgImage } });
@@ -501,7 +500,7 @@ export default function SettingsModal({ onClose, settings, ytdlpUpdater, appUpda
         exit={{ opacity: 0, scale: 0.95, y: 15, filter: "blur(10px)", transition: { duration: 0.2, ease: "easeIn" } }}
         transition={{ type: "spring", stiffness: 300, damping: 25 }}
         // Taller on a background's own page (big preview + options), animated.
-        className={`relative isolate w-full max-w-2xl ${activeTab === 'visual' && bgConfig ? 'h-[min(calc(100vh-48px),860px)]' : 'h-140'} transition-[height] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] rounded-[36px] shadow-2xl overflow-hidden backdrop-blur-md flex flex-col`} /* no CSS border: the glass draws its own rim */
+        className={`relative isolate w-full max-w-2xl ${activeTab === 'visual' && bgConfig ? 'h-[min(calc(100vh-48px),860px)]' : 'h-140'} transition-[height] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] rounded-[36px] shadow-2xl backdrop-blur-md overflow-hidden flex flex-col`} /* no CSS border: the glass draws its own rim */
       >
         {/* Liquid glass background (same material family as the search bar).
             Sits behind all the dialog content (negative z inside the dialog). */}
@@ -649,7 +648,10 @@ export default function SettingsModal({ onClose, settings, ytdlpUpdater, appUpda
           ref={scrollRef}
           onScroll={checkScrollEnd}
           className="scroll-fade px-6 flex flex-col flex-1 min-h-0 relative overflow-y-auto no-scrollbar"
-          style={{ "--fade-top": atScrollTop ? "0px" : "48px", "--fade-bottom": "0px" }}
+          // clip-path: the scroll area reaches the dialog's rounded bottom
+          // corners; GPU-composited children (glass chips, previews, blurs)
+          // would otherwise leak a few pixels past them.
+          style={{ "--fade-top": atScrollTop ? "0px" : "48px", "--fade-bottom": "0px", clipPath: "inset(0 round 0 0 38px 38px)" /* rounder than the dialog (36): the glass draws its visible rim just inside the box, so the curve stays inside it */ }}
           contentClassName="flex flex-col min-h-full pt-4"
         >
           <AnimatePresence mode="wait">
@@ -1228,6 +1230,9 @@ export default function SettingsModal({ onClose, settings, ytdlpUpdater, appUpda
               style={{
                 WebkitMaskImage: "linear-gradient(to top, black 35%, transparent)",
                 maskImage: "linear-gradient(to top, black 35%, transparent)",
+                // A backdrop blur with a mask ignores the rounded corners:
+                // clip-path keeps it inside the dialog's bottom corners.
+                clipPath: "inset(0 round 0 0 38px 38px)", // corners kept inside the glass rim
               }}
             />
           )}
@@ -1323,7 +1328,11 @@ function ShortcutsTab({ keybinds, saveSettings, t }) {
   ];
 
   // Icon shown next to each action.
-  const ACTION_ICONS = { search: Search, paste: ClipboardPaste, selectBar: LinkIcon, openSettings: Settings, download: Download, closeModal: X };
+  // One icon per action — none repeated in this tab (the mouse rows below too).
+  const ACTION_ICONS = {
+    search: Search, paste: ClipboardPaste, selectBar: LinkIcon, openSettings: Settings, autoDownload: RunIcon,
+    download: Download, trim: ScissorsIcon, playPause: VideoIcon, addCut: PlusIcon, undo: UndoIcon, redo: RedoIcon, closeModal: X,
+  };
 
   // Geometry: row 56 px tall, 8 px padding around a 40 px icon tile and a 40 px
   // key button (radius 8) → row radius 8 + 8 = 16 (concentric). The key button
@@ -1422,6 +1431,40 @@ function ShortcutsTab({ keybinds, saveSettings, t }) {
           </div>
         </div>
       ))}
+
+      {/* Mouse on the trim timeline — fixed gestures (not configurable), shown
+          in the same rows; the "keys" side lists the gesture as keycaps. */}
+      <div className="space-y-2">
+        <label className="block text-[12px] font-black text-neutral-300 uppercase tracking-widest leading-none px-1">
+          {t('settings.shortcuts.mouse_group', { defaultValue: 'Trim timeline (mouse)' })}
+        </label>
+        <div className="space-y-2">
+          {[
+            { id: 'set_in', icon: MousePointer, keys: [t('settings.shortcuts.mouse_keys.click', { defaultValue: 'Click' })] },
+            { id: 'set_out', icon: SlidersHorizontal, keys: ['Shift', t('settings.shortcuts.mouse_keys.click_any', { defaultValue: 'Left / right click' })] },
+            { id: 'cut_menu', icon: Layers, keys: [t('settings.shortcuts.mouse_keys.right_click', { defaultValue: 'Right click' })] },
+            { id: 'pick_cut', icon: ListChecksIcon, keys: [t('settings.shortcuts.mouse_keys.click_cut', { defaultValue: 'Click on a cut' })] },
+            { id: 'zoom', icon: Search, keys: ['Alt', t('settings.shortcuts.mouse_keys.wheel', { defaultValue: 'Mouse wheel' })] },
+          ].map((g) => (
+            <div key={g.id} className="flex items-center gap-3 p-2 h-14 rounded-2xl border bg-zinc-900/40 border-white/5">
+              <div className="w-10 h-10 shrink-0 rounded-lg flex items-center justify-center bg-white/5 border border-white/10 text-(--accent)">
+                <g.icon size={20} />
+              </div>
+              <span className="flex-1 min-w-0 truncate text-[14px] font-semibold text-zinc-100">
+                {t(`settings.shortcuts.mouse.${g.id}`)}
+              </span>
+              <div className="h-10 px-1 flex items-center gap-1.5 rounded-lg border bg-zinc-950/60 border-white/10 text-zinc-100">
+                {g.keys.map((k, i) => (
+                  <span key={i} className="flex items-center gap-1.5">
+                    {i > 0 && <span className="text-zinc-300 text-[12px]">+</span>}
+                    <kbd className="min-w-8 h-8 px-2 inline-flex items-center justify-center rounded bg-white/10 border border-white/15 border-b-[3px] border-b-white/20 text-[12.5px] font-mono font-bold leading-none whitespace-nowrap">{k}</kbd>
+                  </span>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

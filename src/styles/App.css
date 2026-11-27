@@ -32,10 +32,18 @@
     color-mix(in srgb, var(--accent-strong) 72%, black),
     color-mix(in srgb, var(--accent-strong) 88%, black));
   border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
-  box-shadow: 0 0 30px -5px color-mix(in srgb, var(--accent-strong) 50%, transparent);
+  /* Glow: rest and hover share the same shadow shape (only its size, offset
+     and strength change), so the browser can blend them smoothly; a long
+     ease-out makes it bloom in rather than pop. */
+  box-shadow: 0 4px 28px -8px color-mix(in srgb, var(--accent-strong) 50%, transparent);
+  filter: brightness(1) saturate(1);
+  transition:
+    box-shadow 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 0.5s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .accent-button:hover {
-  box-shadow: 0 0 40px 0 color-mix(in srgb, var(--accent-strong) 70%, transparent);
+  box-shadow: 0 10px 42px -6px color-mix(in srgb, var(--accent-strong) 72%, transparent);
+  filter: brightness(1.07) saturate(1.05);
 }
 
 /* Text selection: neutral gray everywhere (instead of the system blue) */
@@ -768,3 +776,260 @@ input[data-contrast][data-on-light="true"]::placeholder {
 .stagger-in.stagger-slow > *:nth-child(1) { animation-delay: 0.18s; }
 .stagger-in.stagger-slow > *:nth-child(2) { animation-delay: 0.3s; }
 .stagger-in.stagger-slow > *:nth-child(n+3) { animation-delay: 0.42s; }
+
+/* Trim preview volume slider.
+   From Uiverse.io by Galahhad - https://uiverse.io/Galahhad/happy-dodo-17
+   MIT License, Copyright (c) Galahhad (Galahad)
+   (class names scoped: .slider/.level/.volume → .fd-volume…) */
+.fd-volume {
+  --slider-width: 100%;
+  --slider-height: 6px;
+  --slider-bg: rgb(82, 82, 82);
+  --slider-border-radius: 999px;
+
+  --level-color: #fff;
+  --level-transition-duration: .1s;
+
+  --icon-margin: 15px;
+  --icon-color: var(--slider-bg);
+  --icon-size: 25px;
+}
+
+.fd-volume {
+  cursor: pointer;
+  display: inline-flex;
+  flex-direction: row-reverse;
+  align-items: center;
+}
+
+.fd-volume .fd-volume__button {
+  display: inline-flex;
+  flex-shrink: 0;
+  margin-right: var(--icon-margin);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--icon-color);
+  cursor: pointer;
+  transition: color 0.2s ease, transform 0.15s ease;
+}
+/* (its color — white with sound, dark grey muted — is set inline in TrimPanel's VolumeControl) */
+.fd-volume .fd-volume__button,
+.fd-volume .fd-volume__button * { cursor: pointer; }
+.fd-volume .fd-volume__button:active { transform: scale(0.9); }
+
+.fd-volume .fd-volume__icon {
+  display: inline-block;
+  vertical-align: top;
+  width: var(--icon-size);
+  height: auto;
+  /* stays readable over bright and dark video alike */
+  filter: drop-shadow(0 1px 2px rgb(0 0 0 / 0.5));
+}
+
+.fd-volume .fd-volume__level {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  width: var(--slider-width);
+  height: var(--slider-height);
+  background: var(--slider-bg);
+  overflow: hidden;
+  border-radius: var(--slider-border-radius);
+  transition: height var(--level-transition-duration);
+  cursor: inherit;
+}
+
+.fd-volume .fd-volume__level::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 0;
+  height: 0;
+  box-shadow: -200px 0 0 200px var(--level-color);
+}
+
+.fd-volume:hover .fd-volume__level {
+  height: calc(var(--slider-height) * 2);
+}
+
+/* Trim timeline: things that appear while zooming in / out (ruler ticks,
+   time labels, new filmstrip frames) grow / fade in instead of popping.
+   They animate `scale` / `transform` / `opacity`, never `translate`, so they
+   don't fight the elements' own `translate` positioning (Tailwind). */
+@keyframes tl-appear { from { opacity: 0; scale: 1 0.2; } to { opacity: 1; scale: 1 1; } }
+@keyframes tl-appear-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes tl-appear-label { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
+.tl-appear { animation: tl-appear 0.32s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.tl-appear-fade { animation: tl-appear-fade 0.3s ease-out both; }
+.tl-appear-label { animation: tl-appear-label 0.32s cubic-bezier(0.22, 1, 0.36, 1) both; }
+@media (prefers-reduced-motion: reduce) {
+  .tl-appear, .tl-appear-fade, .tl-appear-label { animation: none; }
+}
+
+/* Toast progress bar with no known size yet: a segment sweeping across (Toast.jsx). */
+.toast-progress-indeterminate { animation: toast-progress-sweep 1.1s cubic-bezier(0.45, 0, 0.55, 1) infinite; }
+@keyframes toast-progress-sweep { from { left: -33%; } to { left: 100%; } }
+@media (prefers-reduced-motion: reduce) { .toast-progress-indeterminate { animation-duration: 2.4s; } }
+
+/* Ignored app update pill (AppUpdateCard.jsx): a soft accent ring breathing out. */
+.update-pill-pulse { box-shadow: 0 0 0 0 var(--accent); animation: update-pill-pulse 2.4s ease-out infinite; opacity: 0.55; }
+@keyframes update-pill-pulse { 0% { box-shadow: 0 0 0 0 var(--accent); opacity: 0.55; } 70%, 100% { box-shadow: 0 0 0 10px transparent; opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .update-pill-pulse { animation: none; opacity: 0; } }
+
+/* ---- App update card (AppUpdateCard.jsx) ---- */
+.update-aurora { transform: translateX(-50%); animation: update-aurora 6s ease-in-out infinite; }
+@keyframes update-aurora { 0%, 100% { opacity: 0.85; transform: translateX(-50%) scale(1); } 50% { opacity: 1; transform: translateX(-50%) scale(1.08); } }
+.update-grid {
+  background-image: radial-gradient(rgba(255,255,255,0.10) 1px, transparent 1px);
+  background-size: 14px 14px;
+  -webkit-mask-image: linear-gradient(to bottom, black 0%, transparent 100%);
+  mask-image: linear-gradient(to bottom, black 0%, transparent 100%);
+}
+/* Light ring: a thin conic-gradient border turning slowly around the logo. */
+@property --ring-a { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+.update-ring {
+  padding: 1.5px;
+  background: conic-gradient(from var(--ring-a), transparent 0deg, var(--accent) 70deg, transparent 140deg, transparent 220deg, color-mix(in srgb, var(--accent) 60%, white) 290deg, transparent 360deg);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: update-ring 5s linear infinite;
+}
+.update-ring--slow { animation-duration: 9s; animation-direction: reverse; }
+@keyframes update-ring { to { --ring-a: 360deg; } }
+/* Sparks drifting up around the logo. */
+.update-spark {
+  position: absolute; width: 4px; height: 4px; border-radius: 9999px;
+  background: color-mix(in srgb, var(--accent) 50%, white);
+  box-shadow: 0 0 8px var(--accent);
+  opacity: 0; animation: update-spark 3.2s ease-out infinite;
+}
+.update-spark--0 { left: -14px; top: 60%; animation-delay: 0s; }
+.update-spark--1 { right: -12px; top: 30%; animation-delay: 0.8s; width: 3px; height: 3px; }
+.update-spark--2 { left: 18%; bottom: -14px; animation-delay: 1.6s; width: 3px; height: 3px; }
+.update-spark--3 { right: 10%; top: -12px; animation-delay: 2.4s; }
+@keyframes update-spark {
+  0% { opacity: 0; transform: translateY(6px) scale(0.6); }
+  25% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-16px) scale(1); }
+}
+/* App name in the headline: accent gradient text with a slow shine. */
+.update-name {
+  background: linear-gradient(100deg, #fff 0%, color-mix(in srgb, var(--accent) 70%, white) 35%, var(--accent) 50%, color-mix(in srgb, var(--accent) 70%, white) 65%, #fff 100%);
+  background-size: 250% 100%;
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  animation: update-name 5s ease-in-out infinite;
+}
+@keyframes update-name { 0%, 100% { background-position: 0% 0; } 50% { background-position: 100% 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .update-aurora, .update-ring, .update-spark, .update-name { animation: none; }
+}
+
+/* App update downloading / installing (App.jsx): loading cursor everywhere. */
+html.app-updating, html.app-updating * { cursor: wait !important; }
+
+/* ---- After-update glow over the whole app (UpdateGlow.jsx) ---- */
+@property --ug-a { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+.ug-root { animation: ug-root 3.6s ease-out both; }
+@keyframes ug-root { 0%, 85% { opacity: 1; } 100% { opacity: 0; } }
+
+/* 1. Bloom from the center */
+.ug-bloom {
+  background: radial-gradient(closest-side at 50% 50%, color-mix(in srgb, var(--accent) 55%, transparent) 0%, color-mix(in srgb, var(--accent-strong) 22%, transparent) 45%, transparent 100%);
+  mix-blend-mode: screen;
+  opacity: 0;
+  animation: ug-bloom 2.4s cubic-bezier(0.22, 1, 0.36, 1) 0.35s both;
+}
+@keyframes ug-bloom {
+  0% { opacity: 0; transform: scale(0.35); }
+  35% { opacity: 0.75; }
+  100% { opacity: 0; transform: scale(1.6); }
+}
+
+/* 2. Light ring around the window edge + its glow + inner edge light */
+.ug-ring {
+  padding: 2px;
+  border-radius: 8px;
+  background: conic-gradient(from var(--ug-a),
+    transparent 0deg, var(--accent) 40deg, #fff 60deg, var(--accent) 80deg, transparent 140deg,
+    transparent 180deg, var(--accent-strong) 220deg, color-mix(in srgb, var(--accent) 50%, #fff) 240deg, var(--accent-strong) 260deg, transparent 320deg);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  animation: ug-spin 2.6s cubic-bezier(0.45, 0, 0.2, 1) 0.45s both, ug-ring 2.6s ease-in-out 0.45s both;
+}
+.ug-ring--glow { padding: 6px; filter: blur(10px); }
+@keyframes ug-spin { from { --ug-a: 0deg; } to { --ug-a: 540deg; } }
+@keyframes ug-ring { 0% { opacity: 0; } 18%, 70% { opacity: 1; } 100% { opacity: 0; } }
+.ug-edge {
+  border-radius: 8px;
+  box-shadow: inset 0 0 60px -10px var(--accent), inset 0 0 140px -40px var(--accent-strong);
+  opacity: 0;
+  animation: ug-edge 2.8s ease-in-out 0.45s both;
+}
+@keyframes ug-edge { 0% { opacity: 0; } 30% { opacity: 0.9; } 100% { opacity: 0; } }
+
+/* 3. Diagonal sheen across the whole window */
+.ug-sheen {
+  left: 0; width: 45%;
+  background: linear-gradient(100deg, transparent 0%, color-mix(in srgb, var(--accent) 18%, transparent) 30%, rgba(255,255,255,0.22) 50%, color-mix(in srgb, var(--accent) 18%, transparent) 70%, transparent 100%);
+  mix-blend-mode: screen;
+  transform: translateX(-120%) skewX(-14deg);
+  animation: ug-sheen 1.5s cubic-bezier(0.45, 0, 0.25, 1) 0.9s both;
+}
+@keyframes ug-sheen { from { transform: translateX(-120%) skewX(-14deg); } to { transform: translateX(340%) skewX(-14deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .ug-ring, .ug-sheen, .ug-bloom { animation: none; opacity: 0; }
+  .ug-edge { animation-duration: 1.6s; }
+}
+
+/* ---- Trim: "couldn't load the sound waves" (RulerWave.jsx) ---- */
+/* Pill: dark glass with a red rim glow that flares in, then settles.
+   (Animates `scale`, not `transform`: the inline transform does the exit.) */
+.wave-error-pill {
+  position: absolute;
+  background: rgba(24, 8, 10, 0.78);
+  box-shadow: inset 0 0 0 1px rgba(248, 113, 113, 0.35), 0 0 14px -2px rgba(239, 68, 68, 0.45);
+  animation: wave-error-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  overflow: hidden;
+}
+/* A red light sweeping across behind the text. */
+.wave-error-pill::before {
+  content: ""; position: absolute; inset: -40% auto -40% 0; width: 45%;
+  background: radial-gradient(closest-side, rgba(248, 113, 113, 0.55), transparent);
+  filter: blur(4px);
+  transform: translateX(-120%);
+  animation: wave-error-sweep 1.1s cubic-bezier(0.45, 0, 0.25, 1) 0.15s both;
+  pointer-events: none;
+}
+/* Text: soft red, with a bright white-to-red shine passing over it. */
+.wave-error-text {
+  position: relative;
+  background: linear-gradient(100deg, #fca5a5 0%, #fca5a5 38%, #fff 50%, #f87171 58%, #fca5a5 70%, #fca5a5 100%);
+  background-size: 260% 100%;
+  background-position: 100% 0;
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 0 6px rgba(239, 68, 68, 0.55));
+  animation: wave-error-shine 1.1s cubic-bezier(0.45, 0, 0.25, 1) 0.15s both;
+}
+/* The baseline: a red light running along it. */
+.wave-error-line {
+  position: absolute; top: 0; bottom: 0; left: 0; width: 30%;
+  background: linear-gradient(90deg, transparent, #fecaca, #ef4444, transparent);
+  box-shadow: 0 0 8px #ef4444;
+  transform: translateX(-110%);
+  animation: wave-error-line 1.2s cubic-bezier(0.45, 0, 0.25, 1) 0.1s both;
+}
+@keyframes wave-error-in {
+  0% { opacity: 0; scale: 0.92; box-shadow: inset 0 0 0 1px rgba(248,113,113,0), 0 0 0 0 rgba(239,68,68,0); }
+  45% { box-shadow: inset 0 0 0 1px rgba(248,113,113,0.7), 0 0 22px 2px rgba(239,68,68,0.6); }
+  100% { scale: 1; box-shadow: inset 0 0 0 1px rgba(248,113,113,0.35), 0 0 14px -2px rgba(239,68,68,0.45); }
+}
+@keyframes wave-error-sweep { to { transform: translateX(320%); } }
+@keyframes wave-error-shine { from { background-position: 100% 0; } to { background-position: 0% 0; } }
+@keyframes wave-error-line { to { transform: translateX(440%); } }
+@media (prefers-reduced-motion: reduce) {
+  .wave-error-pill, .wave-error-pill::before, .wave-error-text, .wave-error-line { animation: none; }
+  .wave-error-pill::before, .wave-error-line { display: none; }
+}

@@ -129,7 +129,7 @@ export default function SetupModal({ settings, onClose }) {
                         <input autoFocus type="text" placeholder={t('settings.search_language')} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full bg-transparent text-xs text-white outline-none" />
                       </div>
                     </div>
-                    <SmoothScroll className="max-h-48 overflow-y-auto custom-scrollbar" contentClassName="p-1">
+                    <SmoothScroll nested className="max-h-48 overflow-y-auto custom-scrollbar" contentClassName="p-1">
                       {filteredLanguages.map((lang) => (
                         <button key={lang.value} onClick={() => handleLanguageChange(lang.value)} className="w-full flex items-center justify-between p-2.5 hover:bg-white/5 rounded-xl text-sm text-zinc-300 hover:text-white transition-colors cursor-pointer">
                           {lang.label}

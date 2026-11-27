@@ -15,6 +15,8 @@ import { getBackdrop } from "./backdrop";
 import { resolveLiquidGlassSettings } from "./presets";
 
 const PAD = 16; // px of canvas around the container
+const CANVAS_STEP = 32; // canvas size granularity (px) — see measure()
+const stepUp = (v) => Math.ceil(v / CANVAS_STEP) * CANVAS_STEP;
 
 export default function LiquidGlass({
   variant = "dark",
@@ -32,6 +34,7 @@ export default function LiquidGlass({
 }) {
   const rootRef = useRef(null);
   const canvasRef = useRef(null);
+  const clipRef = useRef(null);
   const rendererRef = useRef(null);
   const sizeRef = useRef({ w: 0, h: 0 });
   const [failed, setFailed] = useState(false);
@@ -76,13 +79,30 @@ export default function LiquidGlass({
     canvas.addEventListener("webglcontextlost", onLost);
 
     // offsetWidth/Height ignore CSS transforms (entrance scale animations).
+    // While a surface grows or shrinks (e.g. a dialog's height animating), its
+    // canvas is NOT reallocated every frame: a new canvas size wipes the
+    // drawing, which showed as the glass blinking out. The canvas keeps a size
+    // rounded up to steps of CANVAS_STEP (the extra area stays transparent) and
+    // is only reallocated when it really must; the glass is redrawn right away,
+    // in the same frame, so it never shows empty.
+    const canvasSize = { w: 0, h: 0 };
     const measure = () => {
       const w = root.offsetWidth;
       const h = root.offsetHeight;
       if (w === sizeRef.current.w && h === sizeRef.current.h) return;
       sizeRef.current = { w, h };
-      rendererRef.current?.resize(w + PAD * 2, h + PAD * 2);
+      // The visible area is exactly the surface + PAD: the rounded-up canvas
+      // is clipped to it, so it never makes a scroll container scrollable.
+      const clip = clipRef.current;
+      if (clip) { clip.style.width = `${w + PAD * 2}px`; clip.style.height = `${h + PAD * 2}px`; }
+      const cw = stepUp(w + PAD * 2), ch = stepUp(h + PAD * 2);
+      const tooBig = cw < canvasSize.w - CANVAS_STEP * 2 || ch < canvasSize.h - CANVAS_STEP * 2;
+      if (cw > canvasSize.w || ch > canvasSize.h || tooBig) {
+        canvasSize.w = cw; canvasSize.h = ch;
+        rendererRef.current?.resize(cw, ch);
+      }
       syncRef.current();
+      rendererRef.current?.redrawNow();
     };
     measure();
     const observer = new ResizeObserver(measure);
@@ -113,18 +133,21 @@ export default function LiquidGlass({
       {...rest}
     >
       {!failed && (
-        <canvas
-          ref={canvasRef}
+        <div
+          ref={clipRef}
+          data-glass-clip
           aria-hidden="true"
-          className="absolute pointer-events-none"
+          className="absolute pointer-events-none overflow-hidden"
           style={{
             left: -PAD,
             top: -PAD,
             zIndex: -1, // behind the children (the root isolates the stacking context)
-            // No brightness boost on focus: while the background dims (focus),
-            // a brighter glass read as a flash of light on the bar.
           }}
-        />
+        >
+          {/* No brightness boost on focus: while the background dims (focus),
+              a brighter glass read as a flash of light on the bar. */}
+          <canvas ref={canvasRef} className="absolute left-0 top-0 pointer-events-none" />
+        </div>
       )}
       {children}
     </div>

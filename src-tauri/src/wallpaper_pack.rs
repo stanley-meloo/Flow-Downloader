@@ -157,7 +157,7 @@ fn selected(files: &HashMap<String, FileEntry>, big_screen: bool) -> HashSet<Str
         let mut best: HashMap<&str, (u32, &String)> = HashMap::new();
         for name in files.keys() {
             if let Some((base, h)) = tier_of(name) {
-                if best.get(base).map_or(true, |(bh, _)| h > *bh) {
+                if best.get(base).is_none_or(|(bh, _)| h > *bh) {
                     best.insert(base, (h, name));
                 }
             }
@@ -210,7 +210,7 @@ async fn download(app: &AppHandle, prefix: Option<&str>) -> Result<LocalPack, St
     }
 
     // This gallery's files (or the whole pack without a category).
-    let in_part = |n: &str| prefix.map_or(true, |p| n.starts_with(p));
+    let in_part = |n: &str| prefix.is_none_or(|p| n.starts_with(p));
     let wanted: HashSet<String> = selected(&manifest.files, wants_4k(app))
         .into_iter()
         .filter(|n| in_part(n.as_str()))
@@ -219,7 +219,7 @@ async fn download(app: &AppHandle, prefix: Option<&str>) -> Result<LocalPack, St
     // Manifest now (wallpapers appear one by one while downloading) and this
     // gallery marked unfinished until the end.
     std::fs::write(dir.join(MANIFEST), &text).map_err(|e| e.to_string())?;
-    let parts: Vec<&str> = PARTS.iter().copied().filter(|c| prefix.map_or(true, |p| p.starts_with(c))).collect();
+    let parts: Vec<&str> = PARTS.iter().copied().filter(|c| prefix.is_none_or(|p| p.starts_with(c))).collect();
     for c in &parts {
         let _ = std::fs::write(dir.join(format!("{INCOMPLETE}{c}")), b"");
     }
@@ -235,8 +235,8 @@ async fn download(app: &AppHandle, prefix: Option<&str>) -> Result<LocalPack, St
         }
     };
     let is_done = |name: &str, f: &FileEntry, v: &HashMap<String, String>| {
-        v.get(name).map_or(false, |h| h.eq_ignore_ascii_case(&f.sha256))
-            && std::fs::metadata(dir.join(name)).map_or(false, |m| m.len() == f.size)
+        v.get(name).is_some_and(|h| h.eq_ignore_ascii_case(&f.sha256))
+            && std::fs::metadata(dir.join(name)).is_ok_and(|m| m.len() == f.size)
     };
 
     let total: u64 = wanted.iter().map(|n| manifest.files[n].size).sum();

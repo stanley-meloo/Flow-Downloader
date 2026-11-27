@@ -316,9 +316,29 @@
         "openSettings": "Abrir ajustes",
         "download": "Iniciar descarga",
         "closeModal": "Cerrar ventana",
-        "autoDownload": "Activar/desactivar descarga automática"
+        "autoDownload": "Activar/desactivar descarga automática",
+        "trim": "Recortar video (vista de recorte)",
+        "undo": "Deshacer",
+        "redo": "Rehacer",
+        "addCut": "Añadir recorte en el ratón",
+        "playPause": "Reproducir / pausar la vista previa"
       },
-      "restored": "Valores restaurados"
+      "restored": "Valores restaurados",
+      "mouse_group": "Línea de tiempo del recorte (ratón)",
+      "mouse": {
+        "set_in": "Mover el marcador \"in\" (mantén para arrastrar)",
+        "set_out": "Mover el marcador \"out\" (mantén para arrastrar)",
+        "cut_menu": "Añadir / quitar un recorte",
+        "pick_cut": "Editar otro recorte",
+        "zoom": "Zoom en la línea de tiempo bajo el puntero"
+      },
+      "mouse_keys": {
+        "click": "Clic",
+        "click_any": "Clic izq. / der.",
+        "right_click": "Clic derecho",
+        "click_cut": "Clic en un recorte",
+        "wheel": "Rueda del ratón"
+      }
     }
   },
   "toast": {
@@ -331,6 +351,7 @@
     "clipboard_error": "No se pudo leer el portapapeles.",
     "open_error": "No se pudo abrir el archivo o la carpeta.",
     "ytdlp_checking": "Buscando actualizaciones del motor de descarga…",
+    "ytdlp_downloading": "Descargando la actualización del motor de descarga…",
     "ytdlp_updated": "Motor de descarga actualizado.",
     "ytdlp_uptodate": "El motor de descarga ya está actualizado.",
     "ytdlp_update_error": "No se pudo actualizar el motor de descarga.",
@@ -348,6 +369,7 @@
     "err_network": "Problema de conexión. Revisa tu internet e inténtalo de nuevo.",
     "err_unsupported": "Este enlace no es compatible.",
     "err_download": "La descarga falló. Inténtalo de nuevo o actualiza el motor en Ajustes.",
+    "app_updated": "¡Flow Downloader se actualizó a la versión {{version}}!",
     "app_update_error": "No se pudo comprobar o instalar la actualización.",
     "app_update_wait": "Espera a que terminen las descargas antes de actualizar.",
     "diagnostics_error": "No se pudo generar el diagnóstico.",
@@ -395,6 +417,11 @@
     "closing": "Cerrando…"
   },
   "update": {
+    "badge": "Nueva versión",
+    "whats_new": "Novedades",
+    "title": "¡Flow Downloader tiene una nueva actualización disponible!",
+    "ignore": "Ignorar",
+    "downloading": "Descargando…",
     "available": "Flow Downloader {{version}} disponible",
     "install": "Actualizar",
     "installing": "Instalando…",
@@ -442,5 +469,30 @@
   "resume": {
     "message": "Descargas sin terminar de la última vez: {{n}}",
     "resume": "Reanudar"
+  },
+  "trim": {
+    "open": "Recortar video",
+    "back": "Volver a la descarga",
+    "unavailable": "El recorte no está disponible para este video",
+    "length": "Duración",
+    "reset": "Deshacer recorte",
+    "start": "Inicio",
+    "end": "Fin",
+    "download_part": "Descargar fragmento",
+    "play": "Previsualizar el recorte",
+    "pause": "Pausar",
+    "volume": "Volumen",
+    "mute": "Silenciar",
+    "unmute": "Activar sonido",
+    "zoom_in": "Ajuste fino: zoom en el recorte",
+    "zoom_out": "Ver el video completo",
+    "add_cut": "Añadir un recorte aquí",
+    "remove_cut": "Quitar este recorte",
+    "download_parts": "Descargar fragmentos ({{count}})",
+    "position": "Posición del video",
+    "show_wave": "Mostrar ondas de sonido",
+    "show_ruler": "Mostrar regla de tiempo",
+    "wave_loading": "Cargando las ondas de sonido…",
+    "wave_error": "No se pudieron cargar las ondas de sonido"
   }
 }

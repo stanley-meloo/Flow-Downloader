@@ -71,7 +71,7 @@ pub async fn copy_image_from_url(app: AppHandle, url: String) -> Result<(), Stri
         return Err(format!("http {}", resp.status()));
     }
     // Refuse oversized images before downloading them (when the size is known).
-    if resp.content_length().map_or(false, |l| l as usize > MAX_BYTES) {
+    if resp.content_length().is_some_and(|l| l as usize > MAX_BYTES) {
         return Err("image too large".into());
     }
     let body = resp.bytes().await.map_err(|e| e.to_string())?;
@@ -141,7 +141,7 @@ pub fn start_file_drag(window: tauri::WebviewWindow, path: String, icon: Option<
         let thumb = icon
             .as_deref()
             .map(std::path::PathBuf::from)
-            .filter(|f| drag_icons_dir(window.app_handle()).map_or(false, |d| f.parent() == Some(d.as_path())))
+            .filter(|f| drag_icons_dir(window.app_handle()).is_some_and(|d| f.parent() == Some(d.as_path())))
             .and_then(|f| std::fs::read(f).ok());
         let icon = drag::Image::Raw(thumb.unwrap_or_else(|| include_bytes!("../icons/64x64.png").to_vec()));
         drag::start_drag(&window, item, icon, |_, _| {}, drag::Options::default()).map_err(|e| e.to_string())
@@ -174,7 +174,7 @@ fn drag_icons_dir(app: &AppHandle) -> Option<std::path::PathBuf> {
                     .and_then(|m| m.modified())
                     .ok()
                     .and_then(|t| t.elapsed().ok())
-                    .map_or(false, |age| age > Duration::from_secs(24 * 3600));
+                    .is_some_and(|age| age > Duration::from_secs(24 * 3600));
                 if old {
                     let _ = std::fs::remove_file(entry.path());
                 }
@@ -205,7 +205,7 @@ pub async fn prepare_drag_icon(app: AppHandle, url: String) -> Result<String, St
         .build()
         .map_err(|e| e.to_string())?;
     let resp = client.get(&url).send().await.map_err(|e| e.to_string())?;
-    if !resp.status().is_success() || resp.content_length().map_or(false, |l| l as usize > MAX_BYTES) {
+    if !resp.status().is_success() || resp.content_length().is_some_and(|l| l as usize > MAX_BYTES) {
         return Err(format!("http {}", resp.status()));
     }
     let body = resp.bytes().await.map_err(|e| e.to_string())?;
@@ -272,7 +272,7 @@ fn video_size(ffmpeg: &Path, src: &Path) -> Option<(u32, u32)> {
     let out = ffmpeg_command(ffmpeg).args(["-hide_banner", "-i"]).arg(src).output().ok()?;
     let report = String::from_utf8_lossy(&out.stderr);
     let line = report.lines().find(|l| l.contains("Stream #") && l.contains("Video:"))?;
-    line.split(|c: char| c == ',' || c == ' ')
+    line.split([',', ' '])
         .filter_map(|t| t.split_once('x'))
         .filter_map(|(w, h)| Some((w.parse::<u32>().ok()?, h.parse::<u32>().ok()?)))
         .find(|&(w, h)| w >= 16 && h >= 16)
@@ -368,7 +368,7 @@ pub async fn import_wallpaper(app: AppHandle, path: String) -> Result<ImportedWa
         return Err("file too large".into());
     }
     let dir = wallpapers_dir(&app)?;
-    if src.parent().map_or(false, |p| p == dir) {
+    if src.parent().is_some_and(|p| p == dir) {
         return Ok(ImportedWallpaper::at(&src));
     }
     let stamp = std::time::SystemTime::now()
@@ -418,11 +418,11 @@ pub async fn import_wallpaper(app: AppHandle, path: String) -> Result<ImportedWa
 pub fn remove_wallpaper(app: AppHandle, path: String) -> Result<(), String> {
     let dir = wallpapers_dir(&app)?;
     let file = std::path::PathBuf::from(path.trim().replace('/', std::path::MAIN_SEPARATOR_STR));
-    let inside = file.parent().map_or(false, |p| p == dir)
+    let inside = file.parent().is_some_and(|p| p == dir)
         || std::fs::canonicalize(&file)
             .ok()
             .zip(std::fs::canonicalize(&dir).ok())
-            .map_or(false, |(f, d)| f.parent() == Some(d.as_path()));
+            .is_some_and(|(f, d)| f.parent() == Some(d.as_path()));
     if !inside {
         return Ok(()); // a photo used from its original place: never deleted
     }
@@ -562,8 +562,8 @@ fn is_wayland() -> bool {
     if backend.starts_with("x11") {
         return false;
     }
-    std::env::var("WAYLAND_DISPLAY").map_or(false, |v| !v.is_empty())
-        || std::env::var("XDG_SESSION_TYPE").map_or(false, |v| v.eq_ignore_ascii_case("wayland"))
+    std::env::var("WAYLAND_DISPLAY").is_ok_and(|v| !v.is_empty())
+        || std::env::var("XDG_SESSION_TYPE").is_ok_and(|v| v.eq_ignore_ascii_case("wayland"))
 }
 
 /// Cursor position (physical) + color of the screen pixel under it.
@@ -708,7 +708,7 @@ fn build_loupe(app: &AppHandle) -> Option<tauri::WebviewWindow> {
             GetWindowLongPtrW, SetWindowLongPtrW, GWL_EXSTYLE, WS_EX_NOACTIVATE, WS_EX_TOOLWINDOW,
         };
         if let Ok(h) = w.hwnd() {
-            let hwnd = HWND(h.0 as *mut core::ffi::c_void);
+            let hwnd = HWND(h.0);
             unsafe {
                 let ex = GetWindowLongPtrW(hwnd, GWL_EXSTYLE);
                 SetWindowLongPtrW(hwnd, GWL_EXSTYLE, ex | (WS_EX_NOACTIVATE.0 | WS_EX_TOOLWINDOW.0) as isize);
@@ -748,14 +748,14 @@ fn move_loupe(app: &AppHandle, x: i32, y: i32, hex: &str) -> bool {
         if let Ok(h) = win.hwnd() {
             use windows::Win32::Foundation::HWND;
             use windows::Win32::UI::WindowsAndMessaging::{SetWindowPos, HWND_TOPMOST, SWP_NOACTIVATE, SWP_NOSIZE};
-            let hwnd = HWND(h.0 as *mut core::ffi::c_void);
+            let hwnd = HWND(h.0);
             placed = unsafe { SetWindowPos(hwnd, Some(HWND_TOPMOST), px, py, 0, 0, SWP_NOSIZE | SWP_NOACTIVATE) }.is_ok();
         }
     }
     if !placed {
         let _ = win.set_position(tauri::PhysicalPosition::new(px, py));
     }
-    let _ = win.eval(&format!(
+    let _ = win.eval(format!(
         "(function(){{var c=document.getElementById('c'),t=document.getElementById('t');if(c){{c.style.background='{hex}';t.textContent='{}';document.body.style.opacity=1}}}})()",
         hex.to_uppercase()
     ));
@@ -819,7 +819,7 @@ fn media_file<R: tauri::Runtime>(app: &tauri::AppHandle<R>, uri_path: &str) -> O
     let raw = percent_decode(uri_path.trim_start_matches('/'));
     let file = std::fs::canonicalize(std::path::PathBuf::from(raw)).ok()?;
     let data = app.path().app_data_dir().ok()?;
-    let allowed = ["wallpaper-pack", "wallpapers"]
+    let allowed = ["wallpaper-pack", "wallpapers", crate::ytdlp::PREVIEW_DIR]
         .iter()
         .filter_map(|d| std::fs::canonicalize(data.join(d)).ok())
         .any(|root| file.starts_with(&root));

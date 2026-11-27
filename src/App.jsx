@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { TAP } from "./components/ui/Motion"; // fast, hard button press
 import { motion, AnimatePresence, MotionConfig } from "framer-motion";
-import { LoaderCircleIcon as Loader2, XIcon as X } from "./components/ui/AnimatedIcons"; // animated
-import { SettingsIcon as Settings, HeartIcon as Heart, SparklesIcon as Sparkles } from "./components/ui/AnimatedIcons"; // animated (lucide-animated)
+import { XIcon as X } from "./components/ui/AnimatedIcons"; // animated
+import { SettingsIcon as Settings, HeartIcon as Heart } from "./components/ui/AnimatedIcons"; // animated (lucide-animated)
 import { readFile } from '@tauri-apps/plugin-fs';
 import { useTranslation } from 'react-i18next';
 
@@ -31,6 +31,8 @@ import SetupModal from "./components/modals/SetupModal";
 import SettingsModal from "./components/modals/SettingsModal";
 import PlaylistModal from "./components/modals/PlaylistModal";
 import CloseConfirmModal from "./components/modals/CloseConfirmModal";
+import AppUpdateCard, { UpdatePill } from "./components/modals/AppUpdateCard";
+import UpdateGlow from "./components/ui/UpdateGlow";
 
 // Hooks & Utils
 import useSettings from "./hooks/useSettings";
@@ -60,6 +62,8 @@ const INTRO_EASE = [0.22, 1, 0.36, 1]; // soft "ease-out-quint"
 // The heart glass is tinted rose: the refracted background is lifted a little
 // (brightness) and multiplied by a red tint, stronger on hover.
 // coreOpacity: how much of the flat middle is glass (the rest shows the live background).
+// "Resume downloads" pill under the search bar: same glass as the bar.
+const RESUME_GLASS = { blur: 0.65, darkTint: 0.34, edgeHighlight: 0.14, coreOpacity: 0.3 };
 const ROUND_GLASS = { blur: 0.65, darkTint: 0.3, edgeHighlight: 0.14, coreOpacity: 0.35 };
 const HEART_GLASS = { blur: 0.65, darkTint: 0.12, edgeHighlight: 0.16, brightness: 0.06, tintColor: [1.0, 0.36, 0.46], tintStrength: 0.65, coreOpacity: 0.55 };
 const HEART_GLASS_HOVER = { ...HEART_GLASS, darkTint: 0.02, brightness: 0.2, tintStrength: 0.9 };
@@ -72,8 +76,10 @@ const smoothTransition = { type: "spring", stiffness: 200, damping: 25 };
 const IMPORTANT_TOASTS = new Set([
   "disk_low",                  // little free space left
   "app_update_wait",           // can't update while downloading
+  "app_updated",               // first launch after an update
   "clipboard_empty",           // "paste" did nothing
-  "ytdlp_checking", "ytdlp_uptodate", "ytdlp_updated", // engine update the user asked for
+  "ytdlp_checking", "ytdlp_uptodate", "ytdlp_updated", // engine update
+  "ytdlp_downloading",         // engine update being downloaded (progress bar)
   "wallpaper_pack_done",       // the download the user started is over
   "wallpaper_video_preparing", // a video wallpaper is being converted (takes a while)
 ]);
@@ -90,6 +96,12 @@ function App() {
     if (quietToasts.current && type !== "error" && !IMPORTANT_TOASTS.has(msg)) return;
     toastRef.current?.add(msg, type, params);
   };
+  // Progress toast: added once, then updated in place; stays until hidden.
+  const progressToast = (msg, type, params) => {
+    if (quietToasts.current && !IMPORTANT_TOASTS.has(msg)) return;
+    toastRef.current?.set(msg, type, params);
+  };
+  const hideToast = (msg) => toastRef.current?.dismiss(msg);
 
   const settings = useSettings();
   quietToasts.current = settings.notifications === false;
@@ -143,11 +155,26 @@ function App() {
       setTimeout(flash, 850); // already in view (no scroll) → still highlight
     }, 220); // after the dialog's exit
   };
-  const ytdlpUpdater = useYtdlpUpdater(showToast);
+  const ytdlpUpdater = useYtdlpUpdater(showToast, progressToast, hideToast);
   // App self-update; never installs while something is downloading.
   const downloadingRef = useRef(false);
   downloadingRef.current = downloader.activeDownloads.length > 0 || downloader.waitingCount > 0;
   const appUpdater = useAppUpdater(showToast, () => downloadingRef.current);
+  // Loading cursor over the whole app while the new version downloads / installs.
+  const appUpdating = appUpdater.status === "downloading" || appUpdater.status === "installing";
+  // First launch after an update: "updated to vX" toast, shortly after the
+  // glow starts running around the window (UpdateGlow, rendered below).
+  const justUpdated = appUpdater.justUpdated;
+  useEffect(() => {
+    if (!justUpdated) return undefined;
+    const id = setTimeout(() => showToast("app_updated", "success", { version: justUpdated }), 1300);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [justUpdated]);
+  useEffect(() => {
+    document.documentElement.classList.toggle("app-updating", appUpdating);
+    return () => document.documentElement.classList.remove("app-updating");
+  }, [appUpdating]);
   const tooltipApi = useTooltip();
   const { handleTooltipEnter, handleTooltipMove, handleTooltipLeave } = tooltipApi;
 
@@ -158,7 +185,7 @@ function App() {
   useBackLayer(showSettings, () => { setShowSettings(false); return () => setShowSettings(true); });
   useBackLayer(!!downloader.mediaData, () => {
     const data = downloader.mediaData;
-    downloader.setMediaData(null);
+    downloader.closeCard();
     return () => downloader.setMediaData(data);
   });
   useBackLayer(closeShown, () => downloader.cancelClose());
@@ -423,74 +450,20 @@ function App() {
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: INTRO_EASE, delay: INTRO.titleBar }}
-        className="pointer-events-auto z-50"
+        // z-75: above the blurred layer of the update card (70) and the setup
+        // dialog (60), so the app name and window buttons stay sharp; still
+        // under the close confirmation (80).
+        className="relative pointer-events-auto z-[75]"
       >
         <TitleBar />
       </motion.div>
-      <Toast ref={toastRef} language={settings.language} />
+      <Toast ref={toastRef} language={settings.language} shifted={appUpdater.showPill} />
       {/* Custom right-click menu (replaces the webview default) */}
       <ContextMenu showToast={showToast} buildSections={buildMenuSections} />
 
       {/* Film grain + light chromatic aberration over everything (Settings → Appearance) */}
       <FilmGrain intensity={settings.visuals?.filmGrain} />
 
-      {/* RESUME BANNER: downloads left unfinished when the app was last closed */}
-      <AnimatePresence>
-        {downloader.resumable.length > 0 && settings.loaded && !settings.showSetup && (
-          <motion.div
-            initial={{ opacity: 0, y: -12, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1], delay: 0.6 } }}
-            exit={{ opacity: 0, y: -12, scale: 0.97, transition: { duration: 0.18 } }}
-            className={`fixed ${appUpdater.showBanner ? 'top-[92px]' : 'top-12'} left-1/2 -translate-x-1/2 z-[60] flex items-center gap-3 pl-4 pr-1.5 py-1.5 rounded-[14px] bg-zinc-950/80 backdrop-blur-xl border border-white/10 shadow-2xl`}
-            role="status"
-          >
-            <span className="text-[12.5px] font-bold text-zinc-200 whitespace-nowrap">
-              {t('resume.message', { n: downloader.resumable.length, defaultValue: 'Unfinished downloads from last time: {{n}}' })}
-            </span>
-            <button
-              onClick={downloader.resumeDownloads}
-              className="px-3 py-1.5 rounded-lg bg-white hover:bg-zinc-200 text-zinc-900 text-[11px] font-black uppercase tracking-wider transition-colors cursor-pointer"
-            >
-              {t('resume.resume', { defaultValue: 'Resume' })}
-            </button>
-            <button onClick={downloader.dismissResume} className="p-1.5 text-zinc-300 hover:text-white rounded-full hover:bg-white/5 transition-colors cursor-pointer" aria-label={t('update.dismiss', { defaultValue: 'Dismiss' })}>
-              <X size={14} />
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* APP UPDATE BANNER (new Flow Downloader version available) */}
-      <AnimatePresence>
-        {appUpdater.showBanner && (
-          <motion.div
-            initial={{ opacity: 0, y: -12, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -12, scale: 0.97 }}
-            transition={{ type: "spring", stiffness: 380, damping: 30 }}
-            className="fixed top-12 left-1/2 -translate-x-1/2 z-[60] flex items-center gap-3 pl-3 pr-1.5 py-1.5 rounded-[14px] bg-zinc-950/80 backdrop-blur-xl border border-(--accent)/30 shadow-2xl shadow-(--accent-strong)/10"
-          >
-            <Sparkles size={16} className="text-(--accent) shrink-0" />
-            <span className="text-[12.5px] font-bold text-zinc-200 whitespace-nowrap">
-              {t('update.available', { version: appUpdater.available?.version, defaultValue: 'Flow Downloader {{version}} is available' })}
-            </span>
-            <button
-              onClick={appUpdater.install}
-              disabled={appUpdater.status !== 'idle'}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-(--accent-strong) hover:bg-(--accent) disabled:opacity-80 disabled:cursor-wait text-white text-[11px] font-black uppercase tracking-wider transition-colors cursor-pointer"
-            >
-              {appUpdater.status === 'downloading' || appUpdater.status === 'installing'
-                ? <><Loader2 size={12} className="animate-spin" />{appUpdater.status === 'downloading' ? `${appUpdater.progress}%` : t('update.installing', { defaultValue: 'Installing…' })}</>
-                : t('update.install', { defaultValue: 'Update' })}
-            </button>
-            {appUpdater.status === 'idle' && (
-              <button onClick={appUpdater.dismiss} className="p-1.5 text-zinc-300 hover:text-white rounded-full hover:bg-white/5 transition-colors cursor-pointer" aria-label={t('update.dismiss', { defaultValue: 'Dismiss' })}>
-                <X size={14} />
-              </button>
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* Hover tooltips (liquid glass, anchored to the element) */}
       <Tooltip api={tooltipApi} />
@@ -755,6 +728,19 @@ function App() {
         delay={INTRO.settings + 0.1}
       />
 
+      {/* Ignored app update: small round button left of the gear (reopens the card) */}
+      <AnimatePresence>
+        {appUpdater.showPill && (
+          <UpdatePill
+            key="update-pill"
+            version={appUpdater.available?.version}
+            onOpen={appUpdater.restore}
+            tooltip={{ show: tooltipApi.show, leave: handleTooltipLeave }}
+            glassPaused={glassPaused}
+          />
+        )}
+      </AnimatePresence>
+
       {/* SETTINGS BUTTON */}
       <motion.button
         initial={{ opacity: 0, scale: 0.6 }}
@@ -802,6 +788,65 @@ function App() {
             renewSignal={downloader.autoAdded}
           />
 
+          {/* RESUME: downloads left unfinished when the app was last closed —
+              a liquid-glass pill right under the search bar (pushes the queue
+              down while it's there). Geometry on a 4 px grid:
+                pill 40 px tall · 8 px inset around 24 px controls → round
+                ends concentric (20 = 12 + 8) · 4 px between the controls ·
+                text: 16 px from the left edge, 12 px before the button ·
+                X glyph 12 px after the button, 16 px from the right edge ·
+                16 px below the search bar. */}
+          <AnimatePresence initial>
+            {downloader.resumable.length > 0 && settings.loaded && !settings.showSetup && (
+              <motion.div
+                key="resume"
+                initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                animate={{ opacity: 1, height: "auto", marginTop: 16, transition: { duration: 0.5, ease: INTRO_EASE, delay: performance.now() < 4000 ? INTRO.search + 0.5 : 0 } }}
+                exit={{ opacity: 0, height: 0, marginTop: 0, transition: { duration: 0.25, ease: "easeIn" } }}
+                className="shrink-0 flex justify-center w-full"
+                role="status"
+              >
+                <motion.div
+                  initial={{ y: -8, scale: 0.96 }}
+                  animate={{ y: 0, scale: 1, transition: { type: "spring", stiffness: 380, damping: 26, delay: performance.now() < 4000 ? INTRO.search + 0.5 : 0 } }}
+                  exit={{ y: -6, scale: 0.97 }}
+                >
+                  <LiquidGlass
+                    variant="dark"
+                    paused={glassPaused}
+                    settings={RESUME_GLASS}
+                    className="flex items-center h-10 pl-4 pr-3 rounded-full shadow-[0_8px_32px_rgba(0,0,0,0.3)] backdrop-blur-md"
+                    fallbackClassName="bg-zinc-950/60 backdrop-blur-2xl border border-white/10"
+                  >
+                    <span className="mr-3 text-[12.5px] leading-4 font-bold text-zinc-100 whitespace-nowrap">
+                      {t('resume.message', { n: downloader.resumable.length, defaultValue: 'Unfinished downloads from last time: {{n}}' })}
+                    </span>
+                    <motion.button
+                      whileHover={{ scale: 1.04 }}
+                      whileTap={{ scale: 0.96, transition: TAP }}
+                      onClick={downloader.resumeDownloads}
+                      className="h-6 px-2.5 rounded-full bg-white hover:bg-zinc-200 text-zinc-900 text-[9.5px] leading-none font-black uppercase tracking-wider transition-colors cursor-pointer"
+                    >
+                      {t('resume.resume', { defaultValue: 'Resume' })}
+                    </motion.button>
+                    <button
+                      onClick={downloader.dismissResume}
+                      aria-label={t('update.dismiss', { defaultValue: 'Dismiss' })}
+                      /* No background: the X glyph itself is what lines up. The
+                         16 px icon draws its X in the middle 8 px (4 px blank
+                         each side), so ml-2 + 4 = 12 px after the button and
+                         4 + pr-3 = 16 px to the edge (= the text's 16 on the
+                         left). The click area is enlarged invisibly (before:). */
+                      className="relative ml-2 w-4 h-4 flex items-center justify-center text-zinc-300 hover:text-white transition-colors cursor-pointer before:absolute before:-inset-2.5 before:content-['']"
+                    >
+                      <X size={16} />
+                    </button>
+                  </LiquidGlass>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           <QueueList
             queue={downloader.queue}
             tooltipHandlers={tooltipHandlers}
@@ -837,8 +882,12 @@ function App() {
             />
           ) : (
             <MediaModal
+              key={downloader.mediaData.originalUrl || downloader.mediaData.id} /* a new video = fresh card (title, trim…) */
               mediaData={downloader.mediaData}
-              close={() => downloader.setMediaData(null)}
+              previewClip={downloader.previewClip}
+              getWaveform={downloader.waveform}
+              onEdits={downloader.rememberCardEdits}
+              close={downloader.closeCard}
               onConfirm={downloader.startDownload}
               selectedFormat={selectedFormat}
               setSelectedFormat={chooseFormat}
@@ -867,6 +916,21 @@ function App() {
       <AnimatePresence>
         {showSettings && (
           <SettingsModal onClose={() => setShowSettings(false)} settings={settings} ytdlpUpdater={ytdlpUpdater} appUpdater={appUpdater} showToast={showToast} />
+        )}
+      </AnimatePresence>
+
+      {/* App update downloading / installing: a transparent layer over the
+          whole window (title bar included) with the loading cursor. Blocks
+          clicks too — nothing should be touched while the app replaces itself. */}
+      {appUpdating && <div className="fixed inset-0 z-[10070] cursor-wait" aria-hidden="true" />}
+
+      {/* Just updated: premium glow across the whole app, once */}
+      {justUpdated && <UpdateGlow onDone={appUpdater.clearJustUpdated} />}
+
+      {/* New app version: centered card (waits until no other window is open) */}
+      <AnimatePresence custom={appUpdater.showPill}>
+        {appUpdater.showCard && !downloader.mediaData && !showSettings && !settings.showSetup && !closeShown && (
+          <AppUpdateCard key="app-update" updater={appUpdater} />
         )}
       </AnimatePresence>
 

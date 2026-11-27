@@ -221,6 +221,16 @@ export class LiquidGlassRenderer {
     this.dirty = true;
   }
 
+  // Draws now (e.g. right after a resize, before the browser paints), instead
+  // of on the next animation frame — a resized canvas is blank until redrawn.
+  redrawNow() {
+    if (this.disposed || this.paused || document.hidden || !this.hasTexture) return;
+    this.dirty = false;
+    this.lastDraw = performance.now();
+    this.lastRectKey = "";
+    this.draw();
+  }
+
   dispose() {
     this.disposed = true;
     cancelAnimationFrame(this.frame);

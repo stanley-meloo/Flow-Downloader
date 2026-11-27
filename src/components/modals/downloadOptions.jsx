@@ -149,7 +149,7 @@ export function DropdownConfigBox({ label, icon: Icon, valueLabel, options, acti
                 transition={{ duration: 0.15 }}
                 className="absolute bottom-full left-0 right-0 mb-1 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl z-40 overflow-hidden ring-1 ring-black/50 origin-bottom"
               >
-                <SmoothScroll className="max-h-48 overflow-y-auto custom-scrollbar" contentClassName="py-1">
+                <SmoothScroll nested className="max-h-48 overflow-y-auto custom-scrollbar" contentClassName="py-1">
                 {options.map((opt) => (
                   <button
                     key={opt.value}

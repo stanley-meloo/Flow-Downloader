@@ -316,9 +316,29 @@
         "openSettings": "Einstellungen öffnen",
         "download": "Download starten",
         "closeModal": "Fenster schließen",
-        "autoDownload": "Auto-Download ein/aus"
+        "autoDownload": "Auto-Download ein/aus",
+        "trim": "Video schneiden (Schnittansicht)",
+        "undo": "Rückgängig",
+        "redo": "Wiederholen",
+        "addCut": "Schnitt an der Maus hinzufügen",
+        "playPause": "Vorschau abspielen / pausieren"
       },
-      "restored": "Standard wiederhergestellt"
+      "restored": "Standard wiederhergestellt",
+      "mouse_group": "Schnitt-Zeitleiste (Maus)",
+      "mouse": {
+        "set_in": "„In“-Marke setzen (halten zum Ziehen)",
+        "set_out": "„Out“-Marke setzen (halten zum Ziehen)",
+        "cut_menu": "Schnitt hinzufügen / entfernen",
+        "pick_cut": "Anderen Schnitt bearbeiten",
+        "zoom": "Zeitleiste am Zeiger zoomen"
+      },
+      "mouse_keys": {
+        "click": "Klick",
+        "click_any": "Links- / Rechtsklick",
+        "right_click": "Rechtsklick",
+        "click_cut": "Klick auf einen Schnitt",
+        "wheel": "Mausrad"
+      }
     }
   },
   "toast": {
@@ -331,6 +351,7 @@
     "clipboard_error": "Zwischenablage konnte nicht gelesen werden.",
     "open_error": "Datei oder Ordner konnte nicht geöffnet werden.",
     "ytdlp_checking": "Suche nach Updates für die Download-Engine…",
+    "ytdlp_downloading": "Update der Download-Engine wird heruntergeladen…",
     "ytdlp_updated": "Download-Engine aktualisiert.",
     "ytdlp_uptodate": "Die Download-Engine ist bereits aktuell.",
     "ytdlp_update_error": "Download-Engine konnte nicht aktualisiert werden.",
@@ -348,6 +369,7 @@
     "err_network": "Verbindungsproblem. Prüfe dein Internet und versuche es erneut.",
     "err_unsupported": "Dieser Link wird nicht unterstützt.",
     "err_download": "Download fehlgeschlagen. Erneut versuchen oder die Engine in den Einstellungen aktualisieren.",
+    "app_updated": "Flow Downloader wurde auf Version {{version}} aktualisiert!",
     "app_update_error": "Update konnte nicht geprüft oder installiert werden.",
     "app_update_wait": "Warte, bis die Downloads fertig sind, bevor du aktualisierst.",
     "diagnostics_error": "Diagnose konnte nicht erstellt werden.",
@@ -395,6 +417,11 @@
     "closing": "Wird geschlossen…"
   },
   "update": {
+    "badge": "Neue Version",
+    "whats_new": "Neuerungen",
+    "title": "Für Flow Downloader ist ein neues Update verfügbar!",
+    "ignore": "Ignorieren",
+    "downloading": "Wird heruntergeladen…",
     "available": "Flow Downloader {{version}} ist verfügbar",
     "install": "Aktualisieren",
     "installing": "Wird installiert…",
@@ -442,5 +469,30 @@
   "resume": {
     "message": "Unfertige Downloads vom letzten Mal: {{n}}",
     "resume": "Fortsetzen"
+  },
+  "trim": {
+    "open": "Video schneiden",
+    "back": "Zurück zum Download",
+    "unavailable": "Schneiden ist für dieses Video nicht verfügbar",
+    "length": "Länge",
+    "reset": "Schnitt zurücksetzen",
+    "start": "Anfang",
+    "end": "Ende",
+    "download_part": "Abschnitt herunterladen",
+    "play": "Schnitt ansehen",
+    "pause": "Pause",
+    "volume": "Lautstärke",
+    "mute": "Stummschalten",
+    "unmute": "Ton an",
+    "zoom_in": "Feinabstimmung: in den Schnitt zoomen",
+    "zoom_out": "Ganzes Video anzeigen",
+    "add_cut": "Hier einen Schnitt hinzufügen",
+    "remove_cut": "Diesen Schnitt entfernen",
+    "download_parts": "Abschnitte herunterladen ({{count}})",
+    "position": "Videoposition",
+    "show_wave": "Schallwellen anzeigen",
+    "show_ruler": "Zeitlineal anzeigen",
+    "wave_loading": "Schallwellen werden geladen…",
+    "wave_error": "Schallwellen konnten nicht geladen werden"
   }
 }

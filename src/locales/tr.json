@@ -316,9 +316,29 @@
         "openSettings": "Ayarları aç",
         "download": "İndirmeyi başlat",
         "closeModal": "Pencereyi kapat",
-        "autoDownload": "Otomatik indirmeyi aç/kapat"
+        "autoDownload": "Otomatik indirmeyi aç/kapat",
+        "trim": "Videoyu kırp (kırpma ekranı)",
+        "undo": "Geri al",
+        "redo": "Yinele",
+        "addCut": "Fare konumuna kesim ekle",
+        "playPause": "Önizlemeyi oynat / duraklat"
       },
-      "restored": "Varsayılanlar geri yüklendi"
+      "restored": "Varsayılanlar geri yüklendi",
+      "mouse_group": "Kesim zaman çizelgesi (fare)",
+      "mouse": {
+        "set_in": "\"In\" işaretini taşı (sürüklemek için basılı tut)",
+        "set_out": "\"Out\" işaretini taşı (sürüklemek için basılı tut)",
+        "cut_menu": "Kesim ekle / kaldır",
+        "pick_cut": "Başka bir kesimi düzenle",
+        "zoom": "İşaretçide zaman çizelgesini yakınlaştır"
+      },
+      "mouse_keys": {
+        "click": "Tıklama",
+        "click_any": "Sol / sağ tık",
+        "right_click": "Sağ tık",
+        "click_cut": "Bir kesime tıkla",
+        "wheel": "Fare tekerleği"
+      }
     }
   },
   "toast": {
@@ -331,6 +351,7 @@
     "clipboard_error": "Pano okunamadı.",
     "open_error": "Dosya veya klasör açılamadı.",
     "ytdlp_checking": "İndirme motoru güncellemeleri kontrol ediliyor…",
+    "ytdlp_downloading": "İndirme motoru güncellemesi indiriliyor…",
     "ytdlp_updated": "İndirme motoru güncellendi.",
     "ytdlp_uptodate": "İndirme motoru zaten güncel.",
     "ytdlp_update_error": "İndirme motoru güncellenemedi.",
@@ -348,6 +369,7 @@
     "err_network": "Bağlantı sorunu. İnternetinizi kontrol edip tekrar deneyin.",
     "err_unsupported": "Bu bağlantı desteklenmiyor.",
     "err_download": "İndirme başarısız. Tekrar deneyin veya Ayarlar'dan motoru güncelleyin.",
+    "app_updated": "Flow Downloader {{version}} sürümüne güncellendi!",
     "app_update_error": "Güncelleme denetlenemedi veya yüklenemedi.",
     "app_update_wait": "Güncellemeden önce indirmelerin bitmesini bekleyin.",
     "diagnostics_error": "Tanılama oluşturulamadı.",
@@ -395,6 +417,11 @@
     "closing": "Kapatılıyor…"
   },
   "update": {
+    "badge": "Yeni sürüm",
+    "whats_new": "Yenilikler",
+    "title": "Flow Downloader için yeni bir güncelleme var!",
+    "ignore": "Yoksay",
+    "downloading": "İndiriliyor…",
     "available": "Flow Downloader {{version}} kullanılabilir",
     "install": "Güncelle",
     "installing": "Yükleniyor…",
@@ -442,5 +469,30 @@
   "resume": {
     "message": "Geçen seferden tamamlanmamış indirmeler: {{n}}",
     "resume": "Devam et"
+  },
+  "trim": {
+    "open": "Videoyu kırp",
+    "back": "İndirmeye dön",
+    "unavailable": "Bu video için kırpma kullanılamıyor",
+    "length": "Süre",
+    "reset": "Kırpmayı sıfırla",
+    "start": "Başlangıç",
+    "end": "Bitiş",
+    "download_part": "Bölümü indir",
+    "play": "Kesimi önizle",
+    "pause": "Duraklat",
+    "volume": "Ses",
+    "mute": "Sesi kapat",
+    "unmute": "Sesi aç",
+    "zoom_in": "İnce ayar: kesime yakınlaştır",
+    "zoom_out": "Videonun tamamını göster",
+    "add_cut": "Buraya kesim ekle",
+    "remove_cut": "Bu kesimi kaldır",
+    "download_parts": "Bölümleri indir ({{count}})",
+    "position": "Video konumu",
+    "show_wave": "Ses dalgalarını göster",
+    "show_ruler": "Zaman cetvelini göster",
+    "wave_loading": "Ses dalgaları yükleniyor…",
+    "wave_error": "Ses dalgaları yüklenemedi"
   }
 }

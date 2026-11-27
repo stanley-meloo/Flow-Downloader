@@ -116,6 +116,18 @@ jobs:
         with:
           targets: ${{ matrix.target }}
 
+      # "What's new" for the app's update card: UPDATE_NOTES.md goes into
+      # latest.json ("notes"). The GitHub release text itself isn't changed.
+      - name: Read update notes
+        id: notes
+        shell: bash
+        run: |
+          {
+            echo 'body<<EOF_UPDATE_NOTES'
+            if [ -f UPDATE_NOTES.md ]; then sed '/^<!--/,/-->$/d' UPDATE_NOTES.md; fi
+            echo 'EOF_UPDATE_NOTES'
+          } >> "$GITHUB_OUTPUT"
+
       - name: Build Flow Downloader (Tauri)
         uses: tauri-apps/tauri-action@v0
         env:
@@ -124,5 +136,6 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           releaseId: ${{ needs.create-release.outputs.release_id }}
+          releaseBody: ${{ steps.notes.outputs.body }}
           # Updater artifacts (.sig + latest.json) only when the signing key exists.
           args: --target ${{ matrix.target }} ${{ env.HAS_UPDATER_KEY == 'true' && '--config src-tauri/tauri.updater.conf.json' || '' }}

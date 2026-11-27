@@ -29,6 +29,9 @@ import { XIcon } from './AnimatedIcons';
 //   - On screen for 4.5 s; hovering pauses the timer.
 //   - Enters from below and leaves downward (never crosses the round buttons).
 //   - Icons draw themselves in when the toast appears (stroke animation).
+//   - Progress toasts (`set(key, type, { progress })`): a bar under the text
+//     (0..1, or null = indeterminate), updated in place, no timer — they stay
+//     until `dismiss(key)`.
 
 const DURATION = 4500; // ms on screen
 const TILE_MIN = 40;   // px: one line of message (16 + 4 + 20)
@@ -130,16 +133,19 @@ function ToastCard({ toast, onClose, t }) {
   const tileRadius = Math.round(tile * 0.3);
   const cardRadius = tileRadius + 12;
   const startedAt = useRef(0);
+  const hasProgress = !!toast.params && 'progress' in toast.params;
+  const progress = hasProgress && typeof toast.params.progress === 'number'
+    ? Math.max(0, Math.min(1, toast.params.progress)) : null;
 
   useEffect(() => {
-    if (paused) return;
+    if (paused || hasProgress) return;
     startedAt.current = performance.now();
     const timer = setTimeout(onClose, remaining.current);
     return () => {
       clearTimeout(timer);
       remaining.current -= performance.now() - startedAt.current;
     };
-  }, [paused, onClose]);
+  }, [paused, onClose, hasProgress]);
 
   const title = t(`toast.titles.${toast.type}`, { defaultValue: cfg.title });
   const message = t(`toast.${toast.messageKey}`, { defaultValue: toast.messageKey, ...(toast.params || {}) });
@@ -182,11 +188,28 @@ function ToastCard({ toast, onClose, t }) {
           Title + first line = 16 + 4 + 20 = 40 = the tile's height, so the tile's
           top/bottom line up exactly with the title's top and the first line's
           bottom; extra lines continue below at the same 20 px rhythm. */}
-      <div ref={textRef} className="flex-1 min-w-0">
-        <p className="h-4 text-[11px] leading-4 font-black uppercase tracking-widest" style={{ color: cfg.color }}>
-          {title}
-        </p>
-        <p className="mt-1 text-[13px] leading-5 font-semibold text-zinc-100 break-words [text-wrap:pretty]">{renderMessage(message)}</p>
+      <div className={`flex-1 min-w-0 ${hasProgress ? 'min-w-[240px]' : ''}`}>
+        <div ref={textRef}>
+          <p className="h-4 text-[11px] leading-4 font-black uppercase tracking-widest" style={{ color: cfg.color }}>
+            {title}
+          </p>
+          <p className="mt-1 text-[13px] leading-5 font-semibold text-zinc-100 break-words [text-wrap:pretty]">{renderMessage(message)}</p>
+        </div>
+        {/* Progress bar (outside the measured text: the tile keeps its size) */}
+        {hasProgress && (
+          <div className="mt-2 flex items-center gap-2">
+            <div className="relative flex-1 h-1.5 rounded-full bg-white/10 overflow-hidden" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress == null ? undefined : Math.round(progress * 100)}>
+              {progress == null ? (
+                <span className="toast-progress-indeterminate absolute inset-y-0 w-1/3 rounded-full" style={{ background: cfg.color }} />
+              ) : (
+                <span className="absolute inset-y-0 left-0 rounded-full transition-[width] duration-200 ease-out" style={{ width: `${progress * 100}%`, background: cfg.color, boxShadow: `0 0 8px ${cfg.color}88` }} />
+              )}
+            </div>
+            <span className="w-9 text-right text-[11px] leading-4 font-bold tabular-nums text-zinc-300">
+              {progress == null ? '' : `${Math.round(progress * 100)}%`}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Close: round, centered on the tile's row (40 px tile, 28 px button → 6 px down) */}
@@ -222,11 +245,30 @@ const Toast = forwardRef((props, ref) => {
       const id = ++nextToastId;
       // Same message already on screen: replace it instead of stacking duplicates.
       setToasts(prev => [...prev.filter(x => x.messageKey !== messageKey), { id, messageKey, type, params }].slice(-4));
-    }
+    },
+    // Adds the toast, or updates the one with this key in place (same card,
+    // no re-entrance) — used for progress toasts.
+    set(messageKey, type = 'info', params) {
+      setToasts(prev => {
+        const i = prev.findIndex(x => x.messageKey === messageKey);
+        if (i === -1) return [...prev, { id: ++nextToastId, messageKey, type, params }].slice(-4);
+        const next = prev.slice();
+        next[i] = { ...prev[i], type, params };
+        return next;
+      });
+    },
+    dismiss(messageKey) {
+      setToasts(prev => prev.filter(x => {
+        if (x.messageKey !== messageKey) return true;
+        closers.current.delete(x.id);
+        return false;
+      }));
+    },
   }));
 
   return (
-    <div className="fixed bottom-6 right-20 flex flex-col items-end gap-3 z-[10005] pointer-events-none">
+    // shifted: the update pill sits left of the gear → keep 16 px from it too.
+    <div className={`fixed bottom-6 ${props.shifted ? 'right-[120px]' : 'right-20'} transition-[right] duration-300 flex flex-col items-end gap-3 z-[10005] pointer-events-none`}>
       <AnimatePresence mode="popLayout">
         {toasts.map((toast) => (
           <ToastCard key={toast.id} toast={toast} onClose={closerFor(toast.id)} t={t} />

@@ -316,9 +316,29 @@
         "openSettings": "Abrir configurações",
         "download": "Iniciar download",
         "closeModal": "Fechar janela",
-        "autoDownload": "Ligar/desligar Download automático"
+        "autoDownload": "Ligar/desligar Download automático",
+        "trim": "Cortar vídeo (tela de corte)",
+        "undo": "Desfazer",
+        "redo": "Refazer",
+        "addCut": "Adicionar corte no mouse",
+        "playPause": "Reproduzir / pausar a prévia"
       },
-      "restored": "Padrões restaurados"
+      "restored": "Padrões restaurados",
+      "mouse_group": "Timeline do corte (mouse)",
+      "mouse": {
+        "set_in": "Mover o marcador \"in\" (segure para arrastar)",
+        "set_out": "Mover o marcador \"out\" (segure para arrastar)",
+        "cut_menu": "Adicionar / remover corte",
+        "pick_cut": "Editar outro corte",
+        "zoom": "Zoom na timeline no ponteiro"
+      },
+      "mouse_keys": {
+        "click": "Clique",
+        "click_any": "Clique esq. / dir.",
+        "right_click": "Clique direito",
+        "click_cut": "Clique num corte",
+        "wheel": "Roda do mouse"
+      }
     }
   },
   "toast": {
@@ -331,6 +351,7 @@
     "clipboard_error": "Não foi possível ler a área de transferência.",
     "open_error": "Não foi possível abrir o arquivo ou a pasta.",
     "ytdlp_checking": "Procurando atualizações do motor de download…",
+    "ytdlp_downloading": "Baixando a atualização do motor de download…",
     "ytdlp_updated": "Motor de download atualizado.",
     "ytdlp_uptodate": "O motor de download já está atualizado.",
     "ytdlp_update_error": "Não foi possível atualizar o motor de download.",
@@ -348,6 +369,7 @@
     "err_network": "Problema de conexão. Verifique sua internet e tente de novo.",
     "err_unsupported": "Este link não é suportado.",
     "err_download": "O download falhou. Tente de novo ou atualize o motor nas Configurações.",
+    "app_updated": "Flow Downloader atualizado para a versão {{version}}!",
     "app_update_error": "Não foi possível verificar ou instalar a atualização.",
     "app_update_wait": "Espere os downloads terminarem antes de atualizar.",
     "diagnostics_error": "Não foi possível gerar o diagnóstico.",
@@ -395,6 +417,11 @@
     "closing": "Fechando…"
   },
   "update": {
+    "badge": "Nova versão",
+    "whats_new": "Novidades",
+    "title": "Flow Downloader tem uma nova atualização disponível!",
+    "ignore": "Ignorar",
+    "downloading": "Baixando…",
     "available": "Flow Downloader {{version}} disponível",
     "install": "Atualizar",
     "installing": "Instalando…",
@@ -442,5 +469,30 @@
   "resume": {
     "message": "Downloads não concluídos da última vez: {{n}}",
     "resume": "Retomar"
+  },
+  "trim": {
+    "open": "Cortar vídeo",
+    "back": "Voltar para o download",
+    "unavailable": "O corte não está disponível para este vídeo",
+    "length": "Duração",
+    "reset": "Desfazer corte",
+    "start": "Início",
+    "end": "Fim",
+    "download_part": "Baixar trecho",
+    "play": "Pré-visualizar o corte",
+    "pause": "Pausar",
+    "volume": "Volume",
+    "mute": "Silenciar",
+    "unmute": "Ativar som",
+    "zoom_in": "Ajuste fino: zoom no corte",
+    "zoom_out": "Ver o vídeo inteiro",
+    "add_cut": "Adicionar corte aqui",
+    "remove_cut": "Remover este corte",
+    "download_parts": "Baixar trechos ({{count}})",
+    "position": "Posição do vídeo",
+    "show_wave": "Mostrar ondas sonoras",
+    "show_ruler": "Mostrar régua de tempo",
+    "wave_loading": "Carregando as ondas sonoras…",
+    "wave_error": "Não foi possível carregar as ondas sonoras"
   }
 }

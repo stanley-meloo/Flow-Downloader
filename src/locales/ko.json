@@ -315,9 +315,29 @@
         "openSettings": "설정 열기",
         "download": "다운로드 시작",
         "closeModal": "창 닫기",
-        "autoDownload": "자동 다운로드 켜기/끄기"
+        "autoDownload": "자동 다운로드 켜기/끄기",
+        "trim": "동영상 자르기 (자르기 화면)",
+        "undo": "실행 취소",
+        "redo": "다시 실행",
+        "addCut": "마우스 위치에 구간 추가",
+        "playPause": "미리보기 재생 / 일시정지"
       },
-      "restored": "기본값으로 복원됨"
+      "restored": "기본값으로 복원됨",
+      "mouse_group": "자르기 타임라인 (마우스)",
+      "mouse": {
+        "set_in": "\"in\" 마커 이동 (누른 채 드래그)",
+        "set_out": "\"out\" 마커 이동 (누른 채 드래그)",
+        "cut_menu": "구간 추가 / 삭제",
+        "pick_cut": "다른 구간 편집",
+        "zoom": "포인터 위치에서 타임라인 확대"
+      },
+      "mouse_keys": {
+        "click": "클릭",
+        "click_any": "왼쪽 / 오른쪽 클릭",
+        "right_click": "오른쪽 클릭",
+        "click_cut": "구간 클릭",
+        "wheel": "마우스 휠"
+      }
     }
   },
   "toast": {
@@ -330,6 +350,7 @@
     "clipboard_error": "클립보드를 읽을 수 없습니다.",
     "open_error": "파일이나 폴더를 열 수 없습니다.",
     "ytdlp_checking": "다운로드 엔진 업데이트를 확인하는 중…",
+    "ytdlp_downloading": "다운로드 엔진 업데이트를 다운로드하는 중…",
     "ytdlp_updated": "다운로드 엔진을 업데이트했습니다.",
     "ytdlp_uptodate": "다운로드 엔진이 이미 최신입니다.",
     "ytdlp_update_error": "다운로드 엔진을 업데이트할 수 없습니다.",
@@ -347,6 +368,7 @@
     "err_network": "연결에 문제가 있습니다. 인터넷을 확인하고 다시 시도하세요.",
     "err_unsupported": "지원하지 않는 링크입니다.",
     "err_download": "다운로드에 실패했습니다. 다시 시도하거나 설정에서 엔진을 업데이트하세요.",
+    "app_updated": "Flow Downloader가 {{version}} 버전으로 업데이트되었습니다!",
     "app_update_error": "업데이트를 확인하거나 설치할 수 없습니다.",
     "app_update_wait": "다운로드가 끝난 뒤에 업데이트하세요.",
     "diagnostics_error": "진단 정보를 만들 수 없습니다.",
@@ -394,6 +416,11 @@
     "closing": "종료하는 중…"
   },
   "update": {
+    "badge": "새 버전",
+    "whats_new": "새로운 기능",
+    "title": "Flow Downloader의 새 업데이트가 있습니다!",
+    "ignore": "무시",
+    "downloading": "다운로드 중…",
     "available": "Flow Downloader {{version}} 사용 가능",
     "install": "업데이트",
     "installing": "설치 중…",
@@ -441,5 +468,30 @@
   "resume": {
     "message": "지난번에 완료되지 않은 다운로드: {{n}}",
     "resume": "이어서 받기"
+  },
+  "trim": {
+    "open": "동영상 자르기",
+    "back": "다운로드로 돌아가기",
+    "unavailable": "이 동영상은 자르기를 사용할 수 없습니다",
+    "length": "길이",
+    "reset": "자르기 초기화",
+    "start": "시작",
+    "end": "끝",
+    "download_part": "구간 다운로드",
+    "play": "자른 구간 미리보기",
+    "pause": "일시정지",
+    "volume": "볼륨",
+    "mute": "음소거",
+    "unmute": "음소거 해제",
+    "zoom_in": "미세 조정: 자른 구간 확대",
+    "zoom_out": "전체 동영상 보기",
+    "add_cut": "여기에 구간 추가",
+    "remove_cut": "이 구간 삭제",
+    "download_parts": "구간 다운로드 ({{count}})",
+    "position": "동영상 위치",
+    "show_wave": "음파 표시",
+    "show_ruler": "시간 눈금자 표시",
+    "wave_loading": "음파를 불러오는 중…",
+    "wave_error": "음파를 불러올 수 없습니다"
   }
 }

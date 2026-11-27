@@ -98,6 +98,7 @@ pub(crate) fn remove_artifacts_except(dir: &std::path::Path, stem: &str, keep: &
 ///   FOS_FILEMUSTEXIST is removed, so clicking the button with the placeholder
 ///   returns "<current folder>\<placeholder>" — we keep only the folder part.
 ///   If the user selects a file instead, we use the folder containing it.
+///
 /// The dialog is owned by the app window, so it is modal like any native dialog.
 #[cfg(target_os = "windows")]
 mod win_folder_dialog {
@@ -229,7 +230,7 @@ fn pick_folder_native(
     let owner = window
         .hwnd()
         .ok()
-        .map(|h| windows::Win32::Foundation::HWND(h.0 as *mut core::ffi::c_void));
+        .map(|h| windows::Win32::Foundation::HWND(h.0));
     win_folder_dialog::pick(
         owner,
         default_path,
@@ -264,7 +265,17 @@ pub fn run() {
         })
         // Anonymous usage statistics (Aptabase): only the events the frontend
         // sends (utils/analytics.js), only when the user leaves it on in Settings.
-        .plugin(tauri_plugin_aptabase::Builder::new(APTABASE_APP_KEY).build())
+        // The plugin's default send interval in release builds is 60 s (2 s in
+        // dev): "app_started" sat in the queue and was lost whenever the app was
+        // closed, updated or killed before that. Send within a few seconds.
+        .plugin(
+            tauri_plugin_aptabase::Builder::new(APTABASE_APP_KEY)
+                .with_options(tauri_plugin_aptabase::InitOptions {
+                    flush_interval: Some(std::time::Duration::from_secs(5)),
+                    ..Default::default()
+                })
+                .build(),
+        )
         // yt-dlp runner state (running downloads, resolved binary path).
         // Rounded window corners on Windows 11 and macOS (window_corners.rs);
         // fallback for showing the (initially hidden) window.
@@ -289,8 +300,11 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             ytdlp::ytdlp_analyze,
             ytdlp::ytdlp_download,
+            ytdlp::ytdlp_preview_clip,
+            ytdlp::ytdlp_waveform,
             ytdlp::ytdlp_cancel,
             ytdlp::ytdlp_cancel_all,
+            ytdlp::ytdlp_check_update,
             ytdlp::ytdlp_update,
             ytdlp::ytdlp_version,
             ytdlp::save_thumbnail,

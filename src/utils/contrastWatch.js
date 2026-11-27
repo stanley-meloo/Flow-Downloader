@@ -37,7 +37,8 @@ function glassCanvasOf(el) {
   const inside = el.querySelector?.("canvas");
   if (inside) return inside;
   for (let n = el.parentElement, i = 0; n && i < 4; n = n.parentElement, i++) {
-    const c = Array.from(n.children).find((k) => k.tagName === "CANVAS");
+    const c = n.querySelector(":scope > [data-glass-clip] > canvas")
+      || Array.from(n.children).find((k) => k.tagName === "CANVAS");
     if (c) return c;
   }
   return null;
